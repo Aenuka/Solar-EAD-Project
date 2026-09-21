@@ -1,0 +1,57 @@
+plugins { id 'com.android.application' }
+
+def configuredApi = providers.gradleProperty('apiBaseUrl').orNull
+// Workstation-specific debug settings also apply when Run is clicked in Android Studio.
+def developmentSettings = new Properties()
+def developmentFile = rootProject.file('development.properties')
+if (developmentFile.exists()) {
+    developmentFile.withInputStream { developmentSettings.load(it) }
+}
+def debugApi = configuredApi ?: developmentSettings.getProperty('apiBaseUrl') ?: 'http://10.0.2.2:5080/api/v1/'
+def quoteUrl = { String value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
+[configuredApi, debugApi].findAll { it != null }.each { value ->
+    if (!value.endsWith('/') || !(value.startsWith('http://') || value.startsWith('https://'))) {
+        throw new GradleException('apiBaseUrl must be an HTTP(S) URL ending in /.')
+    }
+}
+
+android {
+    namespace 'lk.solar.microgrid'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'lk.solar.microgrid'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+    buildFeatures { buildConfig true }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            buildConfigField 'String', 'API_BASE_URL', quoteUrl(debugApi)
+        }
+        release {
+            buildConfigField 'String', 'API_BASE_URL', quoteUrl(configuredApi ?: 'https://configure-api.invalid/api/v1/')
+            minifyEnabled false
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    lint { abortOnError true }
+}
+
+tasks.configureEach { task ->
+    if (task.name == 'preReleaseBuild') {
+        task.doFirst {
+            if (configuredApi == null || !configuredApi.startsWith('https://')) {
+                throw new GradleException('Release builds require -PapiBaseUrl=https://your-api.example/api/v1/')
+            }
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20250517'
+}

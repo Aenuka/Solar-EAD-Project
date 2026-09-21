@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../SolarMicrogrid.Contracts/SolarMicrogrid.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,10 @@
+@model StaffCreateViewModel
+@{ ViewData["Title"] = "Add staff member"; }
+<a class="back-link" asp-action="Index">← Team &amp; access</a><div class="page-heading"><div><h1>Add staff member</h1><p class="muted">Create a Backoffice or Grid Operator account.</p></div></div>
+<section class="card narrow"><form asp-action="Create" method="post"><div asp-validation-summary="All" class="validation" role="alert"></div>
+<label asp-for="FullName">Full name</label><input asp-for="FullName" autocomplete="name" required maxlength="100" />
+<label asp-for="Email">Email address</label><input asp-for="Email" autocomplete="email" required />
+<label asp-for="Username">Username</label><input asp-for="Username" autocomplete="off" required /><p class="field-help">3–50 letters, numbers, dots, underscores or hyphens.</p>
+<label asp-for="Role">Role</label><select asp-for="Role" required><option value="GridOperator">Grid Operator</option><option value="Backoffice">Backoffice</option></select>
+<label asp-for="Password">Initial password</label><input asp-for="Password" autocomplete="new-password" minlength="12" maxlength="128" required /><p class="field-help">Use a unique password of at least 12 characters. Share it securely with the staff member.</p>
+<div class="form-actions"><button class="button" type="submit">Create account</button><a class="button secondary" asp-action="Index">Cancel</a></div></form></section>
