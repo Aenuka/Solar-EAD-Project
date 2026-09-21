@@ -24,7 +24,32 @@ MongoDB is authoritative. SQLite stores only the signed-in prosumer's last serve
 
 ## Run the API and web application
 
-Prerequisites: .NET SDK 10.0.300 or later in the .NET 10 family, Python 3, and MongoDB (`mongod` on PATH or Docker).
+Prerequisites: .NET SDK 10.0.300 or later in the .NET 10 family, Python 3, and a MongoDB connection (Atlas in the cloud, `mongod` on PATH, or Docker).
+
+### MongoDB Atlas with local Android SQLite
+
+```text
+Android app → local .NET API → MongoDB Atlas (solar_microgrid)
+     ↕
+SQLite profile cache on the Android device
+```
+
+Run `python3 scripts/init_dev.py` once if local settings do not exist. Add a `Mongo` section to `src/SolarMicrogrid.Api/appsettings.Local.json`, preserving its existing `Jwt` and `Bootstrap` sections:
+
+```json
+"Mongo": {
+  "ConnectionString": "mongodb+srv://<database-user>:<encoded-password>@<cluster-host>/?appName=SolarMicrogrid",
+  "DatabaseName": "solar_microgrid"
+}
+```
+
+Use the connection string from Atlas **Connect → Drivers**, a database user with read/write access to `solar_microgrid`, and allow your computer's current IP in the Atlas project's Network Access list. See the [Atlas connection prerequisites](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/). The local settings file is ignored by Git; keep the real URL there or in the API process's `Mongo__ConnectionString` environment variable. Putting it in the Web launch profile does not configure the API.
+
+Start with `python3 scripts/run_dev.py`. With Atlas configured, the script does not start or require local MongoDB or Docker. Restart an already-running API after changing its connection string. The API creates the collections and initial staff account on first startup. Existing records in local MongoDB are not automatically copied to Atlas.
+
+Android saves the server-confirmed profile to SQLite after sign-in, registration, successful edits, and Refresh. During a network failure or temporary server/database outage, Refresh can show the cached profile in an existing valid session. Tap Refresh when the connection returns to fetch the latest cloud data. This is a profile cache: offline edits are not queued, and restarting the app process requires online sign-in. Keep the API running on your computer while testing Android; using Atlas does not host the API itself.
+
+### Start the API and web portal
 
 If using Docker, start MongoDB first:
 
@@ -38,7 +63,7 @@ Then, from the repository root:
 python3 scripts/run_dev.py
 ```
 
-The script creates local credentials, builds the solution, and starts the API and MVC app. If MongoDB is not already listening on port 27017, it starts an installed `mongod` with data in `.local/mongodb`. It only stops processes it started.
+The script creates local credentials, builds the solution, and starts the API and MVC app. When configured for the default local MongoDB connection, it starts an installed `mongod` with data in `.local/mongodb` if port 27017 is not already listening. Atlas connections skip that step. It only stops processes it started.
 
 - Staff portal: <http://localhost:5081>
 - API: <http://localhost:5080/api/v1>
@@ -89,7 +114,7 @@ To verify forwarding, open `http://127.0.0.1:5080/health` in the phone browser; 
 
 To return to an emulator, remove the local `development.properties` override or set its URL to `http://10.0.2.2:5080/api/v1/`, then rebuild. Command-line `-PapiBaseUrl=...` overrides the local file. Debug cleartext access is restricted to emulator/loopback addresses. Release builds require an explicit HTTPS `-PapiBaseUrl=https://your-api.example/api/v1/` and your signing configuration; local debug settings are never used for release builds.
 
-Android keeps the bearer token in memory, so restarting the process requires an online sign-in. SQLite supports cached profile viewing during a connection failure in an existing session. Cached data is labelled and writes require a successful refresh. Logging out clears the cache; passwords and tokens are never stored in SQLite or preferences.
+Android keeps the bearer token in memory, so restarting the process requires an online sign-in. SQLite supports cached profile viewing during a connection failure or HTTP 5xx server/database outage in an existing session. Authentication and authorization errors do not fall back to cached data. Cached data is labelled and writes require a successful refresh. Logging out clears the cache; passwords and tokens are never stored in SQLite or preferences.
 
 ## Component 1 behavior
 
