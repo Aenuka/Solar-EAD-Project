@@ -58,6 +58,15 @@ public final class AccountRepository {
     private ProfileCache.Snapshot load() throws Exception {
         requireSession();
         try { return confirmed(api.request("GET", "prosumers/me", null, token)); }
+        catch (ApiException e) {
+            // The API can still be reachable while its cloud database is unavailable.
+            // Authentication/authorization failures must never be hidden by cached data.
+            if (e.status >= 500 && e.status <= 599) {
+                ProfileCache.Snapshot local = cache.read(nic);
+                if (local != null) return local;
+            }
+            throw e;
+        }
         catch (IOException e) {
             ProfileCache.Snapshot local = cache.read(nic);
             if (local != null) return local;

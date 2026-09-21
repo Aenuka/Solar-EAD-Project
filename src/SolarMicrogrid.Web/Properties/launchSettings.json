@@ -5,9 +5,7 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5081",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "Mongo__ConnectionString": "mongodb+srv://aenuine_db_user:wRMOH1J6NCgZfmjn@cluster0.w6go5w7.mongodb.net/?appName=Cluster0",
-        "Mongo__DatabaseName": "solar_microgrid"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
   }

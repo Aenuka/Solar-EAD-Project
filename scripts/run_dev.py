@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run Component 1 locally; use Ctrl+C to stop the processes started by this script."""
+import json
 import os
 from pathlib import Path
 import shutil
@@ -8,6 +9,7 @@ import socket
 import subprocess
 import sys
 import time
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -17,13 +19,35 @@ def listening(port):
         return sock.connect_ex(("127.0.0.1", port)) == 0
 
 
+def mongo_connection_string():
+    """Match the API's Development JSON settings and environment override."""
+    connection = "mongodb://127.0.0.1:27017"
+    directory = ROOT / "src/SolarMicrogrid.Api"
+    for name in ("appsettings.json", "appsettings.Development.json", "appsettings.Local.json"):
+        path = directory / name
+        if path.exists():
+            settings = json.loads(path.read_text())
+            connection = settings.get("Mongo", {}).get("ConnectionString", connection)
+    return os.environ.get("Mongo__ConnectionString", connection)
+
+
 def main():
     subprocess.run([sys.executable, str(ROOT / "scripts/init_dev.py")], check=True)
+    for port in (5080, 5081):
+        if listening(port):
+            raise RuntimeError(f"Port {port} is already in use. Stop the existing API/web app in its terminal or IDE before starting this script.")
     subprocess.run(["dotnet", "build", "SolarMicrogrid.sln", "-m:1", "/nr:false"], cwd=ROOT, check=True)
     local = ROOT / ".local"
+    local.mkdir(exist_ok=True)
     processes, streams = [], []
     try:
-        if not listening(27017) and not os.environ.get("Mongo__ConnectionString"):
+        mongo_url = urlsplit(mongo_connection_string())
+        default_local_mongo = (mongo_url.scheme == "mongodb" and
+                               mongo_url.hostname in ("localhost", "127.0.0.1") and
+                               mongo_url.port in (None, 27017) and not mongo_url.username)
+        if mongo_url.scheme == "mongodb+srv":
+            print("Using MongoDB Atlas from API configuration; local MongoDB is not required.", flush=True)
+        if default_local_mongo and not listening(27017):
             mongod = shutil.which("mongod")
             if not mongod:
                 raise RuntimeError("Start MongoDB with 'docker compose up -d mongo' or install mongod locally.")
