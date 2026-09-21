@@ -1,0 +1,71 @@
+@model StationResponse
+@{ ViewData["Title"] = Model.Name; string[] days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]; }
+<a asp-action="Index">Back to stations</a>
+<div class="page-heading"><div><h1>@Model.Name</h1><p>@Model.Address</p></div>
+@if (User.IsInRole(Roles.Backoffice)) { <a class="button" asp-action="Edit" asp-route-id="@Model.Id">Edit station</a> }
+</div>
+<section class="card">
+    <p><strong>@(Model.Active ? "Active" : "Inactive")</strong> · @Model.CapacityKw kW · @Model.StorageKwh kWh · @Model.BatterySlots battery slots</p>
+    <p>GPS: @Model.Latitude, @Model.Longitude</p>
+    <p>Station ID: <code>@Model.Id</code></p>
+    <p><strong>@Model.ActiveReservations active reservations</strong>. Reserved allocations remain active until cancelled or completed by booking/operator workflows.</p>
+    @if (User.IsInRole(Roles.Backoffice))
+    {
+        <form asp-action="Status" asp-route-id="@Model.Id" method="post">
+            <input type="hidden" name="Version" value="@Model.Version" /><input type="hidden" name="Active" value="@((!Model.Active).ToString().ToLowerInvariant())" />
+            <button class="button secondary" type="submit">@(Model.Active ? "Deactivate station" : "Activate station")</button>
+        </form>
+    }
+</section>
+<div class="row">
+<div class="col-lg-6"><section class="card"><h2>Operating schedule</h2>
+<p class="muted">All hours use Asia/Colombo (UTC+05:30). Overnight windows are not supported.</p>
+<form asp-action="Schedule" asp-route-id="@Model.Id" method="post">
+    <input type="hidden" name="Version" value="@Model.Version" />
+    <fieldset class="station-days"><legend>Operating days</legend>
+    @for (var d = 0; d < 7; d++) { <label><input type="checkbox" name="Days" value="@d" checked="@Model.Schedule.Days.Contains(d)" /> @days[d]</label> }
+    </fieldset>
+    <label for="opens">Opens</label><input id="opens" name="OpensAt" type="time" value="@Model.Schedule.OpensAt" required />
+    <label for="closes">Closes</label><input id="closes" name="ClosesAt" type="time" value="@Model.Schedule.ClosesAt" required />
+    <div class="form-actions"><button class="button" type="submit">Save schedule</button></div>
+</form></section></div>
+<div class="col-lg-6"><section class="card"><h2>Add energy window</h2>
+<p class="muted">Choose dates and times in Sri Lanka time (UTC+05:30). Windows cannot overlap. Available energy must fit both storage and power × duration.</p>
+<form asp-action="AddSlot" asp-route-id="@Model.Id" method="post">
+    <input type="hidden" name="Version" value="@Model.Version" />
+    <label for="starts">Starts at (Sri Lanka time)</label><input id="starts" name="StartsAt" type="datetime-local" required />
+    <label for="ends">Ends at (Sri Lanka time)</label><input id="ends" name="EndsAt" type="datetime-local" required />
+    <label for="new-slots">Usable battery slots</label><input id="new-slots" name="UsableSlots" type="number" min="0" max="@Model.BatterySlots" value="@Model.BatterySlots" required />
+    <label for="new-energy">Usable energy (kWh)</label><input id="new-energy" name="UsableEnergyKwh" type="number" min="0" max="@Model.StorageKwh" step="0.01" required />
+    <div class="form-actions"><button class="button" type="submit">Add window</button></div>
+</form></section></div>
+</div>
+<h2>Energy windows and usage</h2>
+@if (Model.Slots.Count == 0) { <p>No energy windows added yet.</p> }
+@foreach (var slot in Model.Slots)
+{
+<section class="card">
+    <h3>@slot.StartsAt.ToOffset(TimeSpan.FromMinutes(330)).ToString("yyyy-MM-dd HH:mm") – @slot.EndsAt.ToOffset(TimeSpan.FromMinutes(330)).ToString("HH:mm") (Sri Lanka)</h3>
+    <p>@slot.AvailableSlots available slots · @slot.AvailableEnergyKwh.ToString("0.##") kWh available · @slot.ActiveReservations active reservations</p>
+    <p class="muted">Slot ID: <code>@slot.Id</code></p>
+    @if (slot.EndsAt > DateTimeOffset.UtcNow)
+    {
+        <form asp-action="Availability" asp-route-id="@Model.Id" asp-route-slotId="@slot.Id" method="post">
+            <input type="hidden" name="Version" value="@Model.Version" />
+            <label for="slots-@slot.Id">Usable slots (including reserved/used)</label><input id="slots-@slot.Id" name="UsableSlots" type="number" min="0" max="@Model.BatterySlots" value="@slot.UsableSlots" required />
+            <label for="energy-@slot.Id">Usable energy (kWh, including reserved/used)</label><input id="energy-@slot.Id" name="UsableEnergyKwh" type="number" min="0" step="0.01" max="@Model.StorageKwh" value="@slot.UsableEnergyKwh" required />
+            <div class="form-actions"><button class="button" type="submit">Update availability</button></div>
+        </form>
+    }
+    @if (slot.Allocations.Count > 0)
+    {
+        <div class="table-scroll"><table><thead><tr><th>Booking allocation ID</th><th>Slots</th><th>Energy (kWh)</th><th>Status</th></tr></thead><tbody>
+        @foreach (var allocation in slot.Allocations) { <tr><td>@allocation.BookingId</td><td>@allocation.Slots</td><td>@allocation.EnergyKwh</td><td>@allocation.Status</td></tr> }
+        </tbody></table></div>
+    }
+    <form asp-action="Archive" asp-route-id="@Model.Id" asp-route-slotId="@slot.Id" method="post">
+        <input type="hidden" name="Version" value="@Model.Version" />
+        <div class="form-actions"><button class="button secondary" type="submit">@(slot.EndsAt <= DateTimeOffset.UtcNow ? "Archive window" : "Remove unused window")</button></div>
+    </form>
+</section>
+}

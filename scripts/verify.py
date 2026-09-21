@@ -39,9 +39,11 @@ def wait_ready(url, process):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-build", action="store_true")
+    parser.add_argument("--configuration", default="Debug", choices=["Debug", "Release"])
+    parser.add_argument("--test", help="Optional unittest name, e.g. test_00_stations.StationTests")
     args = parser.parse_args()
     if not args.no_build:
-        subprocess.run(["dotnet", "build", "SolarMicrogrid.sln", "-m:1", "/nr:false"], cwd=ROOT, check=True)
+        subprocess.run(["dotnet", "build", "SolarMicrogrid.sln", "-c", args.configuration, "-m:1", "/nr:false"], cwd=ROOT, check=True)
     mongod = shutil.which("mongod")
     external_mongo = os.environ.get("TEST_MONGO_URL")
     if not mongod and not external_mongo:
@@ -70,7 +72,7 @@ def main():
             })
             for app, port in [("Api", api_port), ("Web", web_port)]:
                 app_dir = ROOT / "src" / f"SolarMicrogrid.{app}"
-                dll = app_dir / "bin" / "Debug" / "net10.0" / f"SolarMicrogrid.{app}.dll"
+                dll = app_dir / "bin" / args.configuration / "net10.0" / f"SolarMicrogrid.{app}.dll"
                 log = open(artifacts / f"verify-{app.lower()}.log", "w")
                 streams.append(log)
                 service_env = {**env, "ASPNETCORE_URLS": f"http://127.0.0.1:{port}", "Api__BaseUrl": f"http://127.0.0.1:{api_port}/api/v1/"}
@@ -81,12 +83,17 @@ def main():
             with urllib.request.urlopen(f"http://127.0.0.1:{api_port}/openapi/v1.json") as response:
                 schema = json.load(response)
             (ROOT / "docs" / "openapi.json").write_text(json.dumps(schema, indent=2) + "\n")
-            result = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], cwd=ROOT, env=env)
+            command = [sys.executable, "-m", "unittest"]
+            command += [args.test, "-v"] if args.test else ["discover", "-s", "tests", "-v"]
+            result = subprocess.run(command, cwd=ROOT / "tests" if args.test else ROOT, env=env)
             return result.returncode
         finally:
             for process in reversed(processes):
                 if process.poll() is None:
-                    process.send_signal(signal.SIGINT)
+                    if os.name == "nt":
+                        process.terminate()
+                    else:
+                        process.send_signal(signal.SIGINT)
                     try:
                         process.wait(timeout=10)
                     except subprocess.TimeoutExpired:

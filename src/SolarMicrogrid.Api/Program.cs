@@ -91,6 +91,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<StaffService>();
 builder.Services.AddScoped<ProsumerService>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<StationService>();
 builder.Services.AddScoped<MongoInitializer>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();

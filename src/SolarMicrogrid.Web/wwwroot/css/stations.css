@@ -1,0 +1,7 @@
+.card { margin-bottom: 24px; }
+.station-days { border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.station-days legend { font-size: 13px; font-weight: 600; }
+.station-days label { display: inline-flex; align-items: center; gap: 8px; margin: 6px 16px 6px 0; }
+.station-days input { width: 18px; height: 18px; min-height: 0; padding: 0; accent-color: #176c4d; }
+code { overflow-wrap: anywhere; }
+input[type="datetime-local"] { min-width: 0; }

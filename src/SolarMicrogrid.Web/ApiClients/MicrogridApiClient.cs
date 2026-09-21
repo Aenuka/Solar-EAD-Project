@@ -20,6 +20,7 @@ public sealed class MicrogridApiClient(HttpClient http, IHttpContextAccessor acc
     public Task<T> GetAsync<T>(string path, CancellationToken ct) => SendAsync<T>(HttpMethod.Get, path, null, ct);
     public Task<T> PostAsync<T>(string path, object body, CancellationToken ct) => SendAsync<T>(HttpMethod.Post, path, body, ct);
     public Task<T> PatchAsync<T>(string path, object body, CancellationToken ct) => SendAsync<T>(HttpMethod.Patch, path, body, ct);
+    public Task<T> PutAsync<T>(string path, object body, CancellationToken ct) => SendAsync<T>(HttpMethod.Put, path, body, ct);
     public async Task LogoutAsync(CancellationToken ct) => await SendAsync<object>(HttpMethod.Post, "auth/logout", null, ct);
 
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)

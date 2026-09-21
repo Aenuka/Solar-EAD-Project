@@ -1,0 +1,54 @@
+@baseUrl = http://localhost:5080/api/v1
+@token = PASTE_STAFF_ACCESS_TOKEN
+@stationId = PASTE_STATION_ID
+@slotId = PASTE_SLOT_ID
+@version = 1
+
+### Sign in (replace locally; do not commit credentials)
+POST {{baseUrl}}/auth/staff/login
+Content-Type: application/json
+
+{"username":"backoffice","password":"PASTE_LOCAL_PASSWORD"}
+
+### Create station
+POST {{baseUrl}}/stations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"name":"Colombo Solar Hub","address":"10 Solar Road, Colombo","latitude":6.9271,"longitude":79.8612,"capacityKw":50,"storageKwh":100,"batterySlots":4}
+
+### Read latest version and window IDs
+GET {{baseUrl}}/stations/{{stationId}}
+Authorization: Bearer {{token}}
+
+### Add a window: change dates to two days from today
+POST {{baseUrl}}/stations/{{stationId}}/slots
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"version":{{version}},"startsAt":"2026-10-01T09:00:00+05:30","endsAt":"2026-10-01T10:00:00+05:30","usableSlots":4,"usableEnergyKwh":40}
+
+### Reserve (use the new version after each write)
+POST {{baseUrl}}/stations/{{stationId}}/slots/{{slotId}}/allocations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"version":{{version}},"bookingId":"manual-check-1","slots":1,"energyKwh":10}
+
+### Must reject while the allocation remains Reserved
+POST {{baseUrl}}/stations/{{stationId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"version":{{version}},"active":false}
+
+### Cancel at least 12 hours before the start; retry deactivation with the new version
+POST {{baseUrl}}/stations/{{stationId}}/slots/{{slotId}}/allocations/manual-check-1/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"version":{{version}}}
+
+### Nearby stations
+GET {{baseUrl}}/stations?latitude=6.9271&longitude=79.8612&radiusKm=25
+Authorization: Bearer {{token}}

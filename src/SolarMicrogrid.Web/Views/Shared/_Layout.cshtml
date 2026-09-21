@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] · Solar Microgrid</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @if (ViewContext.RouteData.Values["controller"]?.ToString() == "Stations")
+    {
+        <link rel="stylesheet" href="~/css/bootstrap-grid.min.css" asp-append-version="true" />
+        <link rel="stylesheet" href="~/css/stations.css" asp-append-version="true" />
+    }
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -15,6 +20,7 @@
             <p class="nav-label">WORKSPACE</p>
             <nav aria-label="Main navigation">
                 <a asp-controller="Home" asp-action="Index">Overview</a>
+                <a asp-controller="Stations" asp-action="Index">Microgrid stations</a>
                 @if (User.IsInRole(Roles.Backoffice))
                 {
                     <a asp-controller="Prosumers" asp-action="Index">Prosumer accounts</a>
