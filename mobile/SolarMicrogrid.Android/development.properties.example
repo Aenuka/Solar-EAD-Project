@@ -2,3 +2,6 @@
 # Run adb reverse tcp:5080 tcp:5080 after connecting the phone.
 # For the Android emulator without forwarding, use http://10.0.2.2:5080/api/v1/.
 apiBaseUrl=http://127.0.0.1:5080/api/v1/
+
+# Enable Maps SDK for Android in Google Cloud and restrict the key to your app/SHA-1.
+mapsApiKey=

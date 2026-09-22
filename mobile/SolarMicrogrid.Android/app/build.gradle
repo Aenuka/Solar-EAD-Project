@@ -8,6 +8,8 @@ if (developmentFile.exists()) {
     developmentFile.withInputStream { developmentSettings.load(it) }
 }
 def debugApi = configuredApi ?: developmentSettings.getProperty('apiBaseUrl') ?: 'http://10.0.2.2:5080/api/v1/'
+def configuredMapsKey = providers.gradleProperty('mapsApiKey').orNull
+def debugMapsKey = configuredMapsKey ?: developmentSettings.getProperty('mapsApiKey', '')
 def quoteUrl = { String value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
 [configuredApi, debugApi].findAll { it != null }.each { value ->
     if (!value.endsWith('/') || !(value.startsWith('http://') || value.startsWith('https://'))) {
@@ -25,14 +27,20 @@ android {
         versionCode 1
         versionName '1.0.0'
         testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+        manifestPlaceholders = [mapsApiKey: '']
+        buildConfigField 'boolean', 'MAPS_CONFIGURED', 'false'
     }
     buildFeatures { buildConfig true }
     buildTypes {
         debug {
             applicationIdSuffix '.debug'
+            manifestPlaceholders = [mapsApiKey: debugMapsKey]
+            buildConfigField 'boolean', 'MAPS_CONFIGURED', (!debugMapsKey.trim().isEmpty()).toString()
             buildConfigField 'String', 'API_BASE_URL', quoteUrl(debugApi)
         }
         release {
+            manifestPlaceholders = [mapsApiKey: configuredMapsKey ?: '']
+            buildConfigField 'boolean', 'MAPS_CONFIGURED', (!(configuredMapsKey ?: '').trim().isEmpty()).toString()
             buildConfigField 'String', 'API_BASE_URL', quoteUrl(configuredApi ?: 'https://configure-api.invalid/api/v1/')
             minifyEnabled false
         }
@@ -52,6 +60,7 @@ tasks.configureEach { task ->
 }
 
 dependencies {
+    implementation 'com.google.android.gms:play-services-maps:20.0.0'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20250517'
 }

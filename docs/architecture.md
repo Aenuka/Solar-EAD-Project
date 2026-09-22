@@ -1,5 +1,7 @@
 # Component 1 architecture
 
+Station, energy-window and map architecture (Component 4) is documented in [stations.md](stations.md), including the shared atomic inventory contract for booking and QR integrations.
+
 ## Boundaries
 
 The .NET solution contains API, MVC and Contracts projects. Contracts has only DTOs, role/status values and input annotations. MVC references Contracts but never the API implementation or MongoDB driver. Android has independent Java DTOs matching the same JSON contract.

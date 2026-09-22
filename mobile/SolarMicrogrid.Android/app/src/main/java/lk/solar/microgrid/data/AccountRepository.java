@@ -55,6 +55,14 @@ public final class AccountRepository {
     }
     public void refresh(Callback<ProfileCache.Snapshot> callback) { run(this::load, callback); }
 
+    /** Station reads always use the server; stale inventory must not look bookable. */
+    public void stations(String query, Callback<JSONObject> callback) {
+        run(() -> { requireSession(); return api.request("GET", "stations?" + query, null, token); }, callback);
+    }
+    public void station(String id, Callback<JSONObject> callback) {
+        run(() -> { requireSession(); return api.request("GET", "stations/" + java.net.URLEncoder.encode(id, "UTF-8"), null, token); }, callback);
+    }
+
     private ProfileCache.Snapshot load() throws Exception {
         requireSession();
         try { return confirmed(api.request("GET", "prosumers/me", null, token)); }

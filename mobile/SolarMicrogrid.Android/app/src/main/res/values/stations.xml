@@ -1,0 +1,27 @@
+<resources>
+    <string name="nearby_stations">Explore microgrid stations</string>
+    <string name="station_latitude">Latitude</string>
+    <string name="station_longitude">Longitude</string>
+    <string name="search_coordinates">Search within 25 km</string>
+    <string name="use_location">Use my location</string>
+    <string name="all_stations">All stations</string>
+    <string name="previous_stations">Previous</string>
+    <string name="next_stations">Next</string>
+    <string name="map_loading">Map loading. If tiles stay blank, check your connection. Station details are also available in the list below.</string>
+    <string name="map_unavailable">Map unavailable. You can still search and select stations in the list below.</string>
+    <string name="invalid_coordinates">Enter latitude from -90 to 90 and longitude from -180 to 180.</string>
+    <plurals name="station_results">
+        <item quantity="one">%1$d active station · Page %2$d</item>
+        <item quantity="other">%1$d active stations · Page %2$d</item>
+    </plurals>
+    <plurals name="nearby_results">
+        <item quantity="one">%1$d station within 25 km · Page %2$d</item>
+        <item quantity="other">%1$d stations within 25 km · Page %2$d</item>
+    </plurals>
+    <string name="station_list_item">%1$s\n%2$s</string>
+    <string name="station_details">Station details</string>
+    <string name="station_detail_loaded">Latest station details loaded.</string>
+    <string name="location_loading">Finding your location…</string>
+    <string name="location_unavailable">Location unavailable. Enable location services and retry, enter coordinates, or browse all stations.</string>
+    <string name="location_denied">Location access declined. Enter coordinates or browse all stations.</string>
+</resources>
