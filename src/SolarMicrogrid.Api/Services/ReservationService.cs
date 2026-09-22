@@ -13,7 +13,7 @@ public class ReservationService
         _repository = repository;
     }
 
-    public async Task<(bool success, string message, EnergyReservation reservation)> CreateAsync(ReservationInput dto)
+    public async Task<(bool success, string message, EnergyReservation? reservation)> CreateAsync(ReservationInput dto)
     {
         // Rule 1: Within 7 days
         if (dto.ReservationDate > DateTime.UtcNow.AddDays(7))

@@ -13,15 +13,16 @@ public class EnergyReservation
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
-    public string ReservationId { get; set; }
-    public string ProsumerNic { get; set; }
-    public string StationId { get; set; }
-    public string SlotId { get; set; }
+    public string? Id { get; set; }
+
+    public string ReservationId { get; set; } = string.Empty;
+    public string ProsumerNic { get; set; } = string.Empty;
+    public string StationId { get; set; } = string.Empty;
+    public string SlotId { get; set; } = string.Empty;
     public DateTime ReservationDate { get; set; }
     public double EnergyAmountKwh { get; set; }
-    public string TradingType { get; set; }
-    public string Status { get; set; } // PENDING, APPROVED, CANCELLED, COMPLETED
+    public string TradingType { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
