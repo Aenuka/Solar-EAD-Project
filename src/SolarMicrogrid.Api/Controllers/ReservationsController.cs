@@ -1,9 +1,4 @@
-﻿/*
- * File: ReservationsController.cs
- * Author: Sajith
- * Description: REST API for reservations.
- */
-
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.Api.Services;
 using SolarMicrogrid.Contracts;

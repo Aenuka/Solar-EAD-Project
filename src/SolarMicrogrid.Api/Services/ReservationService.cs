@@ -1,22 +1,16 @@
-﻿/*
- * File: ReservationService.cs
- * Author: Sajith
- * Description: Business logic for reservations (7-day rule, double booking check).
- */
-
-using MongoDB.Driver;
-using SolarMicrogrid.Api.Models;
+﻿using SolarMicrogrid.Api.Models;
+using SolarMicrogrid.Api.Repositories;
 using SolarMicrogrid.Contracts;
 
 namespace SolarMicrogrid.Api.Services;
 
 public class ReservationService
 {
-    private readonly IMongoCollection<EnergyReservation> _reservations;
+    private readonly IReservationRepository _repository;
 
-    public ReservationService(IMongoDatabase database)
+    public ReservationService(IReservationRepository repository)
     {
-        _reservations = database.GetCollection<EnergyReservation>("energyReservations");
+        _repository = repository;
     }
 
     public async Task<(bool success, string message, EnergyReservation reservation)> CreateAsync(ReservationInput dto)
@@ -29,13 +23,7 @@ public class ReservationService
             return (false, "Reservation date cannot be in the past.", null);
 
         // Rule 2: No double booking
-        var existing = await _reservations.Find(r =>
-            r.StationId == dto.StationId &&
-            r.SlotId == dto.SlotId &&
-            r.ReservationDate == dto.ReservationDate &&
-            (r.Status == "PENDING" || r.Status == "APPROVED")
-        ).FirstOrDefaultAsync();
-
+        var existing = await _repository.CheckConflictAsync(dto.StationId, dto.SlotId, dto.ReservationDate);
         if (existing != null)
             return (false, "This slot is already booked.", null);
 
@@ -53,7 +41,7 @@ public class ReservationService
             UpdatedAt = DateTime.UtcNow
         };
 
-        await _reservations.InsertOneAsync(reservation);
+        await _repository.CreateAsync(reservation);
         return (true, "Reservation created successfully.", reservation);
     }
 }
