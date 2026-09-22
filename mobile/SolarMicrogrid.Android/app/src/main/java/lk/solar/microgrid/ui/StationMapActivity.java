@@ -179,9 +179,7 @@ public final class StationMapActivity extends Activity {
                 if (!alive() || requestGeneration != detailGeneration) return;
                 try {
                     Station station = new Station(result);
-                    TextView text = new TextView(StationMapActivity.this); text.setText(station.details()); text.setPadding(24, 16, 24, 16);
-                    ScrollView scroll = new ScrollView(StationMapActivity.this); scroll.addView(text);
-                    new AlertDialog.Builder(StationMapActivity.this).setTitle(R.string.station_details).setView(scroll).setPositiveButton(android.R.string.ok, null).show();
+                    StationDetailsDialog.show(StationMapActivity.this, station);
                     status.setText(R.string.station_detail_loaded);
                 } catch (Exception e) { status.setText(R.string.contract_error); }
             }

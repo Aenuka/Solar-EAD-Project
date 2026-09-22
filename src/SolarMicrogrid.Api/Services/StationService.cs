@@ -158,9 +158,13 @@ public sealed class StationService(IStationRepository repository)
     {
         // Completed energy remains consumed; only cancellation returns inventory.
         var used = slot.Allocations.Where(x => x.Status != "Cancelled").ToList();
-        if (slot.UsableSlots > s.BatterySlots || slot.UsableEnergyKwh > s.StorageKwh ||
-            slot.UsableEnergyKwh > s.CapacityKw * (slot.EndsAt - slot.StartsAt).TotalHours + 0.000001)
+        if (slot.UsableSlots > s.BatterySlots || slot.UsableEnergyKwh > s.StorageKwh)
             throw ApiException.Conflict("Window availability exceeds the station's battery, storage or power capacity.");
+        var hours = (slot.EndsAt - slot.StartsAt).TotalHours;
+        var maxEnergy = s.CapacityKw * hours;
+        if (slot.UsableEnergyKwh > maxEnergy + 0.000001)
+            throw ApiException.Conflict(FormattableString.Invariant(
+                $"Usable energy exceeds this window's power capacity. {s.CapacityKw:0.##} kW for {hours:0.##} hour(s) permits at most {maxEnergy:0.##} kWh."));
         if (slot.UsableSlots < used.Sum(x => x.Slots) || slot.UsableEnergyKwh + 0.000001 < used.Sum(x => x.EnergyKwh))
             throw ApiException.Conflict("Availability cannot be lower than reserved/completed usage; this request would overbook the window.");
     }

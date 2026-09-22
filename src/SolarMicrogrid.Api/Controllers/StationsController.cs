@@ -30,9 +30,25 @@ public sealed class StationsController(StationService service) : ControllerBase
     [HttpPut("{id}/schedule"), Authorize(Roles = Roles.Staff)]
     public Task<StationResponse> Schedule(string id, ScheduleInput request, CancellationToken ct) => service.ScheduleAsync(id, request, ct);
     [HttpPost("{id}/slots"), Authorize(Roles = Roles.Staff)]
-    public Task<StationResponse> AddSlot(string id, SlotInput request, CancellationToken ct) => service.AddSlotAsync(id, request, ct);
+    public Task<ActionResult<StationResponse>> AddSlot(string id, SlotInput request, CancellationToken ct) =>
+        WindowChange(() => service.AddSlotAsync(id, request, ct));
+
+    private async Task<ActionResult<StationResponse>> WindowChange(Func<Task<StationResponse>> operation)
+    {
+        try
+        {
+            return await operation();
+        }
+        catch (ApiException e) when (e.Status is 400 or 409)
+        {
+            // Expected form errors must return to the UI, including while debugging.
+            return Problem(statusCode: e.Status, title: e.Code, detail: e.Message,
+                extensions: new Dictionary<string, object?> { ["code"] = e.Code });
+        }
+    }
     [HttpPut("{id}/slots/{slotId}/availability"), Authorize(Roles = Roles.Staff)]
-    public Task<StationResponse> Availability(string id, string slotId, AvailabilityInput request, CancellationToken ct) => service.AvailabilityAsync(id, slotId, request, ct);
+    public Task<ActionResult<StationResponse>> Availability(string id, string slotId, AvailabilityInput request, CancellationToken ct) =>
+        WindowChange(() => service.AvailabilityAsync(id, slotId, request, ct));
     [HttpPost("{id}/slots/{slotId}/archive"), Authorize(Roles = Roles.Staff)]
     public Task<StationResponse> Archive(string id, string slotId, StationVersion request, CancellationToken ct) => service.RemoveSlotAsync(id, slotId, request, ct);
     [HttpPost("{id}/slots/{slotId}/allocations"), Authorize(Roles = Roles.Staff)]
