@@ -19,15 +19,13 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.util.BoundingBox;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import lk.solar.microgrid.BuildConfig;
@@ -38,13 +36,12 @@ import lk.solar.microgrid.data.Station;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Pure Android UI + Google Maps SDK. Station coordinates and inventory come exclusively from REST. */
+/** Native Android OpenStreetMap viewer. Station coordinates and inventory come exclusively from REST. */
 public final class StationMapActivity extends Activity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<Station> stations = new ArrayList<>();
     private AccountRepository accounts;
     private MapView mapView;
-    private GoogleMap map;
     private LinearLayout results;
     private TextView status, mapStatus;
     private EditText latitude, longitude;
@@ -83,24 +80,30 @@ public final class StationMapActivity extends Activity {
         addButton(tools, R.string.refresh, this::load);
         root.addView(tools);
         mapStatus = new TextView(this); root.addView(mapStatus);
-        if (BuildConfig.MAPS_CONFIGURED && GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
-            try {
-                mapView = new MapView(this);
-                root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
-                mapView.onCreate(state == null ? null : state.getBundle("map"));
-                mapStatus.setText(R.string.map_loading);
-                mapView.getMapAsync(ready -> {
-                    if (!alive()) return;
-                    map = ready;
-                    map.setOnMarkerClickListener(marker -> { if (marker.getTag() instanceof String) detail((String)marker.getTag()); return true; });
-                    map.setOnMapLoadedCallback(() -> { if (alive()) mapStatus.setVisibility(View.GONE); });
-                    renderMarkers();
-                });
-            } catch (RuntimeException e) {
-                if (mapView != null) root.removeView(mapView);
-                mapView = null; mapStatus.setText(R.string.map_unavailable);
-            }
-        } else mapStatus.setText(R.string.map_unavailable);
+        try {
+            var config = Configuration.getInstance();
+            config.setUserAgentValue(BuildConfig.APPLICATION_ID + "/" + BuildConfig.VERSION_NAME);
+            config.setOsmdroidBasePath(new File(getFilesDir(), "osm"));
+            config.setOsmdroidTileCache(new File(getFilesDir(), "osm/tiles"));
+            config.setExpirationExtendedDuration(7L * 24 * 60 * 60 * 1000);
+            config.setTileDownloadThreads((short) 2);
+            mapView = new MapView(this);
+            mapView.setTileSource(new XYTileSource("OpenStreetMap", 0, 19, 256, ".png",
+                new String[] {"https://tile.openstreetmap.org/"}, "© OpenStreetMap contributors"));
+            mapView.setMultiTouchControls(true);
+            mapView.setMinZoomLevel(2.0);
+            mapView.setMaxZoomLevel(19.0);
+            mapView.getController().setZoom(2.0);
+            root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
+            mapStatus.setText(R.string.map_loading);
+        } catch (RuntimeException e) {
+            if (mapView != null) { root.removeView(mapView); mapView.onDetach(); }
+            mapView = null; mapStatus.setText(R.string.map_unavailable);
+        }
+        TextView attribution = new TextView(this);
+        attribution.setText(android.text.Html.fromHtml(getString(R.string.osm_attribution), android.text.Html.FROM_HTML_MODE_LEGACY));
+        attribution.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        root.addView(attribution);
         ScrollView scroll = new ScrollView(this);
         results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); scroll.addView(results);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -135,7 +138,8 @@ public final class StationMapActivity extends Activity {
     private void load() {
         final int requestGeneration = ++generation;
         detailGeneration++;
-        stations.clear(); results.removeAllViews(); if (map != null) map.clear();
+        stations.clear(); results.removeAllViews();
+        if (mapView != null) { mapView.getOverlays().clear(); mapView.invalidate(); }
         previous.setEnabled(false); next.setEnabled(false); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
             @Override public void success(JSONObject response) {
@@ -158,17 +162,23 @@ public final class StationMapActivity extends Activity {
         });
     }
     private void renderMarkers() {
-        if (map == null || stations.isEmpty()) return;
-        map.clear(); LatLngBounds.Builder bounds = new LatLngBounds.Builder();
+        if (mapView == null || stations.isEmpty()) return;
+        mapView.getOverlays().clear();
+        List<GeoPoint> points = new ArrayList<>();
         for (Station station : stations) {
-            LatLng position = new LatLng(station.latitude, station.longitude); bounds.include(position);
-            Marker marker = map.addMarker(new MarkerOptions().position(position).title(station.name).snippet(station.summary()));
-            if (marker != null) marker.setTag(station.id);
+            GeoPoint position = new GeoPoint(station.latitude, station.longitude); points.add(position);
+            Marker marker = new Marker(mapView);
+            marker.setPosition(position); marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setTitle(station.name); marker.setSnippet(station.summary());
+            marker.setOnMarkerClickListener((selected, view) -> { detail(station.id); return true; });
+            mapView.getOverlays().add(marker);
         }
+        final int renderedGeneration = generation;
         mapView.post(() -> {
-            if (!alive() || map == null || stations.isEmpty()) return;
-            try { map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 60)); }
-            catch (IllegalStateException e) { map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(stations.get(0).latitude, stations.get(0).longitude))); }
+            if (!alive() || mapView == null || generation != renderedGeneration) return;
+            if (points.size() == 1) { mapView.getController().setZoom(15.0); mapView.getController().setCenter(points.get(0)); }
+            else mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 60, 16.0, null);
+            mapView.invalidate();
         });
     }
     private void detail(String id) {
@@ -238,15 +248,12 @@ public final class StationMapActivity extends Activity {
         listener = null;
     }
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
-    @Override protected void onStart() { super.onStart(); if (mapView != null) mapView.onStart(); }
     @Override protected void onResume() { super.onResume(); if (mapView != null) mapView.onResume(); }
     @Override protected void onPause() { if (mapView != null) mapView.onPause(); super.onPause(); }
-    @Override protected void onStop() { stopLocation(); if (mapView != null) mapView.onStop(); super.onStop(); }
-    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (mapView != null) mapView.onDestroy(); super.onDestroy(); }
-    @Override public void onLowMemory() { super.onLowMemory(); if (mapView != null) mapView.onLowMemory(); }
+    @Override protected void onStop() { stopLocation(); super.onStop(); }
+    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (mapView != null) mapView.onDetach(); super.onDestroy(); }
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
-        Bundle mapState = new Bundle(); if (mapView != null) mapView.onSaveInstanceState(mapState); state.putBundle("map", mapState);
         state.putString("filter", filter); state.putInt("page", page);
         state.putString("latitude", latitude.getText().toString()); state.putString("longitude", longitude.getText().toString());
     }

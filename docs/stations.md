@@ -31,20 +31,26 @@ An inactive station disappears from prosumer discovery. It remains visible to st
 
 1. Open `mobile/SolarMicrogrid.Android` as the project.
 2. Set **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** to **JDK 17**. Use **Download JDK** if needed. The bundled JDK 25 in newer Android Studio versions is incompatible with this repository's Gradle 8.13 and produces `Unsupported class file major version 69`.
-3. Install SDK Platform 36 and use an emulator with **Google Play / Google APIs**. Minimum supported Android API is 26.
-4. In Google Cloud, enable **Maps SDK for Android**, configure billing as required by Google, and create a key restricted to this API and your Android app. For debug builds the application ID is `lk.solar.microgrid.debug`. Obtain your signing SHA-1 with `gradlew.bat signingReport` in the Android project directory. Use the release application ID `lk.solar.microgrid` and release certificate for a release key. See [Google's Android Maps setup](https://developers.google.com/maps/documentation/android-sdk/config) and [API-key configuration](https://developers.google.com/maps/documentation/android-sdk/get-api-key).
-5. Create or update `mobile/SolarMicrogrid.Android/development.properties` (ignored by Git):
+3. Install SDK Platform 36. Minimum Android API is 26. Google Play services are not required for the map.
+4. Create or update `mobile/SolarMicrogrid.Android/development.properties` (ignored by Git):
 
    ```properties
    apiBaseUrl=http://10.0.2.2:5080/api/v1/
-   mapsApiKey=YOUR_ANDROID_MAPS_KEY
    ```
 
-   For release builds, supply `-PmapsApiKey=...` along with the existing required HTTPS `-PapiBaseUrl=...`. Debug keys from `development.properties` are not used for release.
-6. Sync Gradle and Run `app`. Keep the API running in Visual Studio. Register/sign in as a prosumer, then tap **Explore microgrid stations** on the account screen.
-7. The screen loads active stations from REST. Tap a marker or list item to load current station details, schedule and upcoming window availability.
-8. Tap **Use my location** and allow foreground location access. Approximate location is supported. On an emulator, set a Colombo location in **Extended controls → Location**. Alternatively enter `6.9271` and `79.8612`, then tap **Search within 25 km**. This also works with location permission denied.
-9. Check **All stations**, pagination, refresh, an empty nearby search, permission denial and API shutdown. Missing Maps configuration/Google Play services leaves the station list usable. Blank tiles commonly indicate a key restriction, billing, API enablement or network problem; inspect Logcat for Google Maps authorization errors. Station inventory is never displayed from an offline cache.
+   No Maps API key is required. Existing `mapsApiKey` settings are ignored.
+5. Sync Gradle and Run `app`. Keep the API running. Sign in as a prosumer and select **Explore microgrid stations**.
+6. The native OpenStreetMap view plots active stations from REST. Pan/pinch to explore; tap a marker or list item for current details, schedules and availability.
+7. Tap **Use my location** and grant foreground location access, or enter latitude `6.9271` and longitude `79.8612` and select **Search within 25 km**. Location permission denial does not prevent manual searches or browsing all stations.
+8. Test refresh, pagination, empty nearby results, and station deactivation. Your phone needs internet for map tiles and a separate connection to the central API for station data. If tiles fail, the list remains usable. Station inventory is never served from a tile cache.
+
+### Map provider and assignment scope
+
+At the user's request, the Google Maps SDK has been replaced by native Java osmdroid 6.1.20 with OpenStreetMap raster tiles. No Google Cloud project, billing setup or API key is used. The assignment originally specified Google Maps: obtain lecturer acceptance before marking that provider-specific requirement complete.
+
+osmdroid is a native Android library, not a cross-platform framework. Its upstream repository is archived; reassess the map library before long-term production maintenance. See [upstream status](https://github.com/osmdroid/osmdroid).
+
+The map uses HTTPS tiles, a distinct application User-Agent, private app tile storage, caching with an additional seven-day lifetime, visible linked OpenStreetMap attribution and two download threads. It offers no bulk/offline tile-download feature. Public tiles are best-effort infrastructure for interactive viewing, not a guaranteed production service. See the [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/). App tokens and station payloads are sent only to the central API, not to the tile server.
 
 For a USB phone, set `apiBaseUrl=http://127.0.0.1:5080/api/v1/`, enable USB debugging, then run from PowerShell:
 
