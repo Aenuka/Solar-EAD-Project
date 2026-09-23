@@ -75,4 +75,32 @@ public final class ApiClient {
         }
         return problem.optString("detail", problem.optString("title", "This request could not be completed."));
     }
+
+    /** Like request(), but for endpoints returning a JSON array. */
+public JSONArray requestArray(String method, String path, JSONObject body, String token) throws IOException, JSONException, ApiException {
+    HttpURLConnection connection = (HttpURLConnection) new URL(baseUrl + path).openConnection();
+    try {
+        connection.setRequestMethod(method);
+        connection.setInstanceFollowRedirects(false);
+        connection.setConnectTimeout(10000);
+        connection.setReadTimeout(15000);
+        connection.setRequestProperty("Accept", "application/json");
+        if (token != null) connection.setRequestProperty("Authorization", "Bearer " + token);
+        if (body != null) {
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            try (var output = connection.getOutputStream()) { output.write(body.toString().getBytes(StandardCharsets.UTF_8)); }
+        }
+        int status = connection.getResponseCode();
+        String text;
+        try (InputStream input = status < 400 ? connection.getInputStream() : connection.getErrorStream()) {
+            text = readBody(input);
+        }
+        if (status < 200 || status >= 300) {
+            JSONObject problem = text.trim().isEmpty() ? new JSONObject() : new JSONObject(text);
+            throw new ApiException(status, problemMessage(problem));
+        }
+        return text.trim().isEmpty() ? new JSONArray() : new JSONArray(text);
+    } finally { connection.disconnect(); }
+}
 }
