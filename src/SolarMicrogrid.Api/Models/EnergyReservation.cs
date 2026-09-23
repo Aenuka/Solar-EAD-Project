@@ -22,7 +22,10 @@ public class EnergyReservation
     public DateTime ReservationDate { get; set; }
     public double EnergyAmountKwh { get; set; }
     public string TradingType { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; set; } = "PENDING";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string? TransactionToken { get; set; }
+    public string? CancellationReason { get; set; }
+    public DateTime? CompletedAt { get; set; }
 }
