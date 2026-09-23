@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "Booking Dashboard";
+}
+
+<div class="container mt-4">
+    <h2>Booking Dashboard</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Reservations</h5>
+                    <h1 class="display-3">@ViewBag.PendingCount</h1>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Approved Future Reservations</h5>
+                    <h1 class="display-3">@ViewBag.ApprovedFutureCount</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

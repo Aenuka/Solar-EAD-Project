@@ -30,29 +30,46 @@ public class ReservationInput
     public string TradingType { get; set; } = string.Empty;
 }
 
-public class ReservationResponse
+public class UpdateReservationInput
 {
-    [Required]
-    public string Id { get; set; } = string.Empty;
-
-    [Required]
-    public string ReservationId { get; set; } = string.Empty;
-
-    [Required]
-    public string ProsumerNic { get; set; } = string.Empty;
-
-    [Required]
-    public string StationId { get; set; } = string.Empty;
-
     [Required]
     public string SlotId { get; set; } = string.Empty;
 
     [JsonRequired]
     public DateTime ReservationDate { get; set; }
 
-    [Required]
-    public string Status { get; set; } = string.Empty;
+    [Range(0.01, 1000000)]
+    public double EnergyAmountKwh { get; set; }
 
-    [JsonRequired]
+    [Required, StringLength(50)]
+    public string TradingType { get; set; } = string.Empty;
+}
+
+public class CancelReservationInput
+{
+    [StringLength(500)]
+    public string? Reason { get; set; }
+}
+
+public class ReservationResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public string ReservationId { get; set; } = string.Empty;
+    public string ProsumerNic { get; set; } = string.Empty;
+    public string StationId { get; set; } = string.Empty;
+    public string SlotId { get; set; } = string.Empty;
+    public DateTime ReservationDate { get; set; }
+    public double EnergyAmountKwh { get; set; }
+    public string TradingType { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string? TransactionToken { get; set; }
+    public string? CancellationReason { get; set; }
+    public DateTime? CompletedAt { get; set; }
+}
+
+public class ApprovedFutureCountResponse
+{
+    public int Count { get; set; }
 }

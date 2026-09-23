@@ -1,0 +1,54 @@
+@model List<SolarMicrogrid.Web.ViewModels.ReservationViewModel>
+
+@{
+    ViewData["Title"] = "Booking Monitoring";
+}
+
+<div class="container mt-4">
+    <h2>Booking Monitoring</h2>
+    
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-3">
+            <input type="text" name="status" class="form-control" placeholder="Status (PENDING/APPROVED/CANCELLED)" />
+        </div>
+        <div class="col-md-3">
+            <input type="text" name="stationId" class="form-control" placeholder="Station ID" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Reservation ID</th>
+                <th>Prosumer NIC</th>
+                <th>Station</th>
+                <th>Date</th>
+                <th>Energy (kWh)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var b in Model)
+            {
+                <tr>
+                    <td>@b.ReservationId</td>
+                    <td>@b.ProsumerNic</td>
+                    <td>@b.StationId</td>
+                    <td>@b.ReservationDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@b.EnergyAmountKwh</td>
+                    <td>
+                        <span class="badge bg-info">@b.Status</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
