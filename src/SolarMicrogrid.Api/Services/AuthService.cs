@@ -1,11 +1,11 @@
 using SolarMicrogrid.Api.Models;
-using SolarMicrogrid.Api.Repositories;
+using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Security;
 using SolarMicrogrid.Contracts;
 
 namespace SolarMicrogrid.Api.Services;
 
-public sealed class AuthService(IStaffRepository staff, IProsumerRepository prosumers, PasswordService passwords, TokenService tokens)
+public sealed class AuthService(StaffRepository staff, ProsumerRepository prosumers, PasswordService passwords, TokenService tokens)
 {
     public async Task<AuthResponse> LoginStaffAsync(StaffLoginRequest request, CancellationToken ct)
     {
@@ -16,7 +16,10 @@ public sealed class AuthService(IStaffRepository staff, IProsumerRepository pros
     public async Task<AuthResponse> LoginProsumerAsync(ProsumerLoginRequest request, CancellationToken ct)
     {
         string nic;
-        try { nic = NationalIdentity.Normalize(request.Nic); }
+        try
+        {
+            nic = NationalIdentity.Normalize(request.Nic);
+        }
         catch (ApiException)
         {
             passwords.Verify(null, request.Password);
@@ -27,14 +30,30 @@ public sealed class AuthService(IStaffRepository staff, IProsumerRepository pros
 
     private AuthResponse Authenticate(AccountDocument? user, string password)
     {
-        if (!passwords.Verify(user, password) || user!.Status != AccountStatus.Active)
+        if (!passwords.Verify(user, password) || user is null || user.Status != AccountStatus.Active)
+        {
             throw ApiException.InvalidCredentials();
+        }
         return tokens.Create(user);
     }
 
-    public Task LogoutAsync(string id, string role, CancellationToken ct) => role == Roles.Prosumer
-        ? prosumers.RevokeSessionsAsync(id, ct) : staff.RevokeSessionsAsync(id, ct);
+    public Task LogoutAsync(string id, string role, CancellationToken ct)
+    {
+        if (role == Roles.Prosumer)
+        {
+            return prosumers.RevokeSessionsAsync(id, ct);
+        }
 
-    public async Task<AccountDocument?> FindAccountAsync(string id, string role, CancellationToken ct) => role == Roles.Prosumer
-        ? await prosumers.FindAsync(id, ct) : await staff.FindByIdAsync(id, ct);
+        return staff.RevokeSessionsAsync(id, ct);
+    }
+
+    public async Task<AccountDocument?> FindAccountAsync(string id, string role, CancellationToken ct)
+    {
+        if (role == Roles.Prosumer)
+        {
+            return await prosumers.FindAsync(id, ct);
+        }
+
+        return await staff.FindByIdAsync(id, ct);
+    }
 }

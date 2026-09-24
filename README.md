@@ -16,7 +16,7 @@ Component 4 (Chamithu): station management, operating schedules, energy window i
 
 ```text
 MVC controllers → API client ─────────────┐
-                                        ├→ REST controllers → Services → Repositories → MongoDB
+                                        ├→ API endpoints → Services → Repositories → MongoDB
 Android UI → AccountRepository → HTTP ───┘
                   ↕
              SQLite cache

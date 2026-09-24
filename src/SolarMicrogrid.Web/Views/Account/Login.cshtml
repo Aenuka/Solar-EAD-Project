@@ -1,22 +1,62 @@
 @model LoginViewModel
-@{ ViewData["Title"] = "Staff sign in"; }
+@{
+    ViewData["Title"] = "Staff sign in";
+}
 <div class="login-page">
     <section class="login-story">
-        <a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark" aria-hidden="true">☀</span><span>Solar<span class="brand-sub">MICROGRID</span></span></a>
-        <div class="story-copy"><p class="eyebrow">SHARED ENERGY. CONNECTED PEOPLE.</p><h1>A brighter grid<br />starts with you.</h1><p>One workspace for the people powering your solar community.</p><div class="solar-art" aria-hidden="true"><div class="sun"></div><div class="panel-grid"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="art-caption">LOCAL GENERATION · SHARED POSSIBILITY</div></div></div>
+        <a class="brand" asp-controller="Home" asp-action="Index">
+            <span class="brand-mark" aria-hidden="true">☀</span>
+            <span>Solar<span class="brand-sub">MICROGRID</span>
+            </span>
+        </a>
+        <div class="story-copy">
+            <p class="eyebrow">SHARED ENERGY. CONNECTED PEOPLE.</p>
+            <h1>A brighter grid<br />starts with you.</h1>
+            <p>One workspace for the people powering your solar community.</p>
+            <div class="solar-art" aria-hidden="true">
+                <div class="sun"></div>
+                <div class="panel-grid">
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                    <i></i>
+                </div>
+                <div class="art-caption">LOCAL GENERATION · SHARED POSSIBILITY</div>
+            </div>
+        </div>
         <p class="story-footer">Smart Solar Microgrid Trading System</p>
     </section>
     <section class="login-form-wrap">
-        <div class="login-form"><span class="pill">STAFF PORTAL</span><h2>Welcome back</h2><p class="muted">Sign in with your Backoffice or Grid Operator account.</p>
-            @if (ViewBag.Expired == true) { <div class="notice" role="status">Your session ended. Please sign in again.</div> }
-            @if (TempData["LogoutNotice"] is string logoutNotice) { <div class="notice" role="status">@logoutNotice</div> }
+        <div class="login-form">
+            <span class="pill">STAFF PORTAL</span>
+            <h2>Welcome back</h2>
+            <p class="muted">Sign in with your Backoffice or Grid Operator account.</p>
+
+            @if (ViewBag.Expired == true)
+            {
+                <div class="notice" role="status">Your session ended. Please sign in again.</div>
+            }
+
+            @if (TempData["LogoutNotice"] is string logoutNotice)
+            {
+                <div class="notice" role="status">@logoutNotice</div>
+            }
             <form asp-action="Login" method="post">
                 <div asp-validation-summary="All" class="validation" role="alert"></div>
-                <label asp-for="Username">Username</label><input asp-for="Username" autocomplete="username" autofocus required /><span asp-validation-for="Username" class="validation"></span>
-                <label asp-for="Password">Password</label><input asp-for="Password" autocomplete="current-password" required /><span asp-validation-for="Password" class="validation"></span>
-                <button class="button full-width" type="submit">Sign in <span aria-hidden="true">→</span></button>
+                <label asp-for="Username">Username</label>
+                <input asp-for="Username" autocomplete="username" autofocus required />
+                <span asp-validation-for="Username" class="validation"></span>
+                <label asp-for="Password">Password</label>
+                <input asp-for="Password" autocomplete="current-password" required />
+                <span asp-validation-for="Password" class="validation"></span>
+                <button class="button full-width" type="submit">Sign in <span aria-hidden="true">→</span>
+                </button>
             </form>
-            <p class="login-help">Need an account? Contact your Backoffice administrator.</p><div class="login-divider"></div><p class="muted small">A prosumer? Register and manage your account in the Solar Microgrid Android app.</p>
+            <p class="login-help">Need an account? Contact your Backoffice administrator.</p>
+            <div class="login-divider"></div>
+            <p class="muted small">A prosumer? Register and manage your account in the Solar Microgrid Android app.</p>
         </div>
     </section>
 </div>

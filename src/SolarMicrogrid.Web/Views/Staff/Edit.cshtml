@@ -1,17 +1,47 @@
 @model StaffEditViewModel
 @using System.Security.Claims
-@{ ViewData["Title"] = "Manage staff account"; var locked = Model.IsProtected || Model.Id == User.FindFirstValue(ClaimTypes.NameIdentifier); }
-<a class="back-link" asp-action="Index">← Team &amp; access</a><div class="page-heading"><div><h1>@Model.Username</h1><p class="muted">Manage profile details and access.</p></div><a class="button secondary" asp-action="Edit" asp-route-id="@Model.Id">Reload account</a></div>
-<section class="card narrow"><form asp-action="Edit" asp-route-id="@Model.Id" method="post"><div asp-validation-summary="All" class="validation" role="alert"></div><input asp-for="Version" type="hidden" />
-<label asp-for="FullName">Full name</label><input asp-for="FullName" required />
-<label asp-for="Email">Email address</label><input asp-for="Email" required />
-@if (locked)
-{
-    <input asp-for="Role" type="hidden" /><input asp-for="Status" type="hidden" /><div class="notice">Role: @Model.Role · Status: @Model.Status. Access settings for your own account and the protected administrator are locked.</div>
+@{
+    ViewData["Title"] = "Manage staff account";
+    var locked = Model.IsProtected || Model.Id == User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
-else
-{
-    <label asp-for="Role">Role</label><select asp-for="Role" required><option value="GridOperator">Grid Operator</option><option value="Backoffice">Backoffice</option></select>
-    <label asp-for="Status">Account status</label><select asp-for="Status" asp-items="Html.GetEnumSelectList<AccountStatus>()" required></select><p class="field-help">Changing role or status ends this member’s existing sessions.</p>
-}
-<div class="form-actions"><button class="button" type="submit">Save changes</button><a class="button secondary" asp-action="Index">Cancel</a></div></form></section>
+<a class="back-link" asp-action="Index">← Team &amp; access</a>
+<div class="page-heading">
+    <div>
+        <h1>@Model.Username</h1>
+        <p class="muted">Manage profile details and access.</p>
+    </div>
+    <a class="button secondary" asp-action="Edit" asp-route-id="@Model.Id">Reload account</a>
+</div>
+<section class="card narrow">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        <div asp-validation-summary="All" class="validation" role="alert"></div>
+        <input asp-for="Version" type="hidden" />
+        <label asp-for="FullName">Full name</label>
+        <input asp-for="FullName" required />
+        <label asp-for="Email">Email address</label>
+        <input asp-for="Email" required />
+
+        @if (locked)
+        {
+            <input asp-for="Role" type="hidden" />
+            <input asp-for="Status" type="hidden" />
+            <div class="notice">Role: @Model.Role · Status: @Model.Status. Access settings for your own account and the protected administrator are locked.</div>
+        }
+        else
+        {
+            <label asp-for="Role">Role</label>
+            <select asp-for="Role" required>
+                <option value="GridOperator">Grid Operator</option>
+                <option value="Backoffice">Backoffice</option>
+            </select>
+            <label asp-for="Status">Account status</label>
+            <select asp-for="Status" asp-items="Html.GetEnumSelectList<AccountStatus>()" required>
+            </select>
+            <p class="field-help">Changing role or status ends this member’s existing sessions.</p>
+        }
+        <div class="form-actions">
+            <button class="button" type="submit">Save changes</button>
+            <a class="button secondary" asp-action="Index">Cancel</a>
+        </div>
+    </form>
+</section>

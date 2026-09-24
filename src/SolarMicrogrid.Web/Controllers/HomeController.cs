@@ -12,8 +12,12 @@ public sealed class HomeController(MicrogridApiClient api) : Controller
 {
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        if (User.IsInRole(Roles.GridOperator)) return View("Operator");
-        return View(await api.GetAsync<DashboardResponse>("dashboard", ct));
+        if (User.IsInRole(Roles.GridOperator))
+        {
+            return View("Operator");
+        }
+        var dashboard = await api.GetAsync<DashboardResponse>("dashboard", ct);
+        return View(dashboard);
     }
 
     [AllowAnonymous]

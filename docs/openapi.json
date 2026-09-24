@@ -10,18 +10,6 @@
     }
   ],
   "paths": {
-    "/health": {
-      "get": {
-        "tags": [
-          "SolarMicrogrid.Api"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/v1/auth/staff/login": {
       "post": {
         "tags": [
@@ -33,16 +21,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StaffLoginRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StaffLoginRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StaffLoginRequest"
-              }
             }
           },
           "required": true
@@ -51,17 +29,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthResponse"
                 }
@@ -82,16 +50,6 @@
               "schema": {
                 "$ref": "#/components/schemas/ProsumerLoginRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProsumerLoginRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProsumerLoginRequest"
-              }
             }
           },
           "required": true
@@ -100,17 +58,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthResponse"
                 }
@@ -129,17 +77,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/CurrentUserResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CurrentUserResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CurrentUserResponse"
                 }
@@ -183,28 +121,169 @@
         ]
       }
     },
-    "/api/v1/dashboard": {
+    "/api/v1/staff-users": {
       "get": {
         "tags": [
-          "Dashboard"
+          "StaffUsers"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "format": "int32",
+              "default": 20
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/DashboardResponse"
-                }
-              },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DashboardResponse"
+                  "$ref": "#/components/schemas/PageResponseOfStaffResponse"
                 }
-              },
-              "text/json": {
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, expired or revoked session."
+          },
+          "403": {
+            "description": "Caller lacks the required role or permission."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "StaffUsers"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DashboardResponse"
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, expired or revoked session."
+          },
+          "403": {
+            "description": "Caller lacks the required role or permission."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/staff-users/{id}": {
+      "get": {
+        "tags": [
+          "StaffUsers"
+        ],
+        "operationId": "GetStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, expired or revoked session."
+          },
+          "403": {
+            "description": "Caller lacks the required role or permission."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "StaffUsers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
                 }
               }
             }
@@ -234,16 +313,6 @@
               "schema": {
                 "$ref": "#/components/schemas/RegisterProsumerRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterProsumerRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterProsumerRequest"
-              }
             }
           },
           "required": true
@@ -252,17 +321,7 @@
           "201": {
             "description": "Created",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -326,17 +385,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PageResponseOfProsumerResponse"
                 }
@@ -362,21 +411,12 @@
         "tags": [
           "Prosumers"
         ],
+        "operationId": "GetMyProfile",
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -406,16 +446,6 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateProfileRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
             }
           },
           "required": true
@@ -424,17 +454,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -466,16 +486,6 @@
               "schema": {
                 "$ref": "#/components/schemas/DeactivationRequestInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeactivationRequestInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeactivationRequestInput"
-              }
             }
           },
           "required": true
@@ -484,17 +494,7 @@
           "201": {
             "description": "Created",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -534,17 +534,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -584,16 +574,6 @@
               "schema": {
                 "$ref": "#/components/schemas/UpdateProfileRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateProfileRequest"
-              }
             }
           },
           "required": true
@@ -602,17 +582,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -662,16 +632,6 @@
               "schema": {
                 "$ref": "#/components/schemas/DecisionRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecisionRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/DecisionRequest"
-              }
             }
           },
           "required": true
@@ -680,17 +640,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -732,16 +682,6 @@
               "schema": {
                 "$ref": "#/components/schemas/ReactivateRequest"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactivateRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactivateRequest"
-              }
             }
           },
           "required": true
@@ -750,17 +690,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProsumerResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProsumerResponse"
                 }
@@ -781,228 +711,18 @@
         ]
       }
     },
-    "/api/v1/staff-users": {
+    "/api/v1/dashboard": {
       "get": {
         "tags": [
-          "StaffUsers"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "maximum": 100000,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32",
-              "default": 1
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer",
-              "format": "int32",
-              "default": 20
-            }
-          }
+          "Dashboard"
         ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfStaffResponse"
-                }
-              },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfStaffResponse"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfStaffResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid, expired or revoked session."
-          },
-          "403": {
-            "description": "Caller lacks the required role or permission."
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "StaffUsers"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStaffRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStaffRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStaffRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid, expired or revoked session."
-          },
-          "403": {
-            "description": "Caller lacks the required role or permission."
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      }
-    },
-    "/api/v1/staff-users/{id}": {
-      "get": {
-        "tags": [
-          "StaffUsers"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing, invalid, expired or revoked session."
-          },
-          "403": {
-            "description": "Caller lacks the required role or permission."
-          }
-        },
-        "security": [
-          {
-            "Bearer": []
-          }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "StaffUsers"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStaffRequest"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStaffRequest"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStaffRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffResponse"
+                  "$ref": "#/components/schemas/DashboardResponse"
                 }
               }
             }
@@ -1093,17 +813,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfStationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PageResponseOfStationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PageResponseOfStationResponse"
                 }
@@ -1133,35 +843,15 @@
               "schema": {
                 "$ref": "#/components/schemas/StationInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationInput"
-              }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1187,6 +877,7 @@
         "tags": [
           "Stations"
         ],
+        "operationId": "GetStation",
         "parameters": [
           {
             "name": "id",
@@ -1201,17 +892,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1251,16 +932,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StationUpdate"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationUpdate"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationUpdate"
-              }
             }
           },
           "required": true
@@ -1269,17 +940,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1321,16 +982,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StationStatusInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationStatusInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationStatusInput"
-              }
             }
           },
           "required": true
@@ -1339,17 +990,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1391,16 +1032,6 @@
               "schema": {
                 "$ref": "#/components/schemas/ScheduleInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScheduleInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScheduleInput"
-              }
             }
           },
           "required": true
@@ -1409,17 +1040,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1461,16 +1082,6 @@
               "schema": {
                 "$ref": "#/components/schemas/SlotInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SlotInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/SlotInput"
-              }
             }
           },
           "required": true
@@ -1479,17 +1090,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1539,16 +1140,6 @@
               "schema": {
                 "$ref": "#/components/schemas/AvailabilityInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvailabilityInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvailabilityInput"
-              }
             }
           },
           "required": true
@@ -1557,17 +1148,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1617,16 +1198,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StationVersion"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
             }
           },
           "required": true
@@ -1635,17 +1206,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1695,16 +1256,6 @@
               "schema": {
                 "$ref": "#/components/schemas/AllocationInput"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AllocationInput"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/AllocationInput"
-              }
             }
           },
           "required": true
@@ -1713,17 +1264,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1781,16 +1322,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StationVersion"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
             }
           },
           "required": true
@@ -1799,17 +1330,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1867,16 +1388,6 @@
               "schema": {
                 "$ref": "#/components/schemas/StationVersion"
               }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/StationVersion"
-              }
             }
           },
           "required": true
@@ -1885,17 +1396,7 @@
           "200": {
             "description": "OK",
             "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StationResponse"
-                }
-              },
-              "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StationResponse"
                 }
@@ -1914,6 +1415,18 @@
             "Bearer": []
           }
         ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "SolarMicrogrid.Api"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
       }
     }
   },
@@ -3063,22 +2576,22 @@
   },
   "tags": [
     {
-      "name": "SolarMicrogrid.Api"
-    },
-    {
       "name": "Auth"
-    },
-    {
-      "name": "Dashboard"
-    },
-    {
-      "name": "Prosumers"
     },
     {
       "name": "StaffUsers"
     },
     {
+      "name": "Prosumers"
+    },
+    {
+      "name": "Dashboard"
+    },
+    {
       "name": "Stations"
+    },
+    {
+      "name": "SolarMicrogrid.Api"
     }
   ]
 }
