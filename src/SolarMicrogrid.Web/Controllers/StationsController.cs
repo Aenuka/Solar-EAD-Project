@@ -9,74 +9,140 @@ namespace SolarMicrogrid.Web.Controllers;
 [Authorize(Roles = Roles.Staff)]
 public sealed class StationsController(MicrogridApiClient api) : Controller
 {
-    private static string PathFor(string id) => "stations/" + Uri.EscapeDataString(id);
     [HttpGet]
-    public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default) =>
-        View(await api.GetAsync<PageResponse<StationResponse>>($"stations?page={page}", ct));
+    public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
+    {
+        var stations = await api.GetAsync<PageResponse<StationResponse>>($"stations?page={page}", ct);
+        return View(stations);
+    }
+
     [HttpGet]
-    public async Task<IActionResult> Details(string id, CancellationToken ct) => View(await api.GetAsync<StationResponse>(PathFor(id), ct));
+    public async Task<IActionResult> Details(string id, CancellationToken ct)
+    {
+        var station = await api.GetAsync<StationResponse>(StationPath(id), ct);
+        return View(station);
+    }
+
     [HttpGet, Authorize(Roles = Roles.Backoffice)]
     public IActionResult Create() => View(new StationInput());
+
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
     public async Task<IActionResult> Create(StationInput model, CancellationToken ct)
     {
-        if (ModelState.IsValid)
-            try
-            {
-                var result = await api.PostAsync<StationResponse>("stations", model, ct);
-                TempData["Success"] = "Station created. Set its schedule and add energy windows below.";
-                return RedirectToAction(nameof(Details), new { id = result.Id });
-            }
-            catch (ApiFailureException e) when (e.StatusCode is 400 or 409) { Errors(e); }
-        return View(model);
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            var station = await api.PostAsync<StationResponse>("stations", model, ct);
+            TempData["Success"] = "Station created. Set its schedule and add energy windows below.";
+            return RedirectToAction(nameof(Details), new { id = station.Id });
+        }
+        catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
+        {
+            AddErrors(exception);
+            return View(model);
+        }
     }
+
     [HttpGet, Authorize(Roles = Roles.Backoffice)]
     public async Task<IActionResult> Edit(string id, CancellationToken ct)
     {
-        var s = await api.GetAsync<StationResponse>(PathFor(id), ct);
-        return View(new StationUpdate { Name = s.Name, Address = s.Address, Latitude = s.Latitude, Longitude = s.Longitude,
-            CapacityKw = s.CapacityKw, StorageKwh = s.StorageKwh, BatterySlots = s.BatterySlots, Version = s.Version });
+        var station = await api.GetAsync<StationResponse>(StationPath(id), ct);
+        var model = new StationUpdate
+        {
+            Name = station.Name,
+            Address = station.Address,
+            Latitude = station.Latitude,
+            Longitude = station.Longitude,
+            CapacityKw = station.CapacityKw,
+            StorageKwh = station.StorageKwh,
+            BatterySlots = station.BatterySlots,
+            Version = station.Version
+        };
+        return View(model);
     }
+
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
     public async Task<IActionResult> Edit(string id, StationUpdate model, CancellationToken ct)
     {
-        if (ModelState.IsValid)
-            try
-            {
-                await api.PatchAsync<StationResponse>(PathFor(id), model, ct);
-                TempData["Success"] = "Station updated.";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-            catch (ApiFailureException e) when (e.StatusCode is 400 or 409) { Errors(e); }
-        return View(model);
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        try
+        {
+            await api.PatchAsync<StationResponse>(StationPath(id), model, ct);
+            TempData["Success"] = "Station updated.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
+        {
+            AddErrors(exception);
+            return View(model);
+        }
     }
+
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
     public Task<IActionResult> Status(string id, StationStatusInput model, CancellationToken ct) =>
-        Change(id, () => api.PostAsync<StationResponse>(PathFor(id) + "/status", model, ct));
+        SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(StationPath(id) + "/status", model, ct));
+
     [HttpPost]
     public Task<IActionResult> Schedule(string id, ScheduleInput model, CancellationToken ct) =>
-        Change(id, () => api.PutAsync<StationResponse>(PathFor(id) + "/schedule", model, ct));
+        SaveStationChangeAsync(id, () => api.PutAsync<StationResponse>(StationPath(id) + "/schedule", model, ct));
+
     [HttpPost]
     public Task<IActionResult> AddSlot(string id, StationSlotForm model, CancellationToken ct) =>
-        Change(id, () => api.PostAsync<StationResponse>(PathFor(id) + "/slots", model.ToRequest(), ct));
+        SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(StationPath(id) + "/slots", model.ToRequest(), ct));
+
     [HttpPost]
     public Task<IActionResult> Availability(string id, string slotId, AvailabilityInput model, CancellationToken ct) =>
-        Change(id, () => api.PutAsync<StationResponse>(PathFor(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/availability", model, ct));
+        SaveStationChangeAsync(id, () => api.PutAsync<StationResponse>(
+            StationPath(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/availability", model, ct));
+
     [HttpPost]
     public Task<IActionResult> Archive(string id, string slotId, StationVersion model, CancellationToken ct) =>
-        Change(id, () => api.PostAsync<StationResponse>(PathFor(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/archive", model, ct));
-    private async Task<IActionResult> Change(string id, Func<Task<StationResponse>> operation)
+        SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(
+            StationPath(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/archive", model, ct));
+
+    private async Task<IActionResult> SaveStationChangeAsync(string id, Func<Task<StationResponse>> save)
     {
         if (!ModelState.IsValid)
-            TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(x => x.Errors).Select(x => string.IsNullOrEmpty(x.ErrorMessage) ? "Check the entered values." : x.ErrorMessage));
-        else
-            try { await operation(); TempData["Success"] = "Station updated."; }
-            catch (ApiFailureException e) when (e.StatusCode is 400 or 409) { TempData["Error"] = e.Message; }
+        {
+            var errors = ModelState.Values.SelectMany(value => value.Errors)
+                .Select(error => string.IsNullOrEmpty(error.ErrorMessage) ? "Check the entered values." : error.ErrorMessage);
+            TempData["Error"] = string.Join(" ", errors);
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // Invoke the supplied API call only after validating the form.
+        try
+        {
+            await save();
+            TempData["Success"] = "Station updated.";
+        }
+        catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
+        {
+            TempData["Error"] = exception.Message;
+        }
+
         return RedirectToAction(nameof(Details), new { id });
     }
-    private void Errors(ApiFailureException e)
+
+    private void AddErrors(ApiFailureException exception)
     {
-        ModelState.AddModelError("", e.Message);
-        foreach (var field in e.Errors) foreach (var error in field.Value) ModelState.AddModelError(field.Key, error);
+        ModelState.AddModelError("", exception.Message);
+        foreach (var (field, errors) in exception.Errors)
+        {
+            foreach (var message in errors)
+            {
+                ModelState.AddModelError(field, message);
+            }
+        }
     }
+
+    private static string StationPath(string id) => "stations/" + Uri.EscapeDataString(id);
 }

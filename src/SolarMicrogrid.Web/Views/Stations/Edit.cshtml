@@ -1,10 +1,16 @@
 @model StationUpdate
-@{ ViewData["Title"] = "Edit station"; }
+@{
+    ViewData["Title"] = "Edit station";
+}
 <a asp-action="Details" asp-route-id="@Context.Request.RouteValues["id"]">Back to station / reload latest values</a>
 <h1>Edit station</h1>
 <p class="muted">Capacity reductions must still accommodate existing energy windows and reservations.</p>
-<section class="card narrow"><form method="post">
-    <input asp-for="Version" type="hidden" />
-    <partial name="_Fields" model="Model" />
-    <div class="form-actions"><button class="button" type="submit">Save station</button></div>
-</form></section>
+<section class="card narrow">
+    <form method="post">
+        <input asp-for="Version" type="hidden" />
+        <partial name="_Fields" model="Model" />
+        <div class="form-actions">
+            <button class="button" type="submit">Save station</button>
+        </div>
+    </form>
+</section>

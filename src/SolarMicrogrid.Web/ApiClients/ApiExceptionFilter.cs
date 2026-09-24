@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using SolarMicrogrid.Web.ViewModels;
 
@@ -11,7 +12,11 @@ public sealed class ApiExceptionFilter : IAsyncExceptionFilter
 {
     public async Task OnExceptionAsync(ExceptionContext context)
     {
-        if (context.Exception is not ApiFailureException failure) return;
+        if (context.Exception is not ApiFailureException failure)
+        {
+            return;
+        }
+
         if (failure.StatusCode == 401)
         {
             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -19,13 +24,19 @@ public sealed class ApiExceptionFilter : IAsyncExceptionFilter
         }
         else
         {
+            var model = new ErrorViewModel(failure.StatusCode, failure.Message);
+            var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), context.ModelState)
+            {
+                Model = model
+            };
             context.Result = new ViewResult
             {
-                ViewName = "~/Views/Shared/Error.cshtml", StatusCode = failure.StatusCode,
-                ViewData = new ViewDataDictionary(new Microsoft.AspNetCore.Mvc.ModelBinding.EmptyModelMetadataProvider(), context.ModelState)
-                { Model = new ErrorViewModel(failure.StatusCode, failure.Message) }
+                ViewName = "~/Views/Shared/Error.cshtml",
+                StatusCode = failure.StatusCode,
+                ViewData = viewData
             };
         }
+
         context.ExceptionHandled = true;
     }
 }

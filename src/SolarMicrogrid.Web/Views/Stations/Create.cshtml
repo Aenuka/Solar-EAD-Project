@@ -1,9 +1,15 @@
 @model StationInput
-@{ ViewData["Title"] = "Register station"; }
+@{
+    ViewData["Title"] = "Register station";
+}
 <a asp-action="Index">Back to stations</a>
 <h1>Register a microgrid station</h1>
 <p class="muted">Enter its physical location and installed capacity. New stations open daily from 08:00 to 18:00 until you update their schedule.</p>
-<section class="card narrow"><form method="post" asp-action="Create">
-    <partial name="_Fields" model="Model" />
-    <div class="form-actions"><button class="button" type="submit">Create station</button></div>
-</form></section>
+<section class="card narrow">
+    <form method="post" asp-action="Create">
+        <partial name="_Fields" model="Model" />
+        <div class="form-actions">
+            <button class="button" type="submit">Create station</button>
+        </div>
+    </form>
+</section>

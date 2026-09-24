@@ -10,24 +10,31 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.InputType;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StyleSpan;
+import android.text.style.RelativeSizeSpan;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.os.Build;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.util.BoundingBox;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import lk.solar.microgrid.BuildConfig;
@@ -38,16 +45,18 @@ import lk.solar.microgrid.data.Station;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Pure Android UI + Google Maps SDK. Station coordinates and inventory come exclusively from REST. */
+/** Native Android OpenStreetMap viewer. Station coordinates and inventory come exclusively from REST. */
 public final class StationMapActivity extends Activity {
+    private static final int GREEN = Color.rgb(23, 108, 77);
+    private static final int INK = Color.rgb(23, 61, 50);
+    private static final int MUTED = Color.rgb(80, 105, 94);
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<Station> stations = new ArrayList<>();
     private AccountRepository accounts;
     private MapView mapView;
-    private GoogleMap map;
+    private GeoPoint currentLocation;
     private LinearLayout results;
     private TextView status, mapStatus;
-    private EditText latitude, longitude;
     private Button previous, next;
     private LocationManager locations;
     private LocationListener listener;
@@ -60,47 +69,65 @@ public final class StationMapActivity extends Activity {
         accounts = ((SolarApplication)getApplication()).accounts();
         if (!accounts.signedIn()) { finish(); return; }
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(20, 12, 20, 12);
+        root.setBackgroundColor(Color.rgb(242, 247, 243));
+        root.setPadding(dp(16), dp(12), dp(16), dp(12));
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left + 20, bars.top, bars.right + 20, bars.bottom);
+                view.setPadding(bars.left + dp(16), bars.top + dp(8), bars.right + dp(16), bars.bottom + dp(8));
             }
             return insets;
         });
         setContentView(root); root.requestApplyInsets();
-        addButton(root, R.string.back_account, this::finish);
-        TextView heading = new TextView(this); heading.setText(R.string.nearby_stations); heading.setTextSize(24); root.addView(heading);
-        status = new TextView(this); status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); root.addView(status);
-        LinearLayout coordinates = new LinearLayout(this);
-        latitude = coordinate(coordinates, R.string.station_latitude); longitude = coordinate(coordinates, R.string.station_longitude); root.addView(coordinates);
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView heading = text(getString(R.string.nearby_stations), 24, INK);
+        heading.setTypeface(null, Typeface.BOLD);
+        header.addView(heading, new LinearLayout.LayoutParams(0, -2, 1));
+        ImageButton account = new ImageButton(this);
+        account.setImageResource(R.drawable.ic_account_avatar);
+        account.setContentDescription(getString(R.string.my_account));
+        account.setTooltipText(getString(R.string.my_account));
+        account.setPadding(dp(8), dp(8), dp(8), dp(8));
+        GradientDrawable avatarBackground = new GradientDrawable();
+        avatarBackground.setShape(GradientDrawable.OVAL);
+        avatarBackground.setColor(Color.TRANSPARENT);
+        account.setBackground(new RippleDrawable(ColorStateList.valueOf(Color.rgb(193, 225, 207)), avatarBackground, null));
+        account.setOnClickListener(v -> finish());
+        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(48), dp(48));
+        avatarParams.leftMargin = dp(12);
+        header.addView(account, avatarParams);
+        root.addView(header);
+        status = text("", 13, MUTED); status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); root.addView(status);
         LinearLayout search = new LinearLayout(this);
-        addButton(search, R.string.search_coordinates, this::searchCoordinates);
         addButton(search, R.string.use_location, this::requestLocation);
         root.addView(search);
-        LinearLayout tools = new LinearLayout(this);
-        addButton(tools, R.string.all_stations, () -> { filter = ""; page = 1; load(); });
-        addButton(tools, R.string.refresh, this::load);
-        root.addView(tools);
-        mapStatus = new TextView(this); root.addView(mapStatus);
-        if (BuildConfig.MAPS_CONFIGURED && GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
-            try {
-                mapView = new MapView(this);
-                root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
-                mapView.onCreate(state == null ? null : state.getBundle("map"));
-                mapStatus.setText(R.string.map_loading);
-                mapView.getMapAsync(ready -> {
-                    if (!alive()) return;
-                    map = ready;
-                    map.setOnMarkerClickListener(marker -> { if (marker.getTag() instanceof String) detail((String)marker.getTag()); return true; });
-                    map.setOnMapLoadedCallback(() -> { if (alive()) mapStatus.setVisibility(View.GONE); });
-                    renderMarkers();
-                });
-            } catch (RuntimeException e) {
-                if (mapView != null) root.removeView(mapView);
-                mapView = null; mapStatus.setText(R.string.map_unavailable);
-            }
-        } else mapStatus.setText(R.string.map_unavailable);
+        mapStatus = text("", 12, MUTED); root.addView(mapStatus);
+        try {
+            var config = Configuration.getInstance();
+            config.setUserAgentValue(BuildConfig.APPLICATION_ID + "/" + BuildConfig.VERSION_NAME);
+            config.setOsmdroidBasePath(new File(getFilesDir(), "osm"));
+            config.setOsmdroidTileCache(new File(getFilesDir(), "osm/tiles"));
+            config.setExpirationExtendedDuration(7L * 24 * 60 * 60 * 1000);
+            config.setTileDownloadThreads((short) 2);
+            mapView = new MapView(this);
+            mapView.setTileSource(new XYTileSource("OpenStreetMap", 0, 19, 256, ".png",
+                new String[] {"https://tile.openstreetmap.org/"}, "© OpenStreetMap contributors"));
+            mapView.setMultiTouchControls(true);
+            mapView.setMinZoomLevel(2.0);
+            mapView.setMaxZoomLevel(19.0);
+            mapView.getController().setZoom(2.0);
+            root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
+            mapStatus.setText(R.string.map_loading);
+        } catch (RuntimeException e) {
+            if (mapView != null) { root.removeView(mapView); mapView.onDetach(); }
+            mapView = null; mapStatus.setText(R.string.map_unavailable);
+        }
+        TextView attribution = new TextView(this);
+        attribution.setText(android.text.Html.fromHtml(getString(R.string.osm_attribution), android.text.Html.FROM_HTML_MODE_LEGACY));
+        attribution.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        attribution.setLinkTextColor(GREEN); attribution.setTextSize(11);
+        root.addView(attribution);
         ScrollView scroll = new ScrollView(this);
         results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); scroll.addView(results);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -110,32 +137,51 @@ public final class StationMapActivity extends Activity {
         root.addView(pages);
         if (state != null) {
             filter = state.getString("filter", ""); page = state.getInt("page", 1);
-            latitude.setText(state.getString("latitude", "")); longitude.setText(state.getString("longitude", ""));
+            if (state.containsKey("locationLatitude")) {
+                currentLocation = new GeoPoint(state.getDouble("locationLatitude"), state.getDouble("locationLongitude"));
+            }
         }
         load();
     }
     private Button addButton(LinearLayout root, int label, Runnable action) {
         Button button = new Button(this); button.setText(label); button.setAllCaps(false);
+        styleButton(button);
         button.setOnClickListener(v -> action.run());
-        root.addView(button, root.getOrientation() == LinearLayout.HORIZONTAL ? new LinearLayout.LayoutParams(0, -2, 1) : new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams params = root.getOrientation() == LinearLayout.HORIZONTAL ? new LinearLayout.LayoutParams(0, -2, 1) : new LinearLayout.LayoutParams(-1, -2);
+        params.setMargins(dp(3), dp(4), dp(3), dp(4));
+        root.addView(button, params);
         return button;
     }
-    private EditText coordinate(LinearLayout parent, int hint) {
-        EditText value = new EditText(this); value.setHint(hint); value.setContentDescription(getString(hint));
-        value.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        parent.addView(value, new LinearLayout.LayoutParams(0, -2, 1)); return value;
+    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private TextView text(String value, int size, int color) {
+        TextView view = new TextView(this); view.setText(value); view.setTextSize(size); view.setTextColor(color);
+        view.setPadding(0, dp(4), 0, dp(4)); return view;
     }
-    private void searchCoordinates() {
-        try {
-            double lat = Double.parseDouble(latitude.getText().toString()); double lon = Double.parseDouble(longitude.getText().toString());
-            if (!Double.isFinite(lat) || !Double.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new NumberFormatException();
-            filter = "&latitude=" + lat + "&longitude=" + lon + "&radiusKm=25"; page = 1; load();
-        } catch (NumberFormatException e) { status.setText(R.string.invalid_coordinates); }
+    private void styleButton(Button button) {
+        GradientDrawable shape = new GradientDrawable(); shape.setColor(Color.WHITE); shape.setCornerRadius(dp(12));
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(Color.rgb(193, 225, 207)), shape, null));
+        button.setBackgroundTintList(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {Color.rgb(220, 230, 223), GREEN}));
+        button.setTextColor(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {MUTED, Color.WHITE}));
+        button.setMinHeight(dp(48)); button.setPadding(dp(16), dp(10), dp(16), dp(10));
+    }
+    private void addStationCard(Station station) {
+        Button card = new Button(this); card.setAllCaps(false); styleButton(card);
+        card.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE)); card.setTextColor(INK);
+        card.setGravity(Gravity.START | Gravity.CENTER_VERTICAL); card.setTextSize(14);
+        String content = station.name + "\n" + station.address + "\n" + getString(R.string.view_station_details);
+        SpannableString label = new SpannableString(content);
+        label.setSpan(new StyleSpan(Typeface.BOLD), 0, station.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        label.setSpan(new RelativeSizeSpan(1.25f), 0, station.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        label.setSpan(new android.text.style.ForegroundColorSpan(GREEN), content.lastIndexOf('\n') + 1, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        card.setText(label); card.setOnClickListener(v -> detail(station.id));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(6), 0, dp(6));
+        results.addView(card, params);
     }
     private void load() {
         final int requestGeneration = ++generation;
         detailGeneration++;
-        stations.clear(); results.removeAllViews(); if (map != null) map.clear();
+        stations.clear(); results.removeAllViews();
+        if (mapView != null) { mapView.getOverlays().clear(); addCurrentLocationMarker(); mapView.invalidate(); }
         previous.setEnabled(false); next.setEnabled(false); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
             @Override public void success(JSONObject response) {
@@ -144,11 +190,10 @@ public final class StationMapActivity extends Activity {
                     JSONArray items = response.getJSONArray("items");
                     for (int i = 0; i < items.length(); i++) stations.add(new Station(items.getJSONObject(i)));
                     for (Station station : stations) {
-                        Button button = new Button(StationMapActivity.this); button.setAllCaps(false);
-                        button.setText(getString(R.string.station_list_item, station.name, station.summary()));
-                        button.setOnClickListener(v -> detail(station.id)); results.addView(button);
+                        addStationCard(station);
                     }
                     int total = response.getInt("total");
+                    if (stations.isEmpty()) results.addView(text(getString(R.string.no_stations), 16, MUTED));
                     status.setText(getResources().getQuantityString(filter.isEmpty() ? R.plurals.station_results : R.plurals.nearby_results, total, total, page));
                     previous.setEnabled(page > 1); next.setEnabled(page * 20 < response.getInt("total"));
                     renderMarkers();
@@ -158,18 +203,37 @@ public final class StationMapActivity extends Activity {
         });
     }
     private void renderMarkers() {
-        if (map == null || stations.isEmpty()) return;
-        map.clear(); LatLngBounds.Builder bounds = new LatLngBounds.Builder();
+        if (mapView == null) return;
+        mapView.getOverlays().clear();
+        List<GeoPoint> points = new ArrayList<>();
         for (Station station : stations) {
-            LatLng position = new LatLng(station.latitude, station.longitude); bounds.include(position);
-            Marker marker = map.addMarker(new MarkerOptions().position(position).title(station.name).snippet(station.summary()));
-            if (marker != null) marker.setTag(station.id);
+            GeoPoint position = new GeoPoint(station.latitude, station.longitude); points.add(position);
+            Marker marker = new Marker(mapView);
+            marker.setPosition(position); marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            marker.setTitle(station.name); marker.setSnippet(station.summary());
+            marker.setOnMarkerClickListener((selected, view) -> { detail(station.id); return true; });
+            mapView.getOverlays().add(marker);
         }
+        addCurrentLocationMarker();
+        if (currentLocation != null) points.add(currentLocation);
+        if (points.isEmpty()) { mapView.invalidate(); return; }
+        final int renderedGeneration = generation;
         mapView.post(() -> {
-            if (!alive() || map == null || stations.isEmpty()) return;
-            try { map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 60)); }
-            catch (IllegalStateException e) { map.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(stations.get(0).latitude, stations.get(0).longitude))); }
+            if (!alive() || mapView == null || generation != renderedGeneration) return;
+            if (points.size() == 1) { mapView.getController().setZoom(15.0); mapView.getController().setCenter(points.get(0)); }
+            else mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 60, 16.0, null);
+            mapView.invalidate();
         });
+    }
+    private void addCurrentLocationMarker() {
+        if (mapView == null || currentLocation == null) return;
+        Marker marker = new Marker(mapView);
+        marker.setPosition(currentLocation);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        marker.setIcon(getDrawable(R.drawable.ic_current_location));
+        marker.setTitle(getString(R.string.your_location));
+        mapView.getOverlays().add(marker);
+        mapStatus.setText(R.string.location_map_hint);
     }
     private void detail(String id) {
         int requestGeneration = ++detailGeneration;
@@ -213,7 +277,14 @@ public final class StationMapActivity extends Activity {
         listener = new LocationListener() {
             @Override public void onLocationChanged(Location location) {
                 if (!alive()) return;
-                stopLocation(); latitude.setText(String.valueOf(location.getLatitude())); longitude.setText(String.valueOf(location.getLongitude())); searchCoordinates();
+                stopLocation();
+                currentLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
+                if (mapView != null) {
+                    mapView.getController().setZoom(15.0);
+                    mapView.getController().setCenter(currentLocation);
+                }
+                filter = "&latitude=" + location.getLatitude() + "&longitude=" + location.getLongitude() + "&radiusKm=25";
+                page = 1; load();
             }
             @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
             @Override public void onProviderEnabled(String provider) { }
@@ -238,16 +309,16 @@ public final class StationMapActivity extends Activity {
         listener = null;
     }
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
-    @Override protected void onStart() { super.onStart(); if (mapView != null) mapView.onStart(); }
     @Override protected void onResume() { super.onResume(); if (mapView != null) mapView.onResume(); }
     @Override protected void onPause() { if (mapView != null) mapView.onPause(); super.onPause(); }
-    @Override protected void onStop() { stopLocation(); if (mapView != null) mapView.onStop(); super.onStop(); }
-    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (mapView != null) mapView.onDestroy(); super.onDestroy(); }
-    @Override public void onLowMemory() { super.onLowMemory(); if (mapView != null) mapView.onLowMemory(); }
+    @Override protected void onStop() { stopLocation(); super.onStop(); }
+    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (mapView != null) mapView.onDetach(); super.onDestroy(); }
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
-        Bundle mapState = new Bundle(); if (mapView != null) mapView.onSaveInstanceState(mapState); state.putBundle("map", mapState);
         state.putString("filter", filter); state.putInt("page", page);
-        state.putString("latitude", latitude.getText().toString()); state.putString("longitude", longitude.getText().toString());
+        if (currentLocation != null) {
+            state.putDouble("locationLatitude", currentLocation.getLatitude());
+            state.putDouble("locationLongitude", currentLocation.getLongitude());
+        }
     }
 }

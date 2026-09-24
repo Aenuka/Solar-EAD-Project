@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -18,13 +19,24 @@ public sealed class TokenService(IOptions<JwtOptions> options)
         var expires = now.AddMinutes(config.LifetimeMinutes);
         var claims = new[]
         {
-            new Claim("sub", user.Id), new Claim("name", user.FullName), new Claim("role", user.Role),
-            new Claim("sv", user.SecurityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            new Claim("sub", user.Id),
+            new Claim("name", user.FullName),
+            new Claim("role", user.Role),
+            new Claim("sv", user.SecurityVersion.ToString(CultureInfo.InvariantCulture)),
             new Claim("jti", Guid.NewGuid().ToString("N")),
-            new Claim("iat", now.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture), ClaimValueTypes.Integer64)
+            new Claim("iat", now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64)
         };
-        var token = new JwtSecurityToken(config.Issuer, config.Audience, claims, now.UtcDateTime, expires.UtcDateTime,
-            new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SigningKey)), SecurityAlgorithms.HmacSha256));
-        return new(new JwtSecurityTokenHandler().WriteToken(token), expires, "Bearer", user.Id, user.FullName, user.Role);
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SigningKey));
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            issuer: config.Issuer,
+            audience: config.Audience,
+            claims: claims,
+            notBefore: now.UtcDateTime,
+            expires: expires.UtcDateTime,
+            signingCredentials: credentials);
+
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+        return new AuthResponse(accessToken, expires, "Bearer", user.Id, user.FullName, user.Role);
     }
 }

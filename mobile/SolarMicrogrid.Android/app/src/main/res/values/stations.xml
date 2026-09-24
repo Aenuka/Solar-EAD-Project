@@ -4,11 +4,16 @@
     <string name="station_longitude">Longitude</string>
     <string name="search_coordinates">Search within 25 km</string>
     <string name="use_location">Use my location</string>
+    <string name="your_location">Your location</string>
+    <string name="location_map_hint">Your location is shown in blue. Tap a station pin for details.</string>
     <string name="all_stations">All stations</string>
     <string name="previous_stations">Previous</string>
     <string name="next_stations">Next</string>
-    <string name="map_loading">Map loading. If tiles stay blank, check your connection. Station details are also available in the list below.</string>
-    <string name="map_unavailable">Map unavailable. You can still search and select stations in the list below.</string>
+    <string name="map_loading">Tap a map pin or a station card to see details.</string>
+    <string name="osm_attribution">&lt;a href="https://www.openstreetmap.org/copyright"&gt;© OpenStreetMap contributors&lt;/a&gt;</string>
+    <string name="map_unavailable">Map unavailable. Choose a station from the list below.</string>
+    <string name="view_station_details">View station details →</string>
+    <string name="no_stations">No stations found here. Try your location again or return later.</string>
     <string name="invalid_coordinates">Enter latitude from -90 to 90 and longitude from -180 to 180.</string>
     <plurals name="station_results">
         <item quantity="one">%1$d active station · Page %2$d</item>
@@ -22,6 +27,6 @@
     <string name="station_details">Station details</string>
     <string name="station_detail_loaded">Latest station details loaded.</string>
     <string name="location_loading">Finding your location…</string>
-    <string name="location_unavailable">Location unavailable. Enable location services and retry, enter coordinates, or browse all stations.</string>
-    <string name="location_denied">Location access declined. Enter coordinates or browse all stations.</string>
+    <string name="location_unavailable">Unable to find your location. Enable location services and tap Use my location to retry. You can still choose a station below.</string>
+    <string name="location_denied">Location access declined. You can still choose a station below, or allow location access in Settings.</string>
 </resources>

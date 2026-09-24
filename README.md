@@ -2,7 +2,7 @@
 
 Component 1: user authentication, staff access and prosumer account management.
 
-Component 4 (Chamithu): station management, operating schedules, energy window inventory and native Android Google Maps discovery. See [station setup, Visual Studio/Android Studio checks and integration contracts](docs/stations.md). Staff can open **Microgrid stations** in the web portal; signed-in prosumers can open **Explore microgrid stations** in Android.
+Component 4 (Chamithu): station management, operating schedules, energy window inventory and native Android OpenStreetMap discovery. See [station setup, Visual Studio/Android Studio checks and integration contracts](docs/stations.md). Staff can open **Microgrid stations** in the web portal; signed-in prosumers can open **Explore microgrid stations** in Android.
 
 ## Projects
 
@@ -16,7 +16,7 @@ Component 4 (Chamithu): station management, operating schedules, energy window i
 
 ```text
 MVC controllers → API client ─────────────┐
-                                        ├→ REST controllers → Services → Repositories → MongoDB
+                                        ├→ API endpoints → Services → Repositories → MongoDB
 Android UI → AccountRepository → HTTP ───┘
                   ↕
              SQLite cache
