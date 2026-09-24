@@ -4,6 +4,7 @@
  * Description: REST API endpoints for reservation management.
  */
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.Api.Models;
 using SolarMicrogrid.Api.Services;
@@ -37,9 +38,12 @@ public class ReservationsController : ControllerBase
         UpdatedAt = r.UpdatedAt,
         TransactionToken = r.TransactionToken,
         CancellationReason = r.CancellationReason,
-        CompletedAt = r.CompletedAt
+        CompletedAt = r.CompletedAt,
+        StationVersion = r.StationVersion,
+        AllocationSlots = r.AllocationSlots
     };
 
+    // ===== CREATE =====
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ReservationInput dto)
     {
@@ -49,6 +53,7 @@ public class ReservationsController : ControllerBase
         return Ok(Map(reservation));
     }
 
+    // ===== UPDATE =====
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateReservationInput dto)
     {
@@ -58,6 +63,7 @@ public class ReservationsController : ControllerBase
         return Ok(Map(reservation));
     }
 
+    // ===== CANCEL =====
     [HttpPatch("{id}/cancel")]
     public async Task<IActionResult> Cancel(string id, [FromBody] CancelReservationInput dto)
     {
@@ -67,6 +73,7 @@ public class ReservationsController : ControllerBase
         return Ok(Map(reservation));
     }
 
+    // ===== HISTORY =====
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory([FromQuery] string nic)
     {
@@ -76,6 +83,7 @@ public class ReservationsController : ControllerBase
         return Ok(list.Select(Map));
     }
 
+    // ===== PENDING =====
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
@@ -83,6 +91,7 @@ public class ReservationsController : ControllerBase
         return Ok(list.Select(Map));
     }
 
+    // ===== SEARCH =====
     [HttpGet("search")]
     public async Task<IActionResult> Search(
         [FromQuery] string? status,
@@ -95,6 +104,7 @@ public class ReservationsController : ControllerBase
         return Ok(list.Select(Map));
     }
 
+    // ===== APPROVED FUTURE COUNT =====
     [HttpGet("approved-future/count")]
     public async Task<IActionResult> GetApprovedFutureCount()
     {
@@ -102,6 +112,7 @@ public class ReservationsController : ControllerBase
         return Ok(new { count });
     }
 
+    // ===== TRANSACTION (QR) =====
     [HttpGet("{id}/transaction")]
     public async Task<IActionResult> GetTransaction(string id)
     {
@@ -111,10 +122,11 @@ public class ReservationsController : ControllerBase
         return Ok(Map(reservation));
     }
 
-        // ===== APPROVE (Operator only) =====
+    // ===== APPROVE (Operator only) =====
     /// <summary>
     /// Approves a pending reservation.
     /// </summary>
+    [Authorize(Roles = "Backoffice,GridOperator")]
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(string id)
     {
@@ -128,6 +140,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Verifies a scanned transaction token.
     /// </summary>
+    [Authorize(Roles = "Backoffice,GridOperator")]
     [HttpGet("verify")]
     public async Task<IActionResult> VerifyToken([FromQuery] string token)
     {
@@ -141,6 +154,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Finalizes the energy transfer for an approved reservation.
     /// </summary>
+    [Authorize(Roles = "Backoffice,GridOperator")]
     [HttpPatch("{id}/complete")]
     public async Task<IActionResult> Complete(string id)
     {

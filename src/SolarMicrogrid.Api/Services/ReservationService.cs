@@ -13,20 +13,25 @@ namespace SolarMicrogrid.Api.Services;
 public class ReservationService
 {
     private readonly IReservationRepository _repository;
+    private readonly StationService _stationService;
 
-    public ReservationService(IReservationRepository repository)
+    public ReservationService(IReservationRepository repository, StationService stationService)
     {
         _repository = repository;
+        _stationService = stationService;
     }
 
+    // ===== CREATE — 7-day rule + double booking + Chamithu allocation =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> CreateAsync(ReservationInput dto)
     {
+        // Rule 1: Within 7 days
         if (dto.ReservationDate > DateTime.UtcNow.AddDays(7))
             return (false, "Reservation must be within 7 days.", null);
 
         if (dto.ReservationDate < DateTime.UtcNow)
             return (false, "Reservation date cannot be in the past.", null);
 
+        // Rule 2: No double booking
         var existing = await _repository.CheckConflictAsync(dto.StationId, dto.SlotId, dto.ReservationDate);
         if (existing != null)
             return (false, "This slot is already booked for that time.", null);
@@ -42,13 +47,39 @@ public class ReservationService
             TradingType = dto.TradingType,
             Status = "PENDING",
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            AllocationSlots = 1
         };
+
+        // ===== Chamithu Integration: Reserve station slot =====
+        try
+        {
+            var stationVersion = await GetStationVersionAsync(dto.StationId);
+
+            await _stationService.ReserveAsync(
+                dto.StationId,
+                dto.SlotId,
+                new AllocationInput
+                {
+                    Version = stationVersion,
+                    BookingId = reservation.ReservationId,
+                    Slots = 1,
+                    EnergyKwh = dto.EnergyAmountKwh
+                },
+                CancellationToken.None);
+
+            reservation.StationVersion = stationVersion;
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Failed to reserve station slot: {ex.Message}", null);
+        }
 
         await _repository.CreateAsync(reservation);
         return (true, "Reservation created successfully.", reservation);
     }
 
+    // ===== UPDATE — 12-hour rule + 7-day rule =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> UpdateAsync(string id, UpdateReservationInput dto)
     {
         var existing = await _repository.GetByIdAsync(id);
@@ -83,6 +114,7 @@ public class ReservationService
         return (true, "Reservation updated successfully.", existing);
     }
 
+    // ===== CANCEL — 12-hour rule + Chamithu release =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> CancelAsync(string id, CancelReservationInput dto)
     {
         var existing = await _repository.GetByIdAsync(id);
@@ -99,30 +131,52 @@ public class ReservationService
         if (hoursUntil < 12)
             return (false, "Cancellations require at least 12 hours notice.", null);
 
+        // ===== Chamithu Integration: Release station slot =====
+        try
+        {
+            var stationVersion = existing.StationVersion ?? 1;
+
+            await _stationService.EndAllocationAsync(
+                existing.StationId,
+                existing.SlotId,
+                existing.ReservationId,
+                new StationVersion { Version = stationVersion },
+                complete: false,
+                CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Failed to release station slot: {ex.Message}");
+        }
+
         existing.Status = "CANCELLED";
         existing.CancellationReason = dto.Reason;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        // TODO: Chamithu's API — release the slot
         await _repository.UpdateAsync(existing);
         return (true, "Reservation cancelled successfully.", existing);
     }
 
+    // ===== HISTORY =====
     public async Task<List<EnergyReservation>> GetHistoryAsync(string nic)
         => await _repository.GetByProsumerNicAsync(nic);
 
+    // ===== PENDING =====
     public async Task<List<EnergyReservation>> GetPendingAsync()
         => await _repository.GetPendingAsync();
 
+    // ===== SEARCH =====
     public async Task<List<EnergyReservation>> SearchAsync(string? status, string? stationId, string? nic, DateTime? from, DateTime? to)
         => await _repository.SearchAsync(status, stationId, nic, from, to);
 
+    // ===== APPROVED FUTURE COUNT =====
     public async Task<int> GetApprovedFutureCountAsync()
     {
         var list = await _repository.GetApprovedFutureAsync();
         return list.Count;
     }
 
+    // ===== TRANSACTION TOKEN (QR) =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> GetTransactionAsync(string id)
     {
         var existing = await _repository.GetByIdAsync(id);
@@ -142,12 +196,11 @@ public class ReservationService
         return (true, "Transaction token retrieved.", existing);
     }
 
-        // ===== APPROVE (Sajith) =====
+    // ===== APPROVE =====
     /// <summary>
     /// Approves a pending reservation so it can be used for QR verification.
     /// </summary>
-    public async Task<(bool success, string message, EnergyReservation? reservation)>
-        ApproveAsync(string id)
+    public async Task<(bool success, string message, EnergyReservation? reservation)> ApproveAsync(string id)
     {
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
@@ -166,12 +219,11 @@ public class ReservationService
         return (true, "Reservation approved.", existing);
     }
 
-    // ===== VERIFY TOKEN (Sajith ↔ Pasindu) =====
+    // ===== VERIFY TOKEN =====
     /// <summary>
     /// Verifies a scanned transaction token against server-side reservation data.
     /// </summary>
-    public async Task<(bool success, string message, EnergyReservation? reservation)>
-        VerifyTokenAsync(string token)
+    public async Task<(bool success, string message, EnergyReservation? reservation)> VerifyTokenAsync(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
             return (false, "Token is required.", null);
@@ -195,12 +247,11 @@ public class ReservationService
         return (true, "Token verified.", existing);
     }
 
-    // ===== COMPLETE (Sajith ↔ Pasindu) =====
+    // ===== COMPLETE =====
     /// <summary>
     /// Finalizes the energy transfer for an approved reservation.
     /// </summary>
-    public async Task<(bool success, string message, EnergyReservation? reservation)>
-        CompleteAsync(string id)
+    public async Task<(bool success, string message, EnergyReservation? reservation)> CompleteAsync(string id)
     {
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
@@ -215,11 +266,42 @@ public class ReservationService
         if (existing.Status != "APPROVED")
             return (false, "Only approved reservations can be completed.", null);
 
+        // ===== Chamithu Integration: Complete station allocation =====
+        try
+        {
+            var stationVersion = existing.StationVersion ?? 1;
+
+            await _stationService.EndAllocationAsync(
+                existing.StationId,
+                existing.SlotId,
+                existing.ReservationId,
+                new StationVersion { Version = stationVersion },
+                complete: true,
+                CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: Failed to complete station allocation: {ex.Message}");
+        }
+
         existing.Status = "COMPLETED";
         existing.CompletedAt = DateTime.UtcNow;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _repository.UpdateAsync(existing);
         return (true, "Energy transfer completed.", existing);
+    }
+
+    // ===== Helper: Get station version for CAS =====
+    /// <summary>
+    /// Gets the current station version for CAS allocation.
+    /// NOTE: Update this once Chamithu exposes a public getter.
+    /// </summary>
+    private async Task<long> GetStationVersionAsync(string stationId)
+    {
+        // Chamithu ගේ StationService එකේ public getter එකක් නැත්නම්, 1 return කරන්න.
+        // TODO: Replace with real version fetch after asking Chamithu.
+        await Task.CompletedTask;
+        return 1;
     }
 }

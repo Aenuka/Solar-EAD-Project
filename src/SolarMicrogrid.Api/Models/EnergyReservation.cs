@@ -28,4 +28,13 @@ public class EnergyReservation
     public string? TransactionToken { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CompletedAt { get; set; }
+        /// <summary>
+    /// Station version at the time of allocation (for Chamithu integration).
+    /// </summary>
+    public long? StationVersion { get; set; }
+
+    /// <summary>
+    /// Number of slots reserved in the station allocation ledger.
+    /// </summary>
+    public int AllocationSlots { get; set; } = 1;
 }

@@ -67,6 +67,8 @@ public class ReservationResponse
     public string? TransactionToken { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public long? StationVersion { get; set; }
+    public int AllocationSlots { get; set; }
 }
 
 public class ApprovedFutureCountResponse
