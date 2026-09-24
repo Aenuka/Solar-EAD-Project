@@ -1,80 +1,82 @@
 /*
  * File: BookingsController.cs
  * Author: Sajith
- * Description: Web UI controller for viewing reservations (calls API).
+ * Description: Web UI for operator booking monitoring.
  */
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using SolarMicrogrid.Web.ViewModels;
+using SolarMicrogrid.Contracts;
+using SolarMicrogrid.Web.ApiClients;
 
 namespace SolarMicrogrid.Web.Controllers;
 
+[Authorize(Roles = "Backoffice,GridOperator")]
 public class BookingsController : Controller
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _config;
+    private readonly MicrogridApiClient _api;
 
-    public BookingsController(IHttpClientFactory httpClientFactory, IConfiguration config)
+    public BookingsController(MicrogridApiClient api)
     {
-        _httpClientFactory = httpClientFactory;
-        _config = config;
+        _api = api;
     }
 
-    // Helper: Get token from session/cookie (you'll need to coordinate with Aenuka)
-    private string? GetToken() => HttpContext.Session.GetString("JwtToken");
-
-    // GET: /Bookings
-    public async Task<IActionResult> Index(string? status, string? stationId)
+    /// <summary>
+    /// Displays all reservations with optional filters.
+    /// </summary>
+    public async Task<IActionResult> Index(string? status, string? stationId, CancellationToken ct)
     {
-        var client = _httpClientFactory.CreateClient();
-        var apiUrl = _config["ApiBaseUrl"] ?? "http://localhost:5080";
-        var token = GetToken();
-
-        if (string.IsNullOrEmpty(token))
-            return RedirectToAction("Login", "Account");
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        // Call the API for search/filter
-        var url = $"{apiUrl}/api/v1/reservations/search?status={status}&stationId={stationId}";
-        var response = await client.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            ViewBag.Error = "Failed to load bookings.";
-            return View(new List<ReservationViewModel>());
+            var bookings = await _api.SearchReservationsAsync(status, stationId, null, ct);
+            ViewBag.FilterStatus = status;
+            ViewBag.FilterStation = stationId;
+            return View(bookings);
         }
-
-        var json = await response.Content.ReadAsStringAsync();
-        var doc = JsonDocument.Parse(json);
-        var bookings = JsonSerializer.Deserialize<List<ReservationViewModel>>(
-            doc.RootElement.GetProperty("data").GetRawText(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        return View(bookings ?? new List<ReservationViewModel>());
+        catch (Exception ex)
+        {
+            ViewBag.Error = ex.Message;
+            return View(new List<ReservationResponse>());
+        }
     }
 
-    // GET: /Bookings/Pending
-    public async Task<IActionResult> Pending()
+    /// <summary>
+    /// Displays only pending reservations.
+    /// </summary>
+    public async Task<IActionResult> Pending(CancellationToken ct)
     {
-        var client = _httpClientFactory.CreateClient();
-        var apiUrl = _config["ApiBaseUrl"] ?? "http://localhost:5080";
-        var token = GetToken();
+        try
+        {
+            var bookings = await _api.GetPendingReservationsAsync(ct);
+            return View(bookings);
+        }
+        catch (Exception ex)
+        {
+            ViewBag.Error = ex.Message;
+            return View(new List<ReservationResponse>());
+        }
+    }
 
-        if (string.IsNullOrEmpty(token))
-            return RedirectToAction("Login", "Account");
+    /// <summary>
+    /// Dashboard with counts.
+    /// </summary>
+    public async Task<IActionResult> Dashboard(CancellationToken ct)
+    {
+        try
+        {
+            var pending = await _api.GetPendingReservationsAsync(ct);
+            var approvedFuture = await _api.GetApprovedFutureCountAsync(ct);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        var response = await client.GetAsync($"{apiUrl}/api/v1/reservations/pending");
-        var json = await response.Content.ReadAsStringAsync();
-        var doc = JsonDocument.Parse(json);
-        var bookings = JsonSerializer.Deserialize<List<ReservationViewModel>>(
-            doc.RootElement.GetProperty("data").GetRawText(),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        return View(bookings ?? new List<ReservationViewModel>());
+            ViewBag.PendingCount = pending.Count;
+            ViewBag.ApprovedFutureCount = approvedFuture.Count;
+            return View();
+        }
+        catch (Exception ex)
+        {
+            ViewBag.Error = ex.Message;
+            ViewBag.PendingCount = 0;
+            ViewBag.ApprovedFutureCount = 0;
+            return View();
+        }
     }
 }
