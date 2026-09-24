@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: EnergyReservation.cs
  * Author: Sajith
  * Description: MongoDB model for energy reservations.
@@ -28,4 +28,5 @@ public class EnergyReservation
     public string? TransactionToken { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public long Version { get; set; } = 1;
 }

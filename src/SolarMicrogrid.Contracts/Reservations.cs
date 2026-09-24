@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: Reservations.cs
  * Author: Sajith
  * Description: DTOs for reservation operations.
@@ -43,12 +43,30 @@ public class UpdateReservationInput
 
     [Required, StringLength(50)]
     public string TradingType { get; set; } = string.Empty;
+
+    [JsonRequired, Range(1, long.MaxValue)]
+    public long Version { get; set; }
 }
 
 public class CancelReservationInput
 {
     [StringLength(500)]
     public string? Reason { get; set; }
+
+    [JsonRequired, Range(1, long.MaxValue)]
+    public long Version { get; set; }
+}
+
+public class ReservationVersionInput
+{
+    [JsonRequired, Range(1, long.MaxValue)]
+    public long Version { get; set; }
+}
+
+public class CompleteReservationInput
+{
+    [Required]
+    public string TransactionToken { get; set; } = string.Empty;
 }
 
 public class ReservationResponse
@@ -67,6 +85,7 @@ public class ReservationResponse
     public string? TransactionToken { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime? CompletedAt { get; set; }
+    public long Version { get; set; }
 }
 
 public class ApprovedFutureCountResponse
