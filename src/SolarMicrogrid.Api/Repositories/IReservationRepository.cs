@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: IReservationRepository.cs
  * Author: Sajith
  * Description: Repository interface for reservation data access.
@@ -18,5 +18,5 @@ public interface IReservationRepository
     Task<List<EnergyReservation>> SearchAsync(string? status, string? stationId, string? nic, DateTime? from, DateTime? to);
     Task<EnergyReservation?> CheckConflictAsync(string stationId, string slotId, DateTime reservationDate);
     Task<EnergyReservation?> CheckConflictExcludingAsync(string stationId, string slotId, DateTime reservationDate, string excludeId);
-    Task UpdateAsync(EnergyReservation reservation);
+    Task<bool> ReplaceAsync(EnergyReservation reservation, long version);
 }

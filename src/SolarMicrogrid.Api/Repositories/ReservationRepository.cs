@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: ReservationRepository.cs
  * Author: Sajith
  * Description: MongoDB implementation for reservation repository.
@@ -92,8 +92,9 @@ public class ReservationRepository : IReservationRepository
         ).FirstOrDefaultAsync();
     }
 
-    public async Task UpdateAsync(EnergyReservation reservation)
+    public async Task<bool> ReplaceAsync(EnergyReservation reservation, long version)
     {
-        await _reservations.ReplaceOneAsync(r => r.Id == reservation.Id, reservation);
+        var result = await _reservations.ReplaceOneAsync(r => r.Id == reservation.Id && r.Version == version, reservation);
+        return result.ModifiedCount == 1;
     }
 }
