@@ -140,6 +140,23 @@ public final class BookingHistoryActivity extends Activity {
         status.setPadding(0, dp(6), 0, 0);
         card.addView(status);
 
+        if ("APPROVED".equals(r.status)) {
+            Button showQr = new Button(this);
+            showQr.setText("Show QR");
+            showQr.setAllCaps(false); showQr.setTextSize(13);
+            showQr.setTextColor(Color.WHITE);
+            showQr.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+            showQr.setMinHeight(dp(40));
+            LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(-1, -2);
+            qlp.topMargin = dp(10);
+            card.addView(showQr, qlp);
+            showQr.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(BookingHistoryActivity.this, TransactionQrActivity.class);
+                intent.putExtra("reservationId", r.id);
+                startActivity(intent);
+            });
+        }
+
         // Cancel button for PENDING or APPROVED bookings
         if ("PENDING".equals(r.status) || "APPROVED".equals(r.status)) {
             Button cancel = new Button(this);
