@@ -14,5 +14,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.CreateBookingActivity"
+            android:exported="false"
+            android:label="@string/create_booking" />
+        <activity
+            android:name=".ui.BookingHistoryActivity"
+            android:exported="false"
+            android:label="@string/my_bookings" />
+        <activity
+            android:name=".ui.PendingBookingsActivity"
+            android:exported="false"
+            android:label="@string/pending_bookings" />
     </application>
 </manifest>

@@ -92,6 +92,12 @@ public final class MainActivity extends Activity {
         }
         button(R.string.refresh, false, this::refresh);
         button(R.string.nearby_stations, true, () -> startActivity(new android.content.Intent(this, StationMapActivity.class)));
+
+        // ===== Sajith: Reservation features =====
+        button(R.string.create_booking, true, () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class)));
+        button(R.string.my_bookings, false, () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class)));
+        button(R.string.pending_bookings, false, () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class)));
+
         EditText name = field(R.string.full_name, profile.fullName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME, 100);
         EditText email = field(R.string.email, profile.email, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, 254);
         EditText phone = field(R.string.phone, profile.phone, InputType.TYPE_CLASS_PHONE, 20);

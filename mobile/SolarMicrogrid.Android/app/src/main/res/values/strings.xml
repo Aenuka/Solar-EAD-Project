@@ -50,4 +50,18 @@
     <string name="change_timeout_error">The service did not respond in time. Your change may have been saved. Reconnect and refresh your account before retrying.</string>
     <string name="reason_help">Please enter a reason of 5–500 characters.</string>
     <string name="offline_writes">Reconnect and refresh your profile before making changes.</string>
+
+    <!-- ===== Reservation strings (Sajith) ===== -->
+    <string name="create_booking">Create Booking</string>
+    <string name="my_bookings">My Bookings</string>
+    <string name="pending_bookings">Pending Bookings</string>
+    <string name="no_bookings">No bookings yet.</string>
+    <string name="no_pending">No pending reservations.</string>
+    <string name="loading">Loading…</string>
+    <string name="cancel_booking">Cancel Booking</string>
+    <string name="cancel_reason">Reason (optional)</string>
+    <string name="confirm_cancel">Cancel this reservation?</string>
+    <string name="booking_cancelled">Booking cancelled.</string>
+    <string name="booking_created_title">Booking Created</string>
+    <string name="ok_button">OK</string>
 </resources>
