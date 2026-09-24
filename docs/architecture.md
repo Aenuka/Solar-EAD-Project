@@ -2,11 +2,13 @@
 
 Station, energy-window and map architecture (Component 4) is documented in [stations.md](stations.md), including the shared atomic inventory contract for booking and QR integrations.
 
+For a tutorial comparison and guided reading order, see [Understanding the backend](../src/SolarMicrogrid.Api/README.md).
+
 ## Boundaries
 
 The .NET solution contains API, MVC and Contracts projects. Contracts has only DTOs, role/status values and input annotations. MVC references Contracts but never the API implementation or MongoDB driver. Android has independent Java DTOs matching the same JSON contract.
 
-API controllers own HTTP binding, endpoint authorization and response status. Services own registration, immutable identity, allowed account transitions and concurrency rules. Repositories own MongoDB filters and persistence. Password hashing and signed-token creation are in the API Security layer. JSON rejects unknown fields to prevent accidentally accepting administrative properties in public requests.
+API endpoint groups own HTTP binding, endpoint authorization and response status. Services own registration, immutable identity, allowed account transitions and concurrency rules. Concrete repositories in `Data/` own MongoDB filters and persistence. Password hashing and signed-token creation are in the API Security layer. JSON rejects unknown fields to prevent accidentally accepting administrative properties in public requests.
 
 MVC uses a typed HTTP client. The signed API token is contained in an encrypted, HttpOnly authentication ticket, never rendered into a page. MVC checks its session with the API, applies page-level role checks and validates antiforgery tokens on POSTs. These checks supplement API enforcement. Android Activities handle forms; AccountRepository coordinates network and cache; ApiClient handles HTTP; ProfileCache uses Android SQLiteOpenHelper.
 

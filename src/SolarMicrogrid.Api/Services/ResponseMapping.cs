@@ -5,14 +5,29 @@ namespace SolarMicrogrid.Api.Services;
 
 public static class ResponseMapping
 {
-    public static StaffResponse ToResponse(this StaffUser user) => new(user.Id, user.Username, user.FullName,
-        user.Email, user.Role, user.Status, user.IsProtected, user.Version, Timestamp(user.CreatedAt));
+    public static StaffResponse ToResponse(this StaffUser user) =>
+        new(user.Id, user.Username, user.FullName, user.Email, user.Role,
+            user.Status, user.IsProtected, user.Version, Timestamp(user.CreatedAt));
 
-    public static ProsumerResponse ToResponse(this Prosumer user) => new(user.Id, user.FullName, user.Email,
-        user.Phone, user.Address, user.Status, user.Version, Timestamp(user.CreatedAt),
-        user.DeactivationRequest is { } r ? new(r.Id, r.Reason, r.Status, Timestamp(r.RequestedAt), r.ReviewedBy,
-            r.ReviewedAt is { } reviewed ? Timestamp(reviewed) : null, r.DecisionNote) : null,
-        user.RecentEvents.Select(e => new AccountEventResponse(e.Action, e.ActorId, e.Note, Timestamp(e.At))).ToList());
+    public static ProsumerResponse ToResponse(this Prosumer user)
+    {
+        DeactivationResponse? deactivation = null;
+        if (user.DeactivationRequest is not null)
+        {
+            var request = user.DeactivationRequest;
+            deactivation = new DeactivationResponse(request.Id, request.Reason, request.Status,
+                Timestamp(request.RequestedAt), request.ReviewedBy,
+                request.ReviewedAt.HasValue ? Timestamp(request.ReviewedAt.Value) : null,
+                request.DecisionNote);
+        }
+
+        var events = user.RecentEvents.Select(accountEvent =>
+            new AccountEventResponse(accountEvent.Action, accountEvent.ActorId, accountEvent.Note, Timestamp(accountEvent.At)))
+            .ToList();
+
+        return new ProsumerResponse(user.Id, user.FullName, user.Email, user.Phone, user.Address,
+            user.Status, user.Version, Timestamp(user.CreatedAt), deactivation, events);
+    }
 
     // BSON dates have millisecond precision. Newly written and subsequently read responses must agree.
     private static DateTimeOffset Timestamp(DateTime value) =>
@@ -23,6 +38,9 @@ public static class ResponseMapping
 
     public static void CheckVersion(long actual, long expected)
     {
-        if (actual != expected) throw ApiException.Conflict("This account changed. Reload it before trying again.");
+        if (actual != expected)
+        {
+            throw ApiException.Conflict("This account changed. Reload it before trying again.");
+        }
     }
 }

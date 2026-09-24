@@ -1,3 +1,16 @@
-@{ ViewData["Title"] = "Grid Operator"; }
-<div class="page-heading"><div><p class="eyebrow">GRID OPERATOR WORKSPACE</p><h1>Welcome, @User.Identity?.Name</h1><p class="muted">You’re signed in with Grid Operator access.</p></div><span class="badge active">Active session</span></div>
-<section class="card narrow"><h2>Your connection is ready</h2><p>Your staff account is active. User and prosumer account administration is handled by Backoffice.</p><p class="muted">Grid operations and trading tools will appear here when their components are connected.</p></section>
+@{
+    ViewData["Title"] = "Grid Operator";
+}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">GRID OPERATOR WORKSPACE</p>
+        <h1>Welcome, @User.Identity?.Name</h1>
+        <p class="muted">You’re signed in with Grid Operator access.</p>
+    </div>
+    <span class="badge active">Active session</span>
+</div>
+<section class="card narrow">
+    <h2>Your connection is ready</h2>
+    <p>Your staff account is active. User and prosumer account administration is handled by Backoffice.</p>
+    <p class="muted">Grid operations and trading tools will appear here when their components are connected.</p>
+</section>
