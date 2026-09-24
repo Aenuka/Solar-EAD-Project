@@ -66,7 +66,7 @@ public final class StationMapActivity extends Activity {
             return insets;
         });
         setContentView(root); root.requestApplyInsets();
-        addButton(root, R.string.back_account, this::finish);
+        addButton(root, R.string.my_account, this::finish);
         TextView heading = new TextView(this); heading.setText(R.string.nearby_stations); heading.setTextSize(24); root.addView(heading);
         status = new TextView(this); status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); root.addView(status);
         LinearLayout coordinates = new LinearLayout(this);
