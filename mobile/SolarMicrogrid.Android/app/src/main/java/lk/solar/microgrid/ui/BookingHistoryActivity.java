@@ -166,12 +166,13 @@ public final class BookingHistoryActivity extends Activity {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.cancel_booking, (d, w) -> {
                     String reasonText = reason.getText().toString().trim();
-                    doCancel(r.id, reasonText);
+                    doCancel(r, reasonText);
                 }).show();
     }
 
-    private void doCancel(String id, String reason) {
-        reservations.cancel(id, reason, new ReservationRepository.Callback<Reservation>() {
+    private void doCancel(Reservation r, String reason) {
+        long version = r.source.optLong("version", 1);
+        reservations.cancel(r.id, version, reason, new ReservationRepository.Callback<Reservation>() {
             @Override public void success(Reservation updated) {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(BookingHistoryActivity.this, R.string.booking_cancelled, Toast.LENGTH_SHORT).show();

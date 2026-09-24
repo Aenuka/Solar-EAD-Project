@@ -47,11 +47,12 @@ public final class ReservationRepository {
     }
 
     // ===== UPDATE =====
-    public void update(String id, String slotId, String reservationDate,
+    public void update(String id, long version, String slotId, String reservationDate,
                        double energyAmountKwh, String tradingType,
                        Callback<Reservation> callback) {
         run(() -> {
             JSONObject body = new JSONObject()
+                .put("version", version)
                 .put("slotId", slotId.trim())
                 .put("reservationDate", reservationDate)
                 .put("energyAmountKwh", energyAmountKwh)
@@ -62,9 +63,11 @@ public final class ReservationRepository {
     }
 
     // ===== CANCEL =====
-    public void cancel(String id, String reason, Callback<Reservation> callback) {
+    public void cancel(String id, long version, String reason, Callback<Reservation> callback) {
         run(() -> {
-            JSONObject body = new JSONObject().put("reason", reason == null ? "" : reason);
+            JSONObject body = new JSONObject()
+                .put("version", version)
+                .put("reason", reason == null ? "" : reason);
             JSONObject response = api.request("PATCH", "reservations/" + id + "/cancel",
                                               body, requireToken());
             return new Reservation(response);
