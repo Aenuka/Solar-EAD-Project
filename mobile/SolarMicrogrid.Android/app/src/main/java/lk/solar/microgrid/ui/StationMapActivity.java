@@ -54,6 +54,7 @@ public final class StationMapActivity extends Activity {
     private final List<Station> stations = new ArrayList<>();
     private AccountRepository accounts;
     private MapView mapView;
+    private GeoPoint currentLocation;
     private LinearLayout results;
     private TextView status, mapStatus;
     private Button previous, next;
@@ -136,6 +137,9 @@ public final class StationMapActivity extends Activity {
         root.addView(pages);
         if (state != null) {
             filter = state.getString("filter", ""); page = state.getInt("page", 1);
+            if (state.containsKey("locationLatitude")) {
+                currentLocation = new GeoPoint(state.getDouble("locationLatitude"), state.getDouble("locationLongitude"));
+            }
         }
         load();
     }
@@ -177,7 +181,7 @@ public final class StationMapActivity extends Activity {
         final int requestGeneration = ++generation;
         detailGeneration++;
         stations.clear(); results.removeAllViews();
-        if (mapView != null) { mapView.getOverlays().clear(); mapView.invalidate(); }
+        if (mapView != null) { mapView.getOverlays().clear(); addCurrentLocationMarker(); mapView.invalidate(); }
         previous.setEnabled(false); next.setEnabled(false); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
             @Override public void success(JSONObject response) {
@@ -199,7 +203,7 @@ public final class StationMapActivity extends Activity {
         });
     }
     private void renderMarkers() {
-        if (mapView == null || stations.isEmpty()) return;
+        if (mapView == null) return;
         mapView.getOverlays().clear();
         List<GeoPoint> points = new ArrayList<>();
         for (Station station : stations) {
@@ -210,6 +214,9 @@ public final class StationMapActivity extends Activity {
             marker.setOnMarkerClickListener((selected, view) -> { detail(station.id); return true; });
             mapView.getOverlays().add(marker);
         }
+        addCurrentLocationMarker();
+        if (currentLocation != null) points.add(currentLocation);
+        if (points.isEmpty()) { mapView.invalidate(); return; }
         final int renderedGeneration = generation;
         mapView.post(() -> {
             if (!alive() || mapView == null || generation != renderedGeneration) return;
@@ -217,6 +224,16 @@ public final class StationMapActivity extends Activity {
             else mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 60, 16.0, null);
             mapView.invalidate();
         });
+    }
+    private void addCurrentLocationMarker() {
+        if (mapView == null || currentLocation == null) return;
+        Marker marker = new Marker(mapView);
+        marker.setPosition(currentLocation);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        marker.setIcon(getDrawable(R.drawable.ic_current_location));
+        marker.setTitle(getString(R.string.your_location));
+        mapView.getOverlays().add(marker);
+        mapStatus.setText(R.string.location_map_hint);
     }
     private void detail(String id) {
         int requestGeneration = ++detailGeneration;
@@ -261,6 +278,11 @@ public final class StationMapActivity extends Activity {
             @Override public void onLocationChanged(Location location) {
                 if (!alive()) return;
                 stopLocation();
+                currentLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
+                if (mapView != null) {
+                    mapView.getController().setZoom(15.0);
+                    mapView.getController().setCenter(currentLocation);
+                }
                 filter = "&latitude=" + location.getLatitude() + "&longitude=" + location.getLongitude() + "&radiusKm=25";
                 page = 1; load();
             }
@@ -294,5 +316,9 @@ public final class StationMapActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
         state.putString("filter", filter); state.putInt("page", page);
+        if (currentLocation != null) {
+            state.putDouble("locationLatitude", currentLocation.getLatitude());
+            state.putDouble("locationLongitude", currentLocation.getLongitude());
+        }
     }
 }

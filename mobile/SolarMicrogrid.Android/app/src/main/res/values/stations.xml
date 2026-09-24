@@ -4,6 +4,8 @@
     <string name="station_longitude">Longitude</string>
     <string name="search_coordinates">Search within 25 km</string>
     <string name="use_location">Use my location</string>
+    <string name="your_location">Your location</string>
+    <string name="location_map_hint">Your location is shown in blue. Tap a station pin for details.</string>
     <string name="all_stations">All stations</string>
     <string name="previous_stations">Previous</string>
     <string name="next_stations">Next</string>
