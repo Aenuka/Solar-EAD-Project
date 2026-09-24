@@ -97,6 +97,7 @@ public final class MainActivity extends Activity {
         button(R.string.create_booking, true, () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class)));
         button(R.string.my_bookings, false, () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class)));
         button(R.string.pending_bookings, false, () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class)));
+        button(R.string.search_booking, false, () -> startActivity(new android.content.Intent(this, SearchBookingActivity.class)));
 
         EditText name = field(R.string.full_name, profile.fullName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME, 100);
         EditText email = field(R.string.email, profile.email, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, 254);

@@ -26,5 +26,21 @@
             android:name=".ui.PendingBookingsActivity"
             android:exported="false"
             android:label="@string/pending_bookings" />
+        <activity
+            android:name=".ui.ModifyBookingActivity"
+            android:exported="false"
+            android:label="@string/modify_booking" />
+        <activity
+            android:name=".ui.CancelBookingActivity"
+            android:exported="false"
+            android:label="@string/cancel_booking" />
+        <activity
+            android:name=".ui.SearchBookingActivity"
+            android:exported="false"
+            android:label="@string/search_booking" />
+        <activity
+            android:name=".ui.BookingSummaryActivity"
+            android:exported="false"
+            android:label="@string/booking_summary_title" />
     </application>
 </manifest>
