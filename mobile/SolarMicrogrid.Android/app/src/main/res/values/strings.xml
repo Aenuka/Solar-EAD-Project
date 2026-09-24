@@ -51,4 +51,46 @@
     <string name="change_timeout_error">The service did not respond in time. Your change may have been saved. Reconnect and refresh your account before retrying.</string>
     <string name="reason_help">Please enter a reason of 5–500 characters.</string>
     <string name="offline_writes">Reconnect and refresh your profile before making changes.</string>
+    
+
+    <!-- ===== Reservation strings (Sajith) ===== -->
+    <string name="create_booking">Create Booking</string>
+    <string name="my_bookings">My Bookings</string>
+    <string name="pending_bookings">Pending Bookings</string>
+    <string name="no_bookings">No bookings yet.</string>
+    <string name="no_pending">No pending reservations.</string>
+    <string name="loading">Loading…</string>
+    <string name="cancel_booking">Cancel Booking</string>
+    <string name="cancel_reason">Reason (optional)</string>
+    <string name="confirm_cancel">Cancel this reservation?</string>
+    <string name="booking_cancelled">Booking cancelled.</string>
+    <string name="booking_created_title">Booking Created</string>
+    <string name="ok_button">OK</string>
+
+    <!-- ===== Modify / Search / Summary screens (Sajith) ===== -->
+    <string name="modify_booking">Modify Booking</string>
+    <string name="search_booking">Search Bookings</string>
+    <string name="booking_summary_title">Booking Summary</string>
+    <string name="update_booking">Update Booking</string>
+    <string name="booking_updated_title">Booking Updated</string>
+    <string name="booking_updated_message">Your reservation was updated successfully.</string>
+    <string name="slot_id_label">Slot ID</string>
+    <string name="reservation_date_label">Reservation Date &amp; Time</string>
+    <string name="energy_amount_label">Energy Amount (kWh)</string>
+    <string name="trading_type_label">Trading Type</string>
+    <string name="station_id_label">Station ID</string>
+    <string name="no_date_picked">No date picked yet</string>
+    <string name="pick_date_time">Pick Date &amp; Time</string>
+    <string name="validation_date">Please pick a date and time</string>
+    <string name="search_hint_status">Status (or leave blank for all)</string>
+    <string name="search_hint_station">Station ID (optional)</string>
+    <string name="search_button">Search</string>
+    <string name="clear_button">Clear Filters</string>
+    <string name="no_search_results">No matching reservations found.</string>
+    <string name="confirm_update">Save changes to this reservation?</string>
+    <string name="search_criteria">Search by status and station ID.</string>
+    <string name="booking_details">Booking Details</string>
+    <string name="status_label">Status</string>
+    <string name="close_button">Close</string>
+    <string name="cancel_reason_label">Reason (optional)</string>
 </resources>

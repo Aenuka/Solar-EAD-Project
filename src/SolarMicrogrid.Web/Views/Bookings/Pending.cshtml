@@ -1,0 +1,57 @@
+@using SolarMicrogrid.Contracts
+@model List<ReservationResponse>
+
+@{
+    ViewData["Title"] = "Pending Reservations";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Pending Reservations</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary">All Bookings</a>
+            <a asp-action="Dashboard" class="btn btn-outline-primary">Dashboard</a>
+        </div>
+    </div>
+    <p class="text-muted">Reservations awaiting operator review.</p>
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger">@ViewBag.Error</div>
+    }
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Reservation ID</th>
+                <th>Prosumer NIC</th>
+                <th>Station</th>
+                <th>Slot</th>
+                <th>Date &amp; Time</th>
+                <th>Energy (kWh)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>@b.ReservationId</td>
+                        <td>@b.ProsumerNic</td>
+                        <td>@b.StationId</td>
+                        <td>@b.SlotId</td>
+                        <td>@b.ReservationDate.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@b.EnergyAmountKwh</td>
+                        <td><span class="badge bg-warning text-dark">@b.Status</span></td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="7" class="text-center text-muted">No pending reservations.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
