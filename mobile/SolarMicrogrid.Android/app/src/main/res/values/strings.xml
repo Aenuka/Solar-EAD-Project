@@ -1,4 +1,5 @@
 <resources>
+    <string name="my_account">My account</string>
     <string name="app_name">Solar Microgrid</string>
     <string name="brand">SOLAR / MICROGRID</string>
     <string name="welcome">Your energy.\nYour community.</string>

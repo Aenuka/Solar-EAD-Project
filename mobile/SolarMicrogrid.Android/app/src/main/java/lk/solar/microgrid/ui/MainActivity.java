@@ -55,7 +55,7 @@ public final class MainActivity extends Activity {
         button(R.string.sign_in, true, () -> {
             if (!required(nic, password)) return;
             setBusy(true);
-            accounts.login(value(nic), value(password), profileCallback(0));
+            accounts.login(value(nic), value(password), signInCallback());
         });
         button(R.string.register_link, false, this::showRegister);
     }
@@ -74,7 +74,7 @@ public final class MainActivity extends Activity {
             if (!required(nic, name, email, phone, address, password)) return;
             if (value(password).length() < 12) { showMessage(getString(R.string.password_help), true); return; }
             setBusy(true);
-            accounts.register(value(nic), value(name), value(email), value(phone), value(address), value(password), profileCallback(0));
+            accounts.register(value(nic), value(name), value(email), value(phone), value(address), value(password), signInCallback());
         });
         button(R.string.back_sign_in, false, this::showLogin);
     }
@@ -151,6 +151,18 @@ public final class MainActivity extends Activity {
             @Override public void success(Void ignored) { if (alive()) { current = null; showLogin(); } }
             @Override public void failure(int status, String text) { handleFailure(status, text); }
         });
+    }
+
+    private AccountRepository.Callback<ProfileCache.Snapshot> signInCallback() {
+        return new AccountRepository.Callback<>() {
+            @Override public void success(ProfileCache.Snapshot snapshot) {
+                if (!alive()) return;
+                // Keep the account page underneath the map for My account and Back.
+                showProfile(snapshot);
+                startActivity(new android.content.Intent(MainActivity.this, StationMapActivity.class));
+            }
+            @Override public void failure(int status, String text) { handleFailure(status, text); }
+        };
     }
 
     private AccountRepository.Callback<ProfileCache.Snapshot> profileCallback(int successMessage) {
