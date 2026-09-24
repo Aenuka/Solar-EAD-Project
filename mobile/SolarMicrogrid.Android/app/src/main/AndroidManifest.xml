@@ -26,5 +26,9 @@
             android:name=".ui.PendingBookingsActivity"
             android:exported="false"
             android:label="@string/pending_bookings" />
+        <activity
+            android:name=".ui.TransactionQrActivity"
+            android:exported="false"
+            android:label="Transaction QR" />
     </application>
 </manifest>
