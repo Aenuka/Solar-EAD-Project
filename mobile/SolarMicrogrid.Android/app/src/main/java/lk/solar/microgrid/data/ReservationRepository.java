@@ -80,6 +80,15 @@ public final class ReservationRepository {
             "reservations/history?nic=" + requireNic(), null, requireToken())), callback);
     }
 
+    // ===== TRANSACTION QR =====
+    public void getTransaction(String id, Callback<Reservation> callback) {
+        run(() -> {
+            JSONObject response = api.request("GET", "reservations/" + id + "/transaction",
+                                              null, requireToken());
+            return new Reservation(response);
+        }, callback);
+    }
+
     // ===== PENDING =====
     public void pending(Callback<List<Reservation>> callback) {
         run(() -> parseList(api.requestArray("GET",
