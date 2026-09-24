@@ -7,7 +7,8 @@
     <string name="all_stations">All stations</string>
     <string name="previous_stations">Previous</string>
     <string name="next_stations">Next</string>
-    <string name="map_loading">Map loading. If tiles stay blank, check your connection. Station details are also available in the list below.</string>
+    <string name="map_loading">Pinch to zoom and tap a station marker. If the map stays blank, check internet access or use the station list below.</string>
+    <string name="osm_attribution">&lt;a href="https://www.openstreetmap.org/copyright"&gt;© OpenStreetMap contributors&lt;/a&gt;</string>
     <string name="map_unavailable">Map unavailable. You can still search and select stations in the list below.</string>
     <string name="invalid_coordinates">Enter latitude from -90 to 90 and longitude from -180 to 180.</string>
     <plurals name="station_results">
