@@ -141,4 +141,85 @@ public class ReservationService
 
         return (true, "Transaction token retrieved.", existing);
     }
+
+        // ===== APPROVE (Sajith) =====
+    /// <summary>
+    /// Approves a pending reservation so it can be used for QR verification.
+    /// </summary>
+    public async Task<(bool success, string message, EnergyReservation? reservation)>
+        ApproveAsync(string id)
+    {
+        var existing = await _repository.GetByIdAsync(id);
+        if (existing is null)
+            return (false, "Reservation not found.", null);
+
+        if (existing.Status == "APPROVED")
+            return (false, "Reservation is already approved.", null);
+
+        if (existing.Status != "PENDING")
+            return (false, $"Cannot approve a {existing.Status} reservation.", null);
+
+        existing.Status = "APPROVED";
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _repository.UpdateAsync(existing);
+        return (true, "Reservation approved.", existing);
+    }
+
+    // ===== VERIFY TOKEN (Sajith ↔ Pasindu) =====
+    /// <summary>
+    /// Verifies a scanned transaction token against server-side reservation data.
+    /// </summary>
+    public async Task<(bool success, string message, EnergyReservation? reservation)>
+        VerifyTokenAsync(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return (false, "Token is required.", null);
+
+        var existing = await _repository.GetByTokenAsync(token);
+        if (existing is null)
+            return (false, "Invalid transaction token.", null);
+
+        if (existing.Status == "CANCELLED")
+            return (false, "Reservation is cancelled.", null);
+
+        if (existing.Status == "COMPLETED")
+            return (false, "Reservation is already completed.", null);
+
+        if (existing.Status != "APPROVED")
+            return (false, $"Reservation is {existing.Status}, cannot be verified.", null);
+
+        if (existing.ReservationDate < DateTime.UtcNow)
+            return (false, "Reservation time has passed.", null);
+
+        return (true, "Token verified.", existing);
+    }
+
+    // ===== COMPLETE (Sajith ↔ Pasindu) =====
+    /// <summary>
+    /// Finalizes the energy transfer for an approved reservation.
+    /// </summary>
+    public async Task<(bool success, string message, EnergyReservation? reservation)>
+        CompleteAsync(string id)
+    {
+        var existing = await _repository.GetByIdAsync(id);
+        if (existing is null)
+            return (false, "Reservation not found.", null);
+
+        if (existing.Status == "COMPLETED")
+            return (false, "Reservation is already completed.", null);
+
+        if (existing.Status == "CANCELLED")
+            return (false, "Cancelled reservations cannot be completed.", null);
+
+        if (existing.Status != "APPROVED")
+            return (false, "Only approved reservations can be completed.", null);
+
+        existing.Status = "COMPLETED";
+        existing.CompletedAt = DateTime.UtcNow;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _repository.UpdateAsync(existing);
+        return (true, "Energy transfer completed.", existing);
+    }
 }

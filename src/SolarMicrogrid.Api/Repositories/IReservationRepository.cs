@@ -19,4 +19,5 @@ public interface IReservationRepository
     Task<EnergyReservation?> CheckConflictAsync(string stationId, string slotId, DateTime reservationDate);
     Task<EnergyReservation?> CheckConflictExcludingAsync(string stationId, string slotId, DateTime reservationDate, string excludeId);
     Task UpdateAsync(EnergyReservation reservation);
+    Task<EnergyReservation?> GetByTokenAsync(string token);
 }

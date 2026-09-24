@@ -96,4 +96,9 @@ public class ReservationRepository : IReservationRepository
     {
         await _reservations.ReplaceOneAsync(r => r.Id == reservation.Id, reservation);
     }
+
+    public async Task<EnergyReservation?> GetByTokenAsync(string token)
+    {
+        return await _reservations.Find(r => r.TransactionToken == token).FirstOrDefaultAsync();
+    }
 }

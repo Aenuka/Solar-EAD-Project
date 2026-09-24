@@ -110,4 +110,43 @@ public class ReservationsController : ControllerBase
             return Problem(detail: message, statusCode: 400);
         return Ok(Map(reservation));
     }
+
+        // ===== APPROVE (Operator only) =====
+    /// <summary>
+    /// Approves a pending reservation.
+    /// </summary>
+    [HttpPatch("{id}/approve")]
+    public async Task<IActionResult> Approve(string id)
+    {
+        var (success, message, reservation) = await _service.ApproveAsync(id);
+        if (!success || reservation is null)
+            return Problem(detail: message, statusCode: 400);
+        return Ok(Map(reservation));
+    }
+
+    // ===== VERIFY TOKEN (Operator only) =====
+    /// <summary>
+    /// Verifies a scanned transaction token.
+    /// </summary>
+    [HttpGet("verify")]
+    public async Task<IActionResult> VerifyToken([FromQuery] string token)
+    {
+        var (success, message, reservation) = await _service.VerifyTokenAsync(token);
+        if (!success || reservation is null)
+            return Problem(detail: message, statusCode: 400);
+        return Ok(Map(reservation));
+    }
+
+    // ===== COMPLETE (Operator only) =====
+    /// <summary>
+    /// Finalizes the energy transfer for an approved reservation.
+    /// </summary>
+    [HttpPatch("{id}/complete")]
+    public async Task<IActionResult> Complete(string id)
+    {
+        var (success, message, reservation) = await _service.CompleteAsync(id);
+        if (!success || reservation is null)
+            return Problem(detail: message, statusCode: 400);
+        return Ok(Map(reservation));
+    }
 }
