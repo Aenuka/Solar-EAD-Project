@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: ReservationService.cs
  * Author: Sajith
  * Description: Business logic for reservations (7-day rule, 12-hour rule, double booking).
@@ -17,6 +17,13 @@ public class ReservationService
     public ReservationService(IReservationRepository repository)
     {
         _repository = repository;
+    }
+
+    private async Task SaveAsync(EnergyReservation reservation, long expectedVersion)
+    {
+        reservation.Version = expectedVersion + 1;
+        if (!await _repository.ReplaceAsync(reservation, expectedVersion))
+            throw ApiException.Conflict("Reservation changed. Reload before trying again.");
     }
 
     public async Task<(bool success, string message, EnergyReservation? reservation)> CreateAsync(ReservationInput dto)
@@ -55,6 +62,8 @@ public class ReservationService
         if (existing is null)
             return (false, "Reservation not found.", null);
 
+        ResponseMapping.CheckVersion(existing.Version, dto.Version);
+
         if (existing.Status != "PENDING" && existing.Status != "APPROVED")
             return (false, "Only pending or approved reservations can be updated.", null);
 
@@ -79,7 +88,7 @@ public class ReservationService
         existing.TradingType = dto.TradingType;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        await _repository.UpdateAsync(existing);
+        await SaveAsync(existing, dto.Version);
         return (true, "Reservation updated successfully.", existing);
     }
 
@@ -88,6 +97,8 @@ public class ReservationService
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
+
+        ResponseMapping.CheckVersion(existing.Version, dto.Version);
 
         if (existing.Status == "CANCELLED")
             return (false, "Reservation is already cancelled.", null);
@@ -104,7 +115,7 @@ public class ReservationService
         existing.UpdatedAt = DateTime.UtcNow;
 
         // TODO: Chamithu's API — release the slot
-        await _repository.UpdateAsync(existing);
+        await SaveAsync(existing, dto.Version);
         return (true, "Reservation cancelled successfully.", existing);
     }
 
@@ -136,9 +147,56 @@ public class ReservationService
         {
             existing.TransactionToken = Guid.NewGuid().ToString("N").ToUpper();
             existing.UpdatedAt = DateTime.UtcNow;
-            await _repository.UpdateAsync(existing);
+            await SaveAsync(existing, existing.Version);
         }
 
         return (true, "Transaction token retrieved.", existing);
+    }
+
+    public async Task<(bool success, string message, EnergyReservation? reservation)> ApproveAsync(string id, long version)
+    {
+        var existing = await _repository.GetByIdAsync(id);
+        if (existing is null) return (false, "Reservation not found.", null);
+        
+        ResponseMapping.CheckVersion(existing.Version, version);
+        
+        if (existing.Status != "PENDING") return (false, "Only pending reservations can be approved.", null);
+        
+        existing.Status = "APPROVED";
+        existing.UpdatedAt = DateTime.UtcNow;
+        
+        await SaveAsync(existing, version);
+        return (true, "Reservation approved successfully.", existing);
+    }
+
+    public async Task<(bool success, string message, EnergyReservation? reservation)> VerifyAsync(string token)
+    {
+        var list = await _repository.SearchAsync(null, null, null, null, null);
+        var existing = list.FirstOrDefault(r => r.TransactionToken == token);
+        
+        if (existing is null) return (false, "Invalid transaction token.", null);
+        if (existing.Status == "CANCELLED") return (false, "Reservation is cancelled.", null);
+        if (existing.Status == "COMPLETED") return (false, "Reservation is already completed.", null);
+        if (existing.Status != "APPROVED") return (false, "Reservation is not approved.", null);
+        
+        return (true, "Token verified successfully.", existing);
+    }
+
+    public async Task<(bool success, string message, EnergyReservation? reservation)> CompleteAsync(string id, CompleteReservationInput dto)
+    {
+        var existing = await _repository.GetByIdAsync(id);
+        if (existing is null) return (false, "Reservation not found.", null);
+        
+        if (existing.TransactionToken != dto.TransactionToken) return (false, "Invalid transaction token.", null);
+        if (existing.Status == "CANCELLED") return (false, "Cannot complete a cancelled reservation.", null);
+        if (existing.Status == "COMPLETED") return (false, "Reservation is already completed.", null);
+        if (existing.Status != "APPROVED") return (false, "Only approved reservations can be completed.", null);
+        
+        existing.Status = "COMPLETED";
+        existing.CompletedAt = DateTime.UtcNow;
+        existing.UpdatedAt = DateTime.UtcNow;
+        
+        await SaveAsync(existing, existing.Version);
+        return (true, "Reservation completed successfully.", existing);
     }
 }
