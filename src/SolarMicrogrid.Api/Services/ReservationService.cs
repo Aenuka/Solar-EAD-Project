@@ -134,13 +134,14 @@ public class ReservationService
         // ===== Chamithu Integration: Release station slot =====
         try
         {
-            var stationVersion = existing.StationVersion ?? 1;
+            // Fetch CURRENT station version (it changes on every mutation)
+            var currentVersion = await GetStationVersionAsync(existing.StationId);
 
             await _stationService.EndAllocationAsync(
                 existing.StationId,
                 existing.SlotId,
                 existing.ReservationId,
-                new StationVersion { Version = stationVersion },
+                new StationVersion { Version = currentVersion },
                 complete: false,
                 CancellationToken.None);
         }
@@ -269,13 +270,14 @@ public class ReservationService
         // ===== Chamithu Integration: Complete station allocation =====
         try
         {
-            var stationVersion = existing.StationVersion ?? 1;
+            // Fetch CURRENT station version (it changes on every mutation)
+            var currentVersion = await GetStationVersionAsync(existing.StationId);
 
             await _stationService.EndAllocationAsync(
                 existing.StationId,
                 existing.SlotId,
                 existing.ReservationId,
-                new StationVersion { Version = stationVersion },
+                new StationVersion { Version = currentVersion },
                 complete: true,
                 CancellationToken.None);
         }
@@ -292,16 +294,17 @@ public class ReservationService
         return (true, "Energy transfer completed.", existing);
     }
 
-    // ===== Helper: Get station version for CAS =====
+    // ===== Helper: Get CURRENT station version for CAS =====
     /// <summary>
-    /// Gets the current station version for CAS allocation.
-    /// NOTE: Update this once Chamithu exposes a public getter.
+    /// Fetches the current station version from Chamithu's StationService.
+    /// Required because the version increments on every station mutation.
     /// </summary>
     private async Task<long> GetStationVersionAsync(string stationId)
     {
-        // Chamithu ගේ StationService එකේ public getter එකක් නැත්නම්, 1 return කරන්න.
-        // TODO: Replace with real version fetch after asking Chamithu.
-        await Task.CompletedTask;
-        return 1;
+        var station = await _stationService.GetAsync(stationId, isStaff: true, CancellationToken.None);
+        if (station is null)
+            throw new InvalidOperationException($"Station {stationId} not found.");
+
+        return station.Version;
     }
 }
