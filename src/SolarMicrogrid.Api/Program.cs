@@ -1,14 +1,8 @@
-using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using SolarMicrogrid.Api.Configuration;
 using SolarMicrogrid.Api.Data;
@@ -16,18 +10,15 @@ using SolarMicrogrid.Api.Endpoints;
 using SolarMicrogrid.Api.Repositories;
 using SolarMicrogrid.Api.Security;
 using SolarMicrogrid.Api.Services;
-using SolarMicrogrid.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true).AddEnvironmentVariables();
 
-// Reference: Julio Casal YouTube tutorials
-// https://www.youtube.com/@juliocasal
 builder.Services.AddValidation();
 builder.AddMicrogridDatabase();
-builder.AddApiAuthentication();
+builder.AddApiAuthentication();   // ← Aenuka ගේ. Bearer scheme එක register කරන්නේ මේක.
 
-// Preserve the JSON rules used by the Android app and the staff portal.
+// JSON rules
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
@@ -40,7 +31,7 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddApiDocumentation();
 
-// ===== Controllers (Sajith's ReservationsController) =====
+// Controllers (Sajith's)
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
@@ -48,6 +39,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
 });
 
+// Services
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<AuthService>();
@@ -59,54 +51,8 @@ builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<ReservationService>();
 builder.Services.AddScoped<MongoInitializer>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-    .Configure<IOptions<JwtOptions>>((options, settings) =>
-    {
-        var jwt = settings.Value;
-        options.MapInboundClaims = false;
-        options.TokenValidationParameters = new()
-        {
-            ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
-            ValidateIssuer = true, ValidIssuer = jwt.Issuer, ValidateAudience = true, ValidAudience = jwt.Audience,
-            ValidateLifetime = true, RequireExpirationTime = true, ClockSkew = TimeSpan.FromSeconds(15),
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256], NameClaimType = "name", RoleClaimType = "role"
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnTokenValidated = async context =>
-            {
-                var principal = context.Principal!;
-                var id = principal.FindFirst("sub")?.Value;
-                var role = principal.FindFirst("role")?.Value;
-                var version = principal.FindFirst("sv")?.Value;
-                if (id is null || role is not (Roles.Backoffice or Roles.GridOperator or Roles.Prosumer) || !long.TryParse(version, out var securityVersion))
-                { context.Fail("Invalid session."); return; }
-                var account = await context.HttpContext.RequestServices.GetRequiredService<AuthService>()
-                    .FindAccountAsync(id, role, context.HttpContext.RequestAborted);
-                if (account is null || account.Status != AccountStatus.Active || account.Role != role || account.SecurityVersion != securityVersion)
-                    context.Fail("Session expired or revoked.");
-            }
-        };
-    });
+// Authorization
 builder.Services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = 429;
-    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPermitLimit", 30),
-            Window = TimeSpan.FromMinutes(1), QueueLimit = 0
-        }));
-    options.OnRejected = async (context, ct) =>
-    {
-        context.HttpContext.Response.Headers.RetryAfter = "60";
-        await Results.Problem(statusCode: 429, title: "Too many attempts", detail: "Please wait a minute before trying again.")
-            .ExecuteAsync(context.HttpContext);
-    };
-});
 
 var app = builder.Build();
 
@@ -131,9 +77,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ===== Map endpoints =====
 app.MapControllers();   // ← Sajith's ReservationsController
-
 app.MapAuthEndpoints();
 app.MapStaffEndpoints();
 app.MapProsumersEndpoints();
