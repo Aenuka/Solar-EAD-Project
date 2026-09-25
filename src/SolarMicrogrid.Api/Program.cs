@@ -1,11 +1,22 @@
+using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using SolarMicrogrid.Api.Configuration;
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Endpoints;
+using SolarMicrogrid.Api.Repositories;
 using SolarMicrogrid.Api.Security;
 using SolarMicrogrid.Api.Services;
+using SolarMicrogrid.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true).AddEnvironmentVariables();
@@ -28,6 +39,14 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
     context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddApiDocumentation();
+
+// ===== Controllers (Sajith's ReservationsController) =====
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+    options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+    options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
 
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
@@ -111,6 +130,9 @@ app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ===== Map endpoints =====
+app.MapControllers();   // ← Sajith's ReservationsController
 
 app.MapAuthEndpoints();
 app.MapStaffEndpoints();
