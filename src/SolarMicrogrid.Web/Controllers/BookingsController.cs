@@ -58,17 +58,28 @@ public class BookingsController : Controller
     }
 
     /// <summary>
-    /// Dashboard with counts.
+    /// Dashboard with live counts and recent activity.
     /// </summary>
     public async Task<IActionResult> Dashboard(CancellationToken ct)
     {
         try
         {
-            var pending = await _api.GetPendingReservationsAsync(ct);
-            var approvedFuture = await _api.GetApprovedFutureCountAsync(ct);
+            // Fetch all bookings once, then compute stats locally
+            var allBookings = await _api.SearchReservationsAsync(null, null, null, ct) 
+                              ?? new List<ReservationResponse>();
 
-            ViewBag.PendingCount = pending.Count;
-            ViewBag.ApprovedFutureCount = approvedFuture.Count;
+            var now = DateTime.UtcNow;
+
+            ViewBag.PendingCount = allBookings.Count(b => b.Status == "PENDING");
+            ViewBag.ApprovedFutureCount = allBookings.Count(b => 
+                b.Status == "APPROVED" && b.ReservationDate > now);
+            ViewBag.TotalCount = allBookings.Count;
+            ViewBag.CompletedCount = allBookings.Count(b => b.Status == "COMPLETED");
+            ViewBag.RecentBookings = allBookings
+                .OrderByDescending(b => b.CreatedAt)
+                .Take(5)
+                .ToList();
+
             return View();
         }
         catch (Exception ex)
@@ -76,6 +87,9 @@ public class BookingsController : Controller
             ViewBag.Error = ex.Message;
             ViewBag.PendingCount = 0;
             ViewBag.ApprovedFutureCount = 0;
+            ViewBag.TotalCount = 0;
+            ViewBag.CompletedCount = 0;
+            ViewBag.RecentBookings = new List<ReservationResponse>();
             return View();
         }
     }
