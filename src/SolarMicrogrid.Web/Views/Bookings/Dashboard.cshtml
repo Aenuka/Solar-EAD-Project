@@ -1,26 +1,35 @@
 @{
     ViewData["Title"] = "Booking Dashboard";
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int approvedFutureCount = ViewBag.ApprovedFutureCount ?? 0;
 }
 
-<div class="container mt-4">
-    <h2>Booking Dashboard</h2>
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">LIVE OVERVIEW</p>
+        <h1>Booking Dashboard</h1>
+        <p class="muted">Real-time snapshot of reservation activity across the microgrid.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a asp-action="Index" class="button secondary">All Bookings</a>
+        <a asp-action="Pending" class="button">Review Pending</a>
+    </div>
+</div>
 
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Pending Reservations</h5>
-                    <h1 class="display-3">@ViewBag.PendingCount</h1>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Approved Future Reservations</h5>
-                    <h1 class="display-3">@ViewBag.ApprovedFutureCount</h1>
-                </div>
-            </div>
-        </div>
+@if (ViewBag.Error != null)
+{
+    <div class="notice error">@ViewBag.Error</div>
+}
+
+<div class="stats-grid" style="grid-template-columns:repeat(2,1fr);">
+    <div class="stat-card">
+        <span>Pending reservations</span>
+        <strong>@pendingCount</strong>
+        <small>Awaiting operator approval</small>
+    </div>
+    <div class="stat-card">
+        <span>Approved future reservations</span>
+        <strong>@approvedFutureCount</strong>
+        <small>Ready for QR verification</small>
     </div>
 </div>
