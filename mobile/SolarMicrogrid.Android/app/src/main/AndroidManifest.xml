@@ -64,5 +64,9 @@
             android:name=".ui.TransactionVerificationActivity"
             android:exported="false"
             android:label="@string/transaction_verified_title" />
+        <activity
+            android:name=".ui.OperatorProfileActivity"
+            android:exported="false"
+            android:label="Operator Profile" />
     </application>
 </manifest>

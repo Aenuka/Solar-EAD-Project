@@ -63,11 +63,7 @@ public class OperatorDashboardActivity extends Activity {
     private void loadDashboardData() {
         content.removeAllViews();
         
-        TextView heading = text(getString(R.string.operator_dashboard_title), 32, INK, true);
-        LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
-        
-        text(operators.getFullName() != null ? operators.getFullName() : "Operator", 24, INK, true);
+        renderHeader();
         
         button(R.string.scan_transaction_qr, true, () -> {
             startActivity(new Intent(this, QrScannerActivity.class));
@@ -97,11 +93,7 @@ public class OperatorDashboardActivity extends Activity {
     private void renderDashboard(lk.solar.microgrid.data.OperatorDashboard dashboard) {
         content.removeAllViews();
         
-        TextView heading = text(getString(R.string.operator_dashboard_title), 32, INK, true);
-        LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
-        
-        text(operators.getFullName() != null ? operators.getFullName() : "Operator", 24, INK, true);
+        renderHeader();
         
         // Stats
         LinearLayout statsLayout = new LinearLayout(this);
@@ -110,9 +102,9 @@ public class OperatorDashboardActivity extends Activity {
         statsParams.topMargin = dp(20);
         content.addView(statsLayout, statsParams);
         
-        statsLayout.addView(statCard("Pending", dashboard.pendingCount, Color.rgb(255, 152, 0)));
-        statsLayout.addView(statCard("Approved\nFuture", dashboard.approvedFutureCount, Color.rgb(33, 150, 243)));
-        statsLayout.addView(statCard("Completed", dashboard.completedCount, GREEN));
+        statsLayout.addView(statCard("Pending", String.valueOf(dashboard.pendingCount), "Awaiting approval", Color.rgb(255, 152, 0)));
+        statsLayout.addView(statCard("Approved Future", String.valueOf(dashboard.approvedFutureCount), "Upcoming transfers", Color.rgb(33, 150, 243)));
+        statsLayout.addView(statCard("Completed", String.valueOf(dashboard.completedCount), "Finished operations", GREEN));
 
         // Pending Reservations
         text("Pending Reservations", 20, INK, true).getLayoutParams().height = -2;
@@ -144,38 +136,38 @@ public class OperatorDashboardActivity extends Activity {
         
         Button refreshBtn = button(R.string.refresh, false, this::loadDashboardData);
         refreshBtn.setText("Refresh");
-
-        button(R.string.sign_out, false, () -> {
-            operators.logout();
-            startActivity(new Intent(this, OperatorLoginActivity.class));
-            finish();
-        });
     }
 
-    private LinearLayout statCard(String title, int count, int color) {
+    private LinearLayout statCard(String title, String count, String label, int color) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackgroundColor(Color.WHITE);
-        card.setPadding(dp(16), dp(16), dp(16), dp(16));
+        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setPadding(dp(12), dp(16), dp(12), dp(16));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1.0f);
         params.rightMargin = dp(8);
         card.setLayoutParams(params);
         
         TextView titleView = new TextView(this);
-        titleView.setText(title); titleView.setTextSize(12); titleView.setTextColor(MUTED);
+        titleView.setText(title); titleView.setTextSize(12); titleView.setTextColor(INK);
+        titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         card.addView(titleView);
         
         TextView countView = new TextView(this);
-        countView.setText(String.valueOf(count)); countView.setTextSize(24); countView.setTextColor(color);
+        countView.setText(count); countView.setTextSize(28); countView.setTextColor(color);
         countView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         card.addView(countView);
+
+        TextView labelView = new TextView(this);
+        labelView.setText(label); labelView.setTextSize(10); labelView.setTextColor(MUTED);
+        card.addView(labelView);
+        
         return card;
     }
 
     private void renderReservationCard(lk.solar.microgrid.data.Reservation r) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackgroundColor(Color.WHITE);
+        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
         card.setPadding(dp(16), dp(16), dp(16), dp(16));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(12);
@@ -186,15 +178,66 @@ public class OperatorDashboardActivity extends Activity {
         card.addView(idView);
 
         TextView detailsView = new TextView(this);
-        detailsView.setText(r.reservationDate + "\n" + r.energyAmountKwh + " kWh");
+        String dateStr = "COMPLETED".equals(r.status) ? 
+            "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now")) 
+            : r.reservationDate;
+            
+        detailsView.setText(dateStr + "\n" + r.energyAmountKwh + " kWh");
         detailsView.setTextSize(14); detailsView.setTextColor(MUTED);
-        card.addView(detailsView);
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
+        detailsParams.topMargin = dp(4); detailsParams.bottomMargin = dp(8);
+        card.addView(detailsView, detailsParams);
 
         TextView statusView = new TextView(this);
         statusView.setText(r.status);
-        statusView.setTextSize(14); statusView.setTextColor("COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? Color.rgb(255, 152, 0) : MUTED);
+        statusView.setTextSize(12); 
+        statusView.setTextColor("COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? Color.rgb(255, 152, 0) : Color.rgb(33, 150, 243));
         statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        card.addView(statusView);
+        statusView.setPadding(dp(8), dp(4), dp(8), dp(4));
+        statusView.setBackground(shape(Color.rgb(245, 247, 243), 0));
+        
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-2, -2);
+        card.addView(statusView, statusParams);
+    }
+
+    private void renderHeader() {
+        LinearLayout headerRow = new LinearLayout(this);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(-1, -2);
+        headerParams.topMargin = dp(30); headerParams.bottomMargin = dp(12);
+        content.addView(headerRow, headerParams);
+
+        LinearLayout titleCol = new LinearLayout(this);
+        titleCol.setOrientation(LinearLayout.VERTICAL);
+        titleCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
+        headerRow.addView(titleCol);
+
+        TextView heading = new TextView(this);
+        heading.setText(getString(R.string.operator_dashboard_title));
+        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleCol.addView(heading);
+
+        TextView name = new TextView(this);
+        name.setText(operators.getFullName() != null ? operators.getFullName() : "Operator");
+        name.setTextSize(24); name.setTextColor(INK); name.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleCol.addView(name);
+
+        android.widget.ImageView profileIcon = new android.widget.ImageView(this);
+        profileIcon.setImageResource(R.drawable.ic_account_avatar);
+        profileIcon.setContentDescription("Operator Profile");
+        profileIcon.setPadding(dp(8), dp(8), dp(8), dp(8));
+        profileIcon.setOnClickListener(v -> startActivity(new Intent(this, OperatorProfileActivity.class)));
+        
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(48), dp(48));
+        headerRow.addView(profileIcon, iconParams);
+    }
+
+    private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable(); 
+        shape.setColor(fill); shape.setCornerRadius(dp(8));
+        if (stroke != 0) shape.setStroke(dp(1), stroke);
+        return shape;
     }
 
     private TextView text(String value, int size, int color, boolean bold) {

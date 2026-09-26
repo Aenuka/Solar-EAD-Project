@@ -18,7 +18,7 @@ public final class OperatorRepository {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
 
-    private volatile String token, operatorId, fullName, role;
+    private volatile String token, operatorId, fullName, role, username;
     private volatile Instant expiresAt;
 
     public interface Callback<T> { void success(T result); void failure(int status, String message); }
@@ -32,6 +32,7 @@ public final class OperatorRepository {
     public boolean signedIn() { return token != null && expiresAt != null && expiresAt.isAfter(Instant.now()); }
 
     public String getFullName() { return fullName; }
+    public String getUsername() { return username; }
 
     public void login(String username, String password, Callback<Void> callback) {
         run(() -> {
@@ -52,6 +53,7 @@ public final class OperatorRepository {
             token = response.getString("accessToken");
             operatorId = response.getString("id");
             fullName = response.getString("fullName");
+            this.username = username.trim();
             role = responseRole;
             expiresAt = Instant.parse(response.getString("expiresAt"));
             return null;
@@ -59,7 +61,7 @@ public final class OperatorRepository {
     }
 
     public void logout() {
-        token = null; operatorId = null; fullName = null; role = null; expiresAt = null;
+        token = null; operatorId = null; fullName = null; role = null; expiresAt = null; username = null;
     }
 
     public void verifyTransaction(String transactionToken, Callback<Reservation> callback) {

@@ -157,7 +157,7 @@ public class OperatorLoginActivity extends Activity {
         progress.setVisibility(value ? View.VISIBLE : View.GONE);
         for (Button action : actions) action.setEnabled(!value && Boolean.TRUE.equals(action.getTag()));
         for (EditText field : fields) field.setEnabled(!value);
-        if (value) showMessage(getString(R.string.working), false);
+        if (value) showMessage("Signing in...", false);
     }
     
     private void showMessage(String value, boolean error) {
