@@ -72,6 +72,12 @@ public Task<List<ReservationResponse>> SearchReservationsAsync(string? status, s
 }
 
 /// <summary>
+/// Approves a pending reservation.
+/// </summary>
+public Task<ReservationResponse> ApproveReservationAsync(string id, CancellationToken ct)
+    => PatchAsync<ReservationResponse>($"reservations/{id}/approve", new { }, ct);
+
+/// <summary>
 /// Gets the count of approved future reservations (for dashboard).
 /// </summary>
 public Task<ApprovedFutureCountResponse> GetApprovedFutureCountAsync(CancellationToken ct)

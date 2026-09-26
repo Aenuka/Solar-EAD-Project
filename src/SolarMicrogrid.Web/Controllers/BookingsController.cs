@@ -58,6 +58,27 @@ public class BookingsController : Controller
     }
 
     /// <summary>
+    /// Approves a pending reservation.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Approve(string id, CancellationToken ct)
+    {
+        try
+        {
+            await _api.ApproveReservationAsync(id, ct);
+            return RedirectToAction(nameof(Pending));
+        }
+        catch (Exception ex)
+        {
+            // Instead of TempData or complex error handling, we can just log or pass error
+            // to a view. Since it's a redirect, we could use TempData for a simple error message.
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Pending));
+        }
+    }
+
+    /// <summary>
     /// Dashboard with live counts and recent activity.
     /// </summary>
     public async Task<IActionResult> Dashboard(CancellationToken ct)
