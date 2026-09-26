@@ -1,0 +1,115 @@
+package lk.solar.microgrid.ui;
+
+import android.Manifest;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.widget.Toast;
+
+import com.journeyapps.barcodescanner.DecoratedBarcodeView;
+import com.journeyapps.barcodescanner.BarcodeCallback;
+import com.journeyapps.barcodescanner.BarcodeResult;
+import com.google.zxing.ResultPoint;
+
+import lk.solar.microgrid.SolarApplication;
+import lk.solar.microgrid.data.OperatorRepository;
+import lk.solar.microgrid.data.Reservation;
+
+import java.util.List;
+
+public class QrScannerActivity extends Activity {
+    private DecoratedBarcodeView barcodeView;
+    private boolean isVerifying = false;
+    private OperatorRepository operators;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        operators = ((SolarApplication) getApplication()).operators();
+        
+        barcodeView = new DecoratedBarcodeView(this);
+        setContentView(barcodeView);
+        
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, 1);
+        } else {
+            startScanning();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == 1 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            startScanning();
+        } else {
+            Toast.makeText(this, "Camera permission is required", Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void startScanning() {
+        barcodeView.decodeContinuous(new BarcodeCallback() {
+            @Override
+            public void barcodeResult(BarcodeResult result) {
+                if (isVerifying || result.getText() == null) return;
+                isVerifying = true;
+                barcodeView.pause();
+                
+                String token = result.getText();
+                verifyToken(token);
+            }
+            @Override
+            public void possibleResultPoints(List<ResultPoint> points) {}
+        });
+    }
+
+    private void verifyToken(String token) {
+        operators.verifyTransaction(token, new OperatorRepository.Callback<Reservation>() {
+            @Override
+            public void success(Reservation reservation) {
+                if (isDestroyed() || isFinishing()) return;
+                Intent intent = new Intent(QrScannerActivity.this, TransactionVerificationActivity.class);
+                intent.putExtra("reservationJson", reservation.source.toString());
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void failure(int status, String message) {
+                if (isDestroyed() || isFinishing()) return;
+                
+                String displayMessage = message;
+                if (status == 404 || status == 400 && message.contains("Invalid")) {
+                    displayMessage = "Invalid transaction QR.";
+                } else if (status == 0) {
+                    displayMessage = "Unable to contact the server.";
+                }
+
+                new AlertDialog.Builder(QrScannerActivity.this)
+                    .setTitle("Error")
+                    .setMessage(displayMessage)
+                    .setPositiveButton("Scan Again", (dialog, which) -> {
+                        isVerifying = false;
+                        barcodeView.resume();
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> finish())
+                    .setCancelable(false)
+                    .show();
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!isVerifying && barcodeView != null) barcodeView.resume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (barcodeView != null) barcodeView.pause();
+    }
+}
