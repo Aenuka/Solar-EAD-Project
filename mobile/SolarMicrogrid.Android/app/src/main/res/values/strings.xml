@@ -104,4 +104,6 @@
     <string name="qr_scanner_title">Scan QR Code</string>
     <string name="transaction_verified_title">Transaction Verified</string>
     <string name="back_to_scanner">Back to Scanner</string>
+    <string name="view_completed_operations">View Completed Operations</string>
+    <string name="completed_operations_title">Completed Operations</string>
 </resources>

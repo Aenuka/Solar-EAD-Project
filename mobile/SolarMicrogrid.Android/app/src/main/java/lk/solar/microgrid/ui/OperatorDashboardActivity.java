@@ -118,17 +118,9 @@ public class OperatorDashboardActivity extends Activity {
             }
         }
 
-        // Completed Reservations
-        text("Completed Operations", 20, INK, true).getLayoutParams().height = -2;
-        ((LinearLayout.LayoutParams) content.getChildAt(content.getChildCount() - 1).getLayoutParams()).topMargin = dp(30);
-        
-        if (dashboard.recentCompletedReservations.isEmpty()) {
-            text("No completed transactions yet.", 14, MUTED, false);
-        } else {
-            for (lk.solar.microgrid.data.Reservation r : dashboard.recentCompletedReservations) {
-                renderReservationCard(r);
-            }
-        }
+        button(R.string.view_completed_operations, false, () -> {
+            startActivity(new Intent(this, CompletedOperationsActivity.class));
+        });
 
         button(R.string.scan_transaction_qr, true, () -> {
             startActivity(new Intent(this, QrScannerActivity.class));

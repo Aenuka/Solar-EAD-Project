@@ -68,5 +68,9 @@
             android:name=".ui.OperatorProfileActivity"
             android:exported="false"
             android:label="Operator Profile" />
+        <activity
+            android:name=".ui.CompletedOperationsActivity"
+            android:exported="false"
+            android:label="@string/completed_operations_title" />
     </application>
 </manifest>

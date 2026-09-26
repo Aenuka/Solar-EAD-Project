@@ -109,6 +109,31 @@ public final class OperatorRepository {
         }, callback);
     }
 
+    public void searchCompletedOperations(Callback<java.util.List<Reservation>> callback) {
+        run(() -> {
+            if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
+            try {
+                org.json.JSONArray response = api.requestArray("GET", "Reservations/search?status=COMPLETED", null, token);
+                java.util.List<Reservation> list = new java.util.ArrayList<>();
+                for (int i = 0; i < response.length(); i++) {
+                    list.add(new Reservation(response.getJSONObject(i)));
+                }
+                // Sort by completedAt descending
+                list.sort((a, b) -> {
+                    String aDate = a.source.optString("completedAt", a.source.optString("updatedAt", ""));
+                    String bDate = b.source.optString("completedAt", b.source.optString("updatedAt", ""));
+                    return bDate.compareTo(aDate);
+                });
+                return list;
+            } catch (ApiException e) {
+                if (e.status == 403) {
+                    throw new ApiException(403, "Grid Operator authorization required.");
+                }
+                throw e;
+            }
+        }, callback);
+    }
+
     private <T> void run(Work<T> work, Callback<T> callback) {
         executor.execute(() -> {
             try { T result = work.run(); main.post(() -> callback.success(result)); }
