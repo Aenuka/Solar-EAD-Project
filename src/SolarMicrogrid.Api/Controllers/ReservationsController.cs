@@ -112,6 +112,28 @@ public class ReservationsController : ControllerBase
         return Ok(new { count });
     }
 
+    // ===== DASHBOARD (Operator only) =====
+    /// <summary>
+    /// Retrieves live dashboard data for Grid Operators.
+    /// </summary>
+    [Authorize(Roles = "GridOperator")]
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboard()
+    {
+        var (pending, approvedFutureCount, completed) = await _service.GetDashboardDataAsync();
+        
+        var response = new OperatorDashboardResponse
+        {
+            PendingCount = pending.Count,
+            ApprovedFutureCount = approvedFutureCount,
+            CompletedCount = completed.Count,
+            PendingReservations = pending.Select(Map).ToList(),
+            RecentCompletedReservations = completed.OrderByDescending(c => c.CompletedAt).Take(5).Select(Map).ToList()
+        };
+        
+        return Ok(response);
+    }
+
     // ===== TRANSACTION (QR) =====
     [Authorize(Roles = "Prosumer")]
     [HttpGet("{id}/transaction")]

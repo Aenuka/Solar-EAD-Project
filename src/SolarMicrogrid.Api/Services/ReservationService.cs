@@ -162,6 +162,16 @@ public class ReservationService
     public async Task<List<EnergyReservation>> GetHistoryAsync(string nic)
         => await _repository.GetByProsumerNicAsync(nic);
 
+    // ===== DASHBOARD (Operator) =====
+    public async Task<(List<EnergyReservation> pending, int approvedFutureCount, List<EnergyReservation> completed)> GetDashboardDataAsync()
+    {
+        var pending = await _repository.GetPendingAsync();
+        var approvedFuture = await _repository.GetApprovedFutureAsync();
+        var completed = await _repository.SearchAsync("COMPLETED", null, null, null, null);
+        
+        return (pending, approvedFuture.Count, completed);
+    }
+
     // ===== PENDING =====
     public async Task<List<EnergyReservation>> GetPendingAsync()
         => await _repository.GetPendingAsync();
@@ -189,6 +199,22 @@ public class ReservationService
 
         if (existing.Status != "APPROVED")
             return (false, "Only approved reservations can be used for QR verification.", null);
+
+        try
+        {
+            var station = await _stationService.GetAsync(existing.StationId, isStaff: true, CancellationToken.None);
+            if (station == null) return (false, "Station not found.", null);
+
+            var slot = station.Slots.FirstOrDefault(s => s.Id == existing.SlotId);
+            if (slot == null) return (false, "Slot not found.", null);
+
+            if (DateTime.UtcNow > slot.EndsAt)
+                return (false, "Reservation time has expired.", null);
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Failed to verify station/slot: {ex.Message}", null);
+        }
 
         if (string.IsNullOrEmpty(existing.TransactionToken))
         {
@@ -271,6 +297,12 @@ public class ReservationService
             {
                 return (false, "Reservation time has expired.", null);
             }
+
+            var allocation = slot.Allocations.FirstOrDefault(a => a.BookingId == existing.ReservationId);
+            if (allocation == null || allocation.Status != "Reserved")
+            {
+                return (false, "Reservation allocation could not be verified.", null);
+            }
         }
         catch (Exception ex)
         {
@@ -310,10 +342,13 @@ public class ReservationService
             if (slot == null) return (false, "Reservation slot could not be verified.", null);
 
             var allocation = slot.Allocations.FirstOrDefault(a => a.BookingId == existing.ReservationId);
-            if (allocation == null) return (false, "Reservation allocation could not be verified.", null);
+            if (allocation == null || allocation.Status != "Reserved") return (false, "Reservation allocation could not be verified.", null);
 
             if (DateTime.UtcNow < slot.StartsAt)
                 return (false, "Reservation window has not started.", null);
+
+            if (DateTime.UtcNow > slot.EndsAt)
+                return (false, "Reservation time has expired.", null);
         }
         catch (Exception)
         {
