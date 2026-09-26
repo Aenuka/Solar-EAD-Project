@@ -149,7 +149,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Verifies a scanned transaction token.
     /// </summary>
-    [Authorize(Roles = "Backoffice,GridOperator")]
+    [Authorize(Roles = "GridOperator")]
     [HttpGet("verify")]
     public async Task<IActionResult> VerifyToken([FromQuery] string token)
     {

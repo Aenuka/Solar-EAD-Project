@@ -237,10 +237,13 @@ public class ReservationService
             return (false, "Invalid transaction token.", null);
 
         if (existing.Status == "CANCELLED")
-            return (false, "Reservation is cancelled.", null);
+            return (false, "This reservation has been cancelled.", null);
 
         if (existing.Status == "COMPLETED")
-            return (false, "Reservation is already completed.", null);
+            return (false, "This transaction has already been completed.", null);
+
+        if (existing.Status == "PENDING")
+            return (false, "This reservation is not approved.", null);
 
         if (existing.Status != "APPROVED")
             return (false, $"Reservation is {existing.Status}, cannot be verified.", null);
@@ -248,19 +251,30 @@ public class ReservationService
         try
         {
             var station = await _stationService.GetAsync(existing.StationId, isStaff: true, CancellationToken.None);
-            if (station != null)
+            if (station == null)
             {
-                var slot = station.Slots.FirstOrDefault(s => s.Id == existing.SlotId);
-                if (slot != null && DateTime.UtcNow > slot.EndsAt)
-                {
-                    return (false, "Reservation time has passed.", null);
-                }
+                return (false, "Station not found.", null);
+            }
+
+            var slot = station.Slots.FirstOrDefault(s => s.Id == existing.SlotId);
+            if (slot == null)
+            {
+                return (false, "Slot not found.", null);
+            }
+
+            if (DateTime.UtcNow < slot.StartsAt)
+            {
+                return (false, "Reservation window has not started.", null);
+            }
+
+            if (DateTime.UtcNow > slot.EndsAt)
+            {
+                return (false, "Reservation time has expired.", null);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            if (existing.ReservationDate.AddHours(1) < DateTime.UtcNow)
-                return (false, "Reservation time has passed.", null);
+            return (false, $"Failed to verify station/slot: {ex.Message}", null);
         }
 
         return (true, "Token verified.", existing);
