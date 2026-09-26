@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: ReservationService.cs
  * Author: Sajith
  * Description: Business logic for reservations (7-day rule, 12-hour rule, double booking).
@@ -178,11 +178,14 @@ public class ReservationService
     }
 
     // ===== TRANSACTION TOKEN (QR) =====
-    public async Task<(bool success, string message, EnergyReservation? reservation)> GetTransactionAsync(string id)
+    public async Task<(bool success, string message, EnergyReservation? reservation)> GetTransactionAsync(string id, string nic)
     {
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
+
+        if (existing.ProsumerNic != nic)
+            return (false, "Unauthorized.", null);
 
         if (existing.Status != "APPROVED")
             return (false, "Only approved reservations can be used for QR verification.", null);
@@ -242,8 +245,23 @@ public class ReservationService
         if (existing.Status != "APPROVED")
             return (false, $"Reservation is {existing.Status}, cannot be verified.", null);
 
-        if (existing.ReservationDate < DateTime.UtcNow)
-            return (false, "Reservation time has passed.", null);
+        try
+        {
+            var station = await _stationService.GetAsync(existing.StationId, isStaff: true, CancellationToken.None);
+            if (station != null)
+            {
+                var slot = station.Slots.FirstOrDefault(s => s.Id == existing.SlotId);
+                if (slot != null && DateTime.UtcNow > slot.EndsAt)
+                {
+                    return (false, "Reservation time has passed.", null);
+                }
+            }
+        }
+        catch
+        {
+            if (existing.ReservationDate.AddHours(1) < DateTime.UtcNow)
+                return (false, "Reservation time has passed.", null);
+        }
 
         return (true, "Token verified.", existing);
     }

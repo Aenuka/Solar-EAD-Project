@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: ReservationsController.cs
  * Author: Sajith
  * Description: REST API endpoints for reservation management.
@@ -113,12 +113,21 @@ public class ReservationsController : ControllerBase
     }
 
     // ===== TRANSACTION (QR) =====
+    [Authorize(Roles = "Prosumer")]
     [HttpGet("{id}/transaction")]
     public async Task<IActionResult> GetTransaction(string id)
     {
-        var (success, message, reservation) = await _service.GetTransactionAsync(id);
+        var nic = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+        if (string.IsNullOrEmpty(nic))
+            return Unauthorized();
+
+        var (success, message, reservation) = await _service.GetTransactionAsync(id, nic);
         if (!success || reservation is null)
+        {
+            if (message == "Unauthorized.")
+                return Forbid();
             return Problem(detail: message, statusCode: 400);
+        }
         return Ok(Map(reservation));
     }
 
