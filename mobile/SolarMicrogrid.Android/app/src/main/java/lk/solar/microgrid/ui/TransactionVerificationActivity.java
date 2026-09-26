@@ -73,13 +73,97 @@ public class TransactionVerificationActivity extends Activity {
         Button button = new Button(this);
         button.setText(R.string.back_to_scanner);
         button.setTextSize(13); button.setAllCaps(false);
-        button.setTextColor(Color.WHITE);
-        button.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        button.setTextColor(GREEN);
+        button.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
         button.setMinHeight(dp(50));
+        LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
+        layout2.topMargin = dp(15);
+        
+        Button finalizeButton = new Button(this);
+        finalizeButton.setText("Finalize Energy Transfer");
+        finalizeButton.setTextSize(13); finalizeButton.setAllCaps(false);
+        finalizeButton.setTextColor(Color.WHITE);
+        finalizeButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        finalizeButton.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(30);
-        content.addView(button, layout);
+        
+        content.addView(finalizeButton, layout);
+        content.addView(button, layout2);
         button.setOnClickListener(view -> finish());
+
+        finalizeButton.setOnClickListener(view -> {
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("Finalize Energy Transfer")
+                .setMessage("This action will mark the reservation as completed.")
+                .setPositiveButton("Finalize", (dialog, which) -> {
+                    finalizeButton.setEnabled(false);
+                    finalizeButton.setText("Completing...");
+                    
+                    ((lk.solar.microgrid.SolarApplication) getApplication()).operators().completeTransaction(reservation.id, new lk.solar.microgrid.data.OperatorRepository.Callback<Reservation>() {
+                        @Override
+                        public void success(Reservation result) {
+                            if (isDestroyed() || isFinishing()) return;
+                            showCompletedState(result);
+                        }
+
+                        @Override
+                        public void failure(int status, String message) {
+                            if (isDestroyed() || isFinishing()) return;
+                            finalizeButton.setEnabled(true);
+                            finalizeButton.setText("Finalize Energy Transfer");
+                            new android.app.AlertDialog.Builder(TransactionVerificationActivity.this)
+                                .setTitle("Error")
+                                .setMessage(message != null ? message : "Failed to finalize.")
+                                .setPositiveButton("OK", null)
+                                .show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+        });
+    }
+
+    private void showCompletedState(Reservation result) {
+        content.removeAllViews();
+        
+        TextView heading = text("Energy Transfer Completed", 32, INK, true);
+        LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
+        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
+
+        detail("Booking:", result.reservationId);
+        detail("Station:", result.stationId);
+        detail("Energy:", result.energyAmountKwh + " kWh");
+        detail("Status:", result.status);
+        
+        String completedDate = result.source.optString("completedAt", result.source.optString("updatedAt", "Now"));
+        detail("Completed:", completedDate);
+
+        Button backButton = new Button(this);
+        backButton.setText("Back to Operator Dashboard");
+        backButton.setTextSize(13); backButton.setAllCaps(false);
+        backButton.setTextColor(Color.WHITE);
+        backButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        backButton.setMinHeight(dp(50));
+        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
+        layout.topMargin = dp(30);
+        content.addView(backButton, layout);
+        backButton.setOnClickListener(view -> finish());
+
+        Button scanAnother = new Button(this);
+        scanAnother.setText("Scan Another QR");
+        scanAnother.setTextSize(13); scanAnother.setAllCaps(false);
+        scanAnother.setTextColor(GREEN);
+        scanAnother.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        scanAnother.setMinHeight(dp(50));
+        LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
+        layout2.topMargin = dp(15);
+        content.addView(scanAnother, layout2);
+        scanAnother.setOnClickListener(view -> {
+            startActivity(new android.content.Intent(this, QrScannerActivity.class));
+            finish();
+        });
     }
 
     private void detail(String label, String value) {

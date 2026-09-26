@@ -77,6 +77,21 @@ public final class OperatorRepository {
         }, callback);
     }
 
+    public void completeTransaction(String id, Callback<Reservation> callback) {
+        run(() -> {
+            if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
+            try {
+                JSONObject response = api.request("PATCH", "Reservations/" + java.net.URLEncoder.encode(id, "UTF-8") + "/complete", null, token);
+                return new Reservation(response);
+            } catch (ApiException e) {
+                if (e.status == 403) {
+                    throw new ApiException(403, "Grid Operator authorization required.");
+                }
+                throw e;
+            }
+        }, callback);
+    }
+
     private <T> void run(Work<T> work, Callback<T> callback) {
         executor.execute(() -> {
             try { T result = work.run(); main.post(() -> callback.success(result)); }
