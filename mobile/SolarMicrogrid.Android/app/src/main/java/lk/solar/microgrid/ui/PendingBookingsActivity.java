@@ -40,6 +40,10 @@ public final class PendingBookingsActivity extends Activity {
         super.onCreate(state);
         reservations = ((SolarApplication) getApplication()).reservations();
         buildUi();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
         load();
     }
 

@@ -9,7 +9,7 @@ import org.json.JSONObject;
  */
 public final class Reservation {
     public final String id, reservationId, prosumerNic, stationId, slotId;
-    public final String reservationDate, tradingType, status, createdAt, updatedAt;
+    public final String reservationDate, tradingType, status, createdAt, updatedAt, transactionToken;
     public final double energyAmountKwh;
     public final JSONObject source;
 
@@ -26,6 +26,7 @@ public final class Reservation {
         status = json.optString("status", "");
         createdAt = json.optString("createdAt", "");
         updatedAt = json.optString("updatedAt", "");
+        transactionToken = json.optString("transactionToken", "");
     }
 
     public String summary() {

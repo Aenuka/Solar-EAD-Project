@@ -44,6 +44,10 @@ public final class BookingHistoryActivity extends Activity {
         super.onCreate(state);
         reservations = ((SolarApplication) getApplication()).reservations();
         buildUi();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
         load();
     }
 
@@ -175,6 +179,28 @@ public final class BookingHistoryActivity extends Activity {
             clp.topMargin = dp(10);
             card.addView(cancel, clp);
             cancel.setOnClickListener(v -> confirmCancel(r));
+        }
+
+        // QR button for APPROVED bookings
+        if ("APPROVED".equals(r.status)) {
+            Button qrBtn = new Button(this);
+            qrBtn.setText("Show Transaction QR");
+            qrBtn.setAllCaps(false); qrBtn.setTextSize(12);
+            qrBtn.setTextColor(Color.WHITE);
+            qrBtn.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+            qrBtn.setMinHeight(dp(40));
+            LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(-1, -2);
+            qlp.topMargin = dp(10);
+            card.addView(qrBtn, qlp);
+            qrBtn.setOnClickListener(v -> {
+                android.content.Intent i = new android.content.Intent(this, TransactionQrActivity.class);
+                i.putExtra("id", r.id);
+                i.putExtra("reservationCode", r.reservationId.isEmpty() ? r.id : r.reservationId);
+                i.putExtra("stationId", r.stationId);
+                i.putExtra("reservationDate", r.reservationDate);
+                i.putExtra("energyAmountKwh", r.energyAmountKwh);
+                startActivity(i);
+            });
         }
         return card;
     }
