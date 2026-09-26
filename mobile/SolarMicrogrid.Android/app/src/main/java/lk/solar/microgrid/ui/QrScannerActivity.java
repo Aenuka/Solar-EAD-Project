@@ -12,6 +12,11 @@ import com.journeyapps.barcodescanner.DecoratedBarcodeView;
 import com.journeyapps.barcodescanner.BarcodeCallback;
 import com.journeyapps.barcodescanner.BarcodeResult;
 import com.google.zxing.ResultPoint;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Button;
+import android.graphics.Color;
+import android.graphics.Typeface;
 
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
@@ -30,7 +35,39 @@ public class QrScannerActivity extends Activity {
         operators = ((SolarApplication) getApplication()).operators();
         
         barcodeView = new DecoratedBarcodeView(this);
-        setContentView(barcodeView);
+        
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setBackgroundColor(Color.rgb(245, 247, 243));
+        
+        TextView title = new TextView(this);
+        title.setText("Scan Transaction QR");
+        title.setTextSize(24);
+        title.setTextColor(Color.rgb(23, 61, 50));
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setPadding(dp(26), dp(30), dp(26), dp(8));
+        content.addView(title);
+        
+        TextView instructions = new TextView(this);
+        instructions.setText("Align the Prosumer QR inside the frame");
+        instructions.setTextSize(14);
+        instructions.setTextColor(Color.rgb(107, 123, 117));
+        instructions.setPadding(dp(26), 0, dp(26), dp(20));
+        content.addView(instructions);
+
+        LinearLayout.LayoutParams scannerParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
+        content.addView(barcodeView, scannerParams);
+
+        Button cancel = new Button(this);
+        cancel.setText("Cancel");
+        cancel.setTextColor(Color.rgb(23, 108, 77));
+        cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        cancel.setOnClickListener(v -> finish());
+        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-1, dp(50));
+        btnParams.setMargins(dp(26), dp(20), dp(26), dp(20));
+        content.addView(cancel, btnParams);
+
+        setContentView(content);
         
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, 1);
@@ -56,6 +93,8 @@ public class QrScannerActivity extends Activity {
                 if (isVerifying || result.getText() == null) return;
                 isVerifying = true;
                 barcodeView.pause();
+                
+                Toast.makeText(QrScannerActivity.this, "Verifying transaction...", Toast.LENGTH_SHORT).show();
                 
                 String token = result.getText();
                 verifyToken(token);
@@ -112,4 +151,6 @@ public class QrScannerActivity extends Activity {
         super.onPause();
         if (barcodeView != null) barcodeView.pause();
     }
+
+    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
 }

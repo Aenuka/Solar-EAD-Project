@@ -58,17 +58,23 @@ public class TransactionVerificationActivity extends Activity {
         setContentView(scroll);
         scroll.requestApplyInsets();
 
-        TextView heading = text(getString(R.string.transaction_verified_title), 32, INK, true);
+        TextView heading = text(getString(R.string.transaction_verified_title), 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
         headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
 
-        detail("Booking:", reservation.reservationId);
-        detail("Prosumer:", reservation.prosumerNic);
-        detail("Station:", reservation.stationId);
-        detail("Booking Time:", reservation.reservationDate);
-        detail("Energy:", reservation.energyAmountKwh + " kWh");
-        detail("Trading Type:", reservation.tradingType);
-        detail("Status:", reservation.status);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+        content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+
+        detail(card, "Booking:", reservation.reservationId);
+        detail(card, "Prosumer:", reservation.prosumerNic);
+        detail(card, "Station:", reservation.stationId);
+        detail(card, "Booking Time:", reservation.reservationDate);
+        detail(card, "Energy:", reservation.energyAmountKwh + " kWh");
+        detail(card, "Trading Type:", reservation.tradingType);
+        detail(card, "Status:", reservation.status);
 
         Button button = new Button(this);
         button.setText(R.string.back_to_scanner);
@@ -128,17 +134,23 @@ public class TransactionVerificationActivity extends Activity {
     private void showCompletedState(Reservation result) {
         content.removeAllViews();
         
-        TextView heading = text("Energy Transfer Completed", 32, INK, true);
+        TextView heading = text("✓ Energy Transfer Completed", 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
         headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
 
-        detail("Booking:", result.reservationId);
-        detail("Station:", result.stationId);
-        detail("Energy:", result.energyAmountKwh + " kWh");
-        detail("Status:", result.status);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+        content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+
+        detail(card, "Booking:", result.reservationId);
+        detail(card, "Station:", result.stationId);
+        detail(card, "Energy:", result.energyAmountKwh + " kWh");
+        detail(card, "Status:", result.status);
         
         String completedDate = result.source.optString("completedAt", result.source.optString("updatedAt", "Now"));
-        detail("Completed:", completedDate);
+        detail(card, "Completed:", completedDate);
 
         Button backButton = new Button(this);
         backButton.setText("Back to Operator Dashboard");
@@ -166,12 +178,12 @@ public class TransactionVerificationActivity extends Activity {
         });
     }
 
-    private void detail(String label, String value) {
+    private void detail(LinearLayout parent, String label, String value) {
         TextView viewLabel = new TextView(this);
         viewLabel.setText(label);
         viewLabel.setTextSize(12);
         viewLabel.setTextColor(MUTED);
-        content.addView(viewLabel);
+        parent.addView(viewLabel);
         
         TextView viewValue = new TextView(this);
         viewValue.setText(value);
@@ -180,7 +192,7 @@ public class TransactionVerificationActivity extends Activity {
         viewValue.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(16);
-        content.addView(viewValue, layout);
+        parent.addView(viewValue, layout);
     }
 
     private TextView text(String value, int size, int color, boolean bold) {
@@ -191,6 +203,13 @@ public class TransactionVerificationActivity extends Activity {
         layout.bottomMargin = dp(8);
         content.addView(view, layout);
         return view;
+    }
+
+    private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable(); 
+        shape.setColor(fill); shape.setCornerRadius(dp(8));
+        if (stroke != 0) shape.setStroke(dp(1), stroke);
+        return shape;
     }
 
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
