@@ -42,5 +42,9 @@
             android:name=".ui.BookingSummaryActivity"
             android:exported="false"
             android:label="@string/booking_summary_title" />
+        <activity
+            android:name=".ui.TransactionQrActivity"
+            android:exported="false"
+            android:label="Transaction QR" />
     </application>
 </manifest>
