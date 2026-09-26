@@ -291,20 +291,37 @@ public class ReservationService
             return (false, "Reservation not found.", null);
 
         if (existing.Status == "COMPLETED")
-            return (false, "Reservation is already completed.", null);
+            return (false, "This transaction has already been completed.", null);
 
         if (existing.Status == "CANCELLED")
-            return (false, "Cancelled reservations cannot be completed.", null);
+            return (false, "This reservation has been cancelled.", null);
 
         if (existing.Status != "APPROVED")
-            return (false, "Only approved reservations can be completed.", null);
+            return (false, "This reservation is not approved.", null);
 
-        // ===== Chamithu Integration: Complete station allocation =====
+        long currentVersion;
         try
         {
-            // Fetch CURRENT station version (it changes on every mutation)
-            var currentVersion = await GetStationVersionAsync(existing.StationId);
+            var station = await _stationService.GetAsync(existing.StationId, isStaff: true, CancellationToken.None);
+            if (station == null) return (false, "Station information could not be verified.", null);
+            currentVersion = station.Version;
 
+            var slot = station.Slots.FirstOrDefault(s => s.Id == existing.SlotId);
+            if (slot == null) return (false, "Reservation slot could not be verified.", null);
+
+            var allocation = slot.Allocations.FirstOrDefault(a => a.BookingId == existing.ReservationId);
+            if (allocation == null) return (false, "Reservation allocation could not be verified.", null);
+
+            if (DateTime.UtcNow < slot.StartsAt)
+                return (false, "Reservation window has not started.", null);
+        }
+        catch (Exception)
+        {
+            return (false, "Station information could not be verified.", null);
+        }
+
+        try
+        {
             await _stationService.EndAllocationAsync(
                 existing.StationId,
                 existing.SlotId,
@@ -315,7 +332,7 @@ public class ReservationService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Warning: Failed to complete station allocation: {ex.Message}");
+            return (false, ex.Message, null);
         }
 
         existing.Status = "COMPLETED";

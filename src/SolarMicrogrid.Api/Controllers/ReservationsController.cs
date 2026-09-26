@@ -163,7 +163,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Finalizes the energy transfer for an approved reservation.
     /// </summary>
-    [Authorize(Roles = "Backoffice,GridOperator")]
+    [Authorize(Roles = "GridOperator")]
     [HttpPatch("{id}/complete")]
     public async Task<IActionResult> Complete(string id)
     {
