@@ -92,6 +92,21 @@ public final class OperatorRepository {
         }, callback);
     }
 
+    public void loadDashboard(Callback<OperatorDashboard> callback) {
+        run(() -> {
+            if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
+            try {
+                JSONObject response = api.request("GET", "Reservations/dashboard", null, token);
+                return new OperatorDashboard(response);
+            } catch (ApiException e) {
+                if (e.status == 403) {
+                    throw new ApiException(403, "Grid Operator authorization required.");
+                }
+                throw e;
+            }
+        }, callback);
+    }
+
     private <T> void run(Work<T> work, Callback<T> callback) {
         executor.execute(() -> {
             try { T result = work.run(); main.post(() -> callback.success(result)); }
