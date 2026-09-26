@@ -93,4 +93,15 @@
     <string name="status_label">Status</string>
     <string name="close_button">Close</string>
     <string name="cancel_reason_label">Reason (optional)</string>
+
+    <!-- ===== Operator strings ===== -->
+    <string name="operator_login_title">Grid Operator Login</string>
+    <string name="operator_username">Username</string>
+    <string name="back_to_prosumer_login">Back to Prosumer Login</string>
+    <string name="grid_operator_link">Grid Operator Login</string>
+    <string name="operator_dashboard_title">Grid Operator</string>
+    <string name="scan_transaction_qr">Scan Transaction QR</string>
+    <string name="qr_scanner_title">Scan QR Code</string>
+    <string name="transaction_verified_title">Transaction Verified</string>
+    <string name="back_to_scanner">Back to Scanner</string>
 </resources>
