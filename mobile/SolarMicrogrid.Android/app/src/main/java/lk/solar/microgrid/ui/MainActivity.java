@@ -58,6 +58,9 @@ public final class MainActivity extends Activity {
             accounts.login(value(nic), value(password), signInCallback());
         });
         button(R.string.register_link, false, this::showRegister);
+        button(R.string.grid_operator_link, false, () -> {
+            startActivity(new android.content.Intent(this, OperatorLoginActivity.class));
+        });
     }
 
     private void showRegister() {

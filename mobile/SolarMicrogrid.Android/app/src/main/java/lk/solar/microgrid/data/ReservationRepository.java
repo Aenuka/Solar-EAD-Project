@@ -93,6 +93,14 @@ public final class ReservationRepository {
         }, callback);
     }
 
+    // ===== TRANSACTION =====
+    public void transaction(String id, Callback<Reservation> callback) {
+        run(() -> {
+            JSONObject response = api.request("GET", "reservations/" + id + "/transaction", null, requireToken());
+            return new Reservation(response);
+        }, callback);
+    }
+
     // ===== Helpers =====
     private String requireToken() throws ApiException {
         String token = accounts.sessionToken();

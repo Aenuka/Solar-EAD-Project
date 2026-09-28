@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: Reservations.cs
  * Author: Sajith
  * Description: DTOs for reservation operations.
@@ -74,4 +74,13 @@ public class ReservationResponse
 public class ApprovedFutureCountResponse
 {
     public int Count { get; set; }
+}
+
+public class OperatorDashboardResponse
+{
+    public int PendingCount { get; set; }
+    public int ApprovedFutureCount { get; set; }
+    public int CompletedCount { get; set; }
+    public List<ReservationResponse> PendingReservations { get; set; } = new();
+    public List<ReservationResponse> RecentCompletedReservations { get; set; } = new();
 }

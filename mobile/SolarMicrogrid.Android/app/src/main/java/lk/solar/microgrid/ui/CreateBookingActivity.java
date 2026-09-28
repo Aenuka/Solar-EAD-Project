@@ -24,9 +24,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import android.content.Intent;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import lk.solar.microgrid.data.AccountRepository;
+import lk.solar.microgrid.data.Station;
 
 import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
@@ -47,9 +53,11 @@ public final class CreateBookingActivity extends Activity {
     private final List<Button> actions = new ArrayList<>();
     private final List<EditText> fields = new ArrayList<>();
 
-    private EditText stationId, slotId, energy;
-    private TextView pickedDate;
-    private LocalDateTime pickedDateTime;
+    private EditText energy;
+    private TextView stationLabel, slotLabel, energyHint;
+    private String selectedStationId, selectedSlotId, selectedSlotStartsAt;
+    private double availableEnergyKwh;
+    private Station currentStationDetail;
     private boolean busy;
 
     private static final DateTimeFormatter DISPLAY =
@@ -60,6 +68,25 @@ public final class CreateBookingActivity extends Activity {
         super.onCreate(state);
         reservations = ((SolarApplication) getApplication()).reservations();
         buildUi();
+
+        Intent intent = getIntent();
+        if (intent.hasExtra("stationId") && intent.hasExtra("slotId")) {
+            selectedStationId = intent.getStringExtra("stationId");
+            selectedSlotId = intent.getStringExtra("slotId");
+            selectedSlotStartsAt = intent.getStringExtra("startsAt");
+            availableEnergyKwh = intent.getDoubleExtra("availableEnergyKwh", 0);
+
+            stationLabel.setText(intent.getStringExtra("stationName") + "\n(Pre-selected)");
+            stationLabel.setTextColor(INK);
+
+            OffsetDateTime start = OffsetDateTime.parse(selectedSlotStartsAt).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+            OffsetDateTime end = OffsetDateTime.parse(intent.getStringExtra("endsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+            DateTimeFormatter date = DateTimeFormatter.ofPattern("dd MMM yyyy");
+            DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
+            slotLabel.setText(start.format(date) + "\n" + start.format(time) + " - " + end.format(time) + "\n" + availableEnergyKwh + " kWh available");
+            slotLabel.setTextColor(INK);
+            energyHint.setText("Available: " + availableEnergyKwh + " kWh");
+        }
     }
 
     private void buildUi() {
@@ -86,60 +113,160 @@ public final class CreateBookingActivity extends Activity {
         message = text("", 13, INK, false);
         message.setVisibility(View.GONE);
 
-        stationId = field("Station ID", "", InputType.TYPE_CLASS_TEXT, 60);
-        stationId.setHint("e.g. ST001");
-        slotId = field("Slot ID", "", InputType.TYPE_CLASS_TEXT, 60);
-        slotId.setHint("e.g. SLOT001");
+        TextView stationCaption = text("Station", 12, INK, true);
+        ((LinearLayout.LayoutParams) stationCaption.getLayoutParams()).topMargin = dp(18);
+        stationLabel = text("No station selected", 14, MUTED, false);
+        button("Select Station", false, this::pickStation);
 
-        TextView dateCaption = text("Reservation Date & Time", 12, INK, true);
-        ((LinearLayout.LayoutParams) dateCaption.getLayoutParams()).topMargin = dp(18);
-        pickedDate = text("No date picked yet", 13, MUTED, false);
-        Button pickDate = button("Pick Date & Time", false, this::showDateTimePicker);
+        TextView slotCaption = text("Available Slot", 12, INK, true);
+        ((LinearLayout.LayoutParams) slotCaption.getLayoutParams()).topMargin = dp(18);
+        slotLabel = text("No slot selected", 14, MUTED, false);
+        button("Select Available Slot", false, this::pickSlot);
 
         energy = field("Energy Amount (kWh)", "", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL, 12);
         energy.setHint("e.g. 25");
+        
+        energyHint = text("Available: -", 12, MUTED, false);
 
         button("Create Booking", true, this::submit);
     }
 
-    private void showDateTimePicker() {
-        Calendar now = Calendar.getInstance();
-        new DatePickerDialog(this, (dateView, y, m, d) ->
-            new TimePickerDialog(this, (timeView, hour, minute) -> {
-                pickedDateTime = LocalDateTime.of(y, m + 1, d, hour, minute);
-                pickedDate.setText(pickedDateTime.format(DISPLAY));
-                pickedDate.setTextColor(INK);
-            }, 12, 0, true).show(),
-            now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
-        ).show();
+    private void pickStation() {
+        setBusy(true);
+        ((SolarApplication) getApplication()).accounts().stations("activeOnly=true&pageSize=50", new AccountRepository.Callback<JSONObject>() {
+            @Override public void success(JSONObject response) {
+                if (isFinishing() || isDestroyed()) return;
+                setBusy(false);
+                try {
+                    JSONArray items = response.getJSONArray("items");
+                    List<Station> list = new ArrayList<>();
+                    for (int i = 0; i < items.length(); i++) list.add(new Station(items.getJSONObject(i)));
+                    if (list.isEmpty()) { showMessage("No stations found.", true); return; }
+                    
+                    String[] names = new String[list.size()];
+                    for (int i = 0; i < list.size(); i++) names[i] = list.get(i).name + "\n" + list.get(i).address;
+                    
+                    new AlertDialog.Builder(CreateBookingActivity.this)
+                        .setTitle("Select Station")
+                        .setItems(names, (dialog, which) -> onStationSelected(list.get(which)))
+                        .show();
+                } catch (Exception e) {
+                    showMessage("Error parsing stations", true);
+                }
+            }
+            @Override public void failure(int status, String text) {
+                if (isFinishing() || isDestroyed()) return;
+                setBusy(false);
+                showMessage(text, true);
+            }
+        });
+    }
+
+    private void onStationSelected(Station station) {
+        selectedStationId = station.id;
+        stationLabel.setText(station.name + "\n" + station.address);
+        stationLabel.setTextColor(INK);
+        
+        selectedSlotId = null;
+        selectedSlotStartsAt = null;
+        availableEnergyKwh = 0;
+        slotLabel.setText("No slot selected");
+        slotLabel.setTextColor(MUTED);
+        energyHint.setText("Available: -");
+        
+        setBusy(true);
+        ((SolarApplication) getApplication()).accounts().station(station.id, new AccountRepository.Callback<JSONObject>() {
+            @Override public void success(JSONObject response) {
+                if (isFinishing() || isDestroyed()) return;
+                setBusy(false);
+                try {
+                    currentStationDetail = new Station(response);
+                } catch (Exception e) {
+                    showMessage("Error parsing station details", true);
+                }
+            }
+            @Override public void failure(int status, String text) {
+                if (isFinishing() || isDestroyed()) return;
+                setBusy(false);
+                showMessage(text, true);
+            }
+        });
+    }
+
+    private void pickSlot() {
+        if (currentStationDetail == null) {
+            showMessage("Please select a station first", true);
+            return;
+        }
+        try {
+            JSONArray slots = currentStationDetail.source.getJSONArray("slots");
+            List<JSONObject> availableSlots = new ArrayList<>();
+            for (int i = 0; i < slots.length(); i++) {
+                JSONObject s = slots.getJSONObject(i);
+                if (s.getInt("availableSlots") > 0 && s.getDouble("availableEnergyKwh") > 0) {
+                    availableSlots.add(s);
+                }
+            }
+            if (availableSlots.isEmpty()) {
+                showMessage("No available slots found for this station.", true);
+                return;
+            }
+            
+            String[] display = new String[availableSlots.size()];
+            DateTimeFormatter date = DateTimeFormatter.ofPattern("dd MMM yyyy");
+            DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
+            for (int i = 0; i < availableSlots.size(); i++) {
+                JSONObject s = availableSlots.get(i);
+                OffsetDateTime start = OffsetDateTime.parse(s.getString("startsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+                OffsetDateTime end = OffsetDateTime.parse(s.getString("endsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+                display[i] = start.format(date) + "\n" + start.format(time) + " - " + end.format(time) +
+                    "\n" + s.getInt("availableSlots") + " battery slots available\n" +
+                    s.getDouble("availableEnergyKwh") + " kWh available";
+            }
+            
+            new AlertDialog.Builder(CreateBookingActivity.this)
+                .setTitle("Select Available Slot")
+                .setItems(display, (dialog, which) -> {
+                    try {
+                        JSONObject s = availableSlots.get(which);
+                        selectedSlotId = s.getString("id");
+                        selectedSlotStartsAt = s.getString("startsAt");
+                        availableEnergyKwh = s.getDouble("availableEnergyKwh");
+                        slotLabel.setText(display[which]);
+                        slotLabel.setTextColor(INK);
+                        energyHint.setText("Available: " + availableEnergyKwh + " kWh");
+                    } catch (Exception e) { showMessage("Error selecting slot", true); }
+                }).show();
+        } catch (Exception e) {
+            showMessage("Error reading slots", true);
+        }
     }
 
     private void submit() {
-        String stId = value(stationId).trim();
-        String slId = value(slotId).trim();
-        String enStr = value(energy).trim();
-
-        if (stId.isEmpty()) { stationId.setError("Station ID required"); return; }
-        if (slId.isEmpty()) { slotId.setError("Slot ID required"); return; }
-        if (pickedDateTime == null) { showMessage("Please pick a date and time", true); return; }
+        if (selectedStationId == null) { showMessage("Please select a station", true); return; }
+        if (selectedSlotId == null || selectedSlotStartsAt == null) { showMessage("Please select a slot", true); return; }
+        String enStr = energy.getText().toString().trim();
 
         double en;
         try {
             en = Double.parseDouble(enStr);
             if (en <= 0) throw new NumberFormatException();
+            if (en > availableEnergyKwh) {
+                energy.setError("Amount exceeds available energy (" + availableEnergyKwh + " kWh)");
+                return;
+            }
         } catch (NumberFormatException e) {
             energy.setError("Enter a valid energy amount");
             return;
         }
 
-        // Convert local -> UTC ISO 8601 (e.g. 2026-09-25T04:30:00Z)
-        String isoUtc = pickedDateTime
-                .atZone(ZoneId.systemDefault())
-                .withZoneSameInstant(ZoneOffset.UTC)
+        // Convert slot start time to UTC ISO 8601 (e.g. 2026-09-25T04:30:00Z)
+        String isoUtc = OffsetDateTime.parse(selectedSlotStartsAt)
+                .withOffsetSameInstant(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ISO_INSTANT);
 
         setBusy(true);
-        reservations.create(stId, slId, isoUtc, en, "DROP_OFF",
+        reservations.create(selectedStationId, selectedSlotId, isoUtc, en, "DROP_OFF",
             new ReservationRepository.Callback<Reservation>() {
                 @Override public void success(Reservation r) {
                     if (isFinishing() || isDestroyed()) return;

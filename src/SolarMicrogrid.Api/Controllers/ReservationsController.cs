@@ -1,4 +1,4 @@
-﻿/*
+/*
  * File: ReservationsController.cs
  * Author: Sajith
  * Description: REST API endpoints for reservation management.
@@ -112,13 +112,44 @@ public class ReservationsController : ControllerBase
         return Ok(new { count });
     }
 
+    // ===== DASHBOARD (Operator only) =====
+    /// <summary>
+    /// Retrieves live dashboard data for Grid Operators.
+    /// </summary>
+    [Authorize(Roles = "GridOperator")]
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboard()
+    {
+        var (pending, approvedFutureCount, completed) = await _service.GetDashboardDataAsync();
+        
+        var response = new OperatorDashboardResponse
+        {
+            PendingCount = pending.Count,
+            ApprovedFutureCount = approvedFutureCount,
+            CompletedCount = completed.Count,
+            PendingReservations = pending.Select(Map).ToList(),
+            RecentCompletedReservations = completed.OrderByDescending(c => c.CompletedAt).Take(5).Select(Map).ToList()
+        };
+        
+        return Ok(response);
+    }
+
     // ===== TRANSACTION (QR) =====
+    [Authorize(Roles = "Prosumer")]
     [HttpGet("{id}/transaction")]
     public async Task<IActionResult> GetTransaction(string id)
     {
-        var (success, message, reservation) = await _service.GetTransactionAsync(id);
+        var nic = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+        if (string.IsNullOrEmpty(nic))
+            return Unauthorized();
+
+        var (success, message, reservation) = await _service.GetTransactionAsync(id, nic);
         if (!success || reservation is null)
+        {
+            if (message == "Unauthorized.")
+                return Forbid();
             return Problem(detail: message, statusCode: 400);
+        }
         return Ok(Map(reservation));
     }
 
@@ -140,7 +171,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Verifies a scanned transaction token.
     /// </summary>
-    [Authorize(Roles = "Backoffice,GridOperator")]
+    [Authorize(Roles = "GridOperator")]
     [HttpGet("verify")]
     public async Task<IActionResult> VerifyToken([FromQuery] string token)
     {
@@ -154,7 +185,7 @@ public class ReservationsController : ControllerBase
     /// <summary>
     /// Finalizes the energy transfer for an approved reservation.
     /// </summary>
-    [Authorize(Roles = "Backoffice,GridOperator")]
+    [Authorize(Roles = "GridOperator")]
     [HttpPatch("{id}/complete")]
     public async Task<IActionResult> Complete(string id)
     {

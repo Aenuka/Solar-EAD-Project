@@ -86,15 +86,17 @@ public final class BookingSummaryActivity extends Activity {
             addRow(card, "Cancellation Reason", reason);
         }
 
+
+
         // Close button
         Button close = new Button(this);
         close.setText(R.string.close_button);
         close.setTextSize(13); close.setAllCaps(false);
         close.setTextColor(Color.WHITE);
-        close.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        close.setBackgroundTintList(ColorStateList.valueOf(MUTED));
         close.setMinHeight(dp(48));
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-1, -2);
-        blp.topMargin = dp(20);
+        blp.topMargin = dp(10);
         content.addView(close, blp);
         close.setOnClickListener(v -> finish());
     }
