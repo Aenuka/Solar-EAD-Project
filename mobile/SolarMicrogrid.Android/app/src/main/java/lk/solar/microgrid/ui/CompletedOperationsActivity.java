@@ -94,8 +94,9 @@ public class CompletedOperationsActivity extends Activity {
                     empty.setTextSize(14); empty.setTextColor(MUTED);
                     content.addView(empty);
                 } else {
+                    int index = 0;
                     for (Reservation r : result) {
-                        renderCard(r);
+                        renderCard(r, index++);
                     }
                 }
             }
@@ -113,54 +114,97 @@ public class CompletedOperationsActivity extends Activity {
         });
     }
 
-    private void renderCard(Reservation r) {
+    private void renderCard(Reservation r, int index) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
-        card.setPadding(dp(16), dp(16), dp(16), dp(16));
+        
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(252, 255, 252), Color.WHITE});
+        bg.setCornerRadius(dp(12));
+        bg.setStroke(dp(1), Color.rgb(220, 235, 225));
+        card.setBackground(bg);
+        card.setElevation(dp(6));
+        card.setPadding(dp(18), dp(18), dp(18), dp(18));
         card.setClickable(true);
         card.setOnClickListener(v -> showDetailsDialog(r));
         
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(12);
+        params.bottomMargin = dp(6);
         content.addView(card, params);
 
-        TextView idView = new TextView(this);
-        idView.setText(r.reservationId); idView.setTextSize(16); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        card.addView(idView);
+        android.view.animation.TranslateAnimation anim = new android.view.animation.TranslateAnimation(
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0f, 
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0f, 
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, 
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0f
+        );
+        anim.setDuration(400);
+        anim.setStartOffset(index * 50L);
+        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
+        card.startAnimation(anim);
 
-        TextView stationView = new TextView(this);
-        stationView.setText(r.stationId); // Using stationId as requested if name unavailable without new infra
-        stationView.setTextSize(14); stationView.setTextColor(INK);
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
-        sp.topMargin = dp(4);
-        card.addView(stationView, sp);
+        // Header Row: ID and Energy amount
+        LinearLayout headerRow = new LinearLayout(this);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(headerRow, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView idView = new TextView(this);
+        idView.setText(r.reservationId);
+        idView.setTextSize(16); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        idView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
+        headerRow.addView(idView);
 
         TextView energyView = new TextView(this);
         energyView.setText(r.energyAmountKwh + " kWh");
-        energyView.setTextSize(14); energyView.setTextColor(INK);
-        card.addView(energyView);
+        energyView.setTextSize(16); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        headerRow.addView(energyView);
+
+        // Subtitle: Station ID
+        TextView stationView = new TextView(this);
+        String shortStation = r.stationId;
+        if (shortStation != null && shortStation.length() > 12) {
+            shortStation = shortStation.substring(0, 12) + "...";
+        }
+        stationView.setText("Station: " + shortStation);
+        stationView.setTextSize(13); stationView.setTextColor(MUTED);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
+        sp.topMargin = dp(8);
+        card.addView(stationView, sp);
+
+        // Date and Status row
+        LinearLayout footerRow = new LinearLayout(this);
+        footerRow.setOrientation(LinearLayout.HORIZONTAL);
+        footerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(-1, -2);
+        footerParams.topMargin = dp(16);
+        card.addView(footerRow, footerParams);
 
         TextView detailsView = new TextView(this);
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
+        completedDate = completedDate.replace("T", " ").replace("Z", "");
+        if (completedDate.length() > 19) {
+            completedDate = completedDate.substring(0, 19);
+        }
         
-        detailsView.setText("Completed\n" + completedDate);
+        detailsView.setText("Done on " + completedDate);
         detailsView.setTextSize(12); detailsView.setTextColor(MUTED);
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
-        detailsParams.topMargin = dp(8); detailsParams.bottomMargin = dp(8);
-        card.addView(detailsView, detailsParams);
+        detailsView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
+        footerRow.addView(detailsView);
 
         TextView statusView = new TextView(this);
         statusView.setText("COMPLETED");
-        statusView.setTextSize(12); 
+        statusView.setTextSize(11); 
         statusView.setTextColor(GREEN);
         statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        statusView.setPadding(dp(8), dp(4), dp(8), dp(4));
-        statusView.setBackground(shape(Color.rgb(245, 247, 243), 0));
+        statusView.setPadding(dp(12), dp(4), dp(12), dp(4));
+        android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
+        statusBg.setCornerRadius(dp(12));
+        statusView.setBackground(statusBg);
         
-        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-2, -2);
-        card.addView(statusView, statusParams);
+        footerRow.addView(statusView);
     }
 
     private void showDetailsDialog(Reservation r) {

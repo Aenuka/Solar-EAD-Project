@@ -64,7 +64,8 @@ public class TransactionVerificationActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setBackground(shape(Color.WHITE, 0));
+        card.setElevation(dp(4));
         card.setPadding(dp(20), dp(20), dp(20), dp(20));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
@@ -79,8 +80,9 @@ public class TransactionVerificationActivity extends Activity {
         Button button = new Button(this);
         button.setText(R.string.back_to_scanner);
         button.setTextSize(13); button.setAllCaps(false);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setTextColor(GREEN);
-        button.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        button.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
         button.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
         layout2.topMargin = dp(15);
@@ -88,8 +90,10 @@ public class TransactionVerificationActivity extends Activity {
         Button finalizeButton = new Button(this);
         finalizeButton.setText("Finalize Energy Transfer");
         finalizeButton.setTextSize(13); finalizeButton.setAllCaps(false);
+        finalizeButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         finalizeButton.setTextColor(Color.WHITE);
         finalizeButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        finalizeButton.setElevation(dp(4));
         finalizeButton.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(30);
@@ -140,7 +144,8 @@ public class TransactionVerificationActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setBackground(shape(Color.WHITE, 0));
+        card.setElevation(dp(4));
         card.setPadding(dp(20), dp(20), dp(20), dp(20));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
@@ -155,8 +160,10 @@ public class TransactionVerificationActivity extends Activity {
         Button backButton = new Button(this);
         backButton.setText("Back to Operator Dashboard");
         backButton.setTextSize(13); backButton.setAllCaps(false);
+        backButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         backButton.setTextColor(Color.WHITE);
         backButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
+        backButton.setElevation(dp(4));
         backButton.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(30);
@@ -166,8 +173,9 @@ public class TransactionVerificationActivity extends Activity {
         Button scanAnother = new Button(this);
         scanAnother.setText("Scan Another QR");
         scanAnother.setTextSize(13); scanAnother.setAllCaps(false);
+        scanAnother.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         scanAnother.setTextColor(GREEN);
-        scanAnother.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        scanAnother.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
         scanAnother.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
         layout2.topMargin = dp(15);
