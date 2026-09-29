@@ -3,4 +3,5 @@
 # For the Android emulator without forwarding, use http://10.0.2.2:5080/api/v1/.
 apiBaseUrl=http://127.0.0.1:5080/api/v1/
 
-# OpenStreetMap tiles need internet access, but no map API key.
+# Enable Maps SDK for Android in Google Cloud and use an Android-restricted key.
+mapsApiKey=YOUR_GOOGLE_MAPS_API_KEY

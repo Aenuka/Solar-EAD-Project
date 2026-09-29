@@ -8,6 +8,8 @@ if (developmentFile.exists()) {
     developmentFile.withInputStream { developmentSettings.load(it) }
 }
 def debugApi = configuredApi ?: developmentSettings.getProperty('apiBaseUrl') ?: 'http://10.0.2.2:5080/api/v1/'
+def configuredMapsKey = providers.gradleProperty('mapsApiKey').orNull
+def debugMapsKey = configuredMapsKey ?: developmentSettings.getProperty('mapsApiKey') ?: 'YOUR_GOOGLE_MAPS_API_KEY'
 def quoteUrl = { String value -> '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"' }
 [configuredApi, debugApi].findAll { it != null }.each { value ->
     if (!value.endsWith('/') || !(value.startsWith('http://') || value.startsWith('https://'))) {
@@ -31,9 +33,11 @@ android {
         debug {
             applicationIdSuffix '.debug'
             buildConfigField 'String', 'API_BASE_URL', quoteUrl(debugApi)
+            manifestPlaceholders = [googleMapsApiKey: debugMapsKey]
         }
         release {
             buildConfigField 'String', 'API_BASE_URL', quoteUrl(configuredApi ?: 'https://configure-api.invalid/api/v1/')
+            manifestPlaceholders = [googleMapsApiKey: configuredMapsKey ?: 'YOUR_GOOGLE_MAPS_API_KEY']
             minifyEnabled false
         }
     }
@@ -47,6 +51,7 @@ tasks.configureEach { task ->
             if (configuredApi == null || !configuredApi.startsWith('https://')) {
                 throw new GradleException('Release builds require -PapiBaseUrl=https://your-api.example/api/v1/')
             }
+            if (!configuredMapsKey) throw new GradleException('Release builds require -PmapsApiKey=YOUR_GOOGLE_MAPS_API_KEY')
         }
     }
 }
