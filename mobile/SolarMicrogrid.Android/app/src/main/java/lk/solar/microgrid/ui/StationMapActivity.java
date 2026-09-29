@@ -28,16 +28,15 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.XYTileSource;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.util.BoundingBox;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.Marker;
-import java.io.File;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.ArrayList;
 import java.util.List;
-import lk.solar.microgrid.BuildConfig;
 import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.AccountRepository;
@@ -45,7 +44,7 @@ import lk.solar.microgrid.data.Station;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** Native Android OpenStreetMap viewer. Station coordinates and inventory come exclusively from REST. */
+/** Google Maps viewer. Station coordinates and inventory come exclusively from REST. */
 public final class StationMapActivity extends Activity {
     private static final int GREEN = Color.rgb(23, 108, 77);
     private static final int INK = Color.rgb(23, 61, 50);
@@ -54,7 +53,8 @@ public final class StationMapActivity extends Activity {
     private final List<Station> stations = new ArrayList<>();
     private AccountRepository accounts;
     private MapView mapView;
-    private GeoPoint currentLocation;
+    private GoogleMap googleMap;
+    private LatLng currentLocation;
     private LinearLayout results;
     private TextView status, mapStatus;
     private Button previous, next;
@@ -104,30 +104,25 @@ public final class StationMapActivity extends Activity {
         root.addView(search);
         mapStatus = text("", 12, MUTED); root.addView(mapStatus);
         try {
-            var config = Configuration.getInstance();
-            config.setUserAgentValue(BuildConfig.APPLICATION_ID + "/" + BuildConfig.VERSION_NAME);
-            config.setOsmdroidBasePath(new File(getFilesDir(), "osm"));
-            config.setOsmdroidTileCache(new File(getFilesDir(), "osm/tiles"));
-            config.setExpirationExtendedDuration(7L * 24 * 60 * 60 * 1000);
-            config.setTileDownloadThreads((short) 2);
             mapView = new MapView(this);
-            mapView.setTileSource(new XYTileSource("OpenStreetMap", 0, 19, 256, ".png",
-                new String[] {"https://tile.openstreetmap.org/"}, "© OpenStreetMap contributors"));
-            mapView.setMultiTouchControls(true);
-            mapView.setMinZoomLevel(2.0);
-            mapView.setMaxZoomLevel(19.0);
-            mapView.getController().setZoom(2.0);
+            mapView.onCreate(state);
+            mapView.getMapAsync(map -> {
+                if (!alive()) return;
+                googleMap = map;
+                googleMap.getUiSettings().setZoomControlsEnabled(true);
+                googleMap.setOnMarkerClickListener(marker -> {
+                    Object stationId = marker.getTag();
+                    if (stationId instanceof String) { detail((String) stationId); return true; }
+                    return false;
+                });
+                renderMarkers();
+            });
             root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
             mapStatus.setText(R.string.map_loading);
         } catch (RuntimeException e) {
-            if (mapView != null) { root.removeView(mapView); mapView.onDetach(); }
+            if (mapView != null) { root.removeView(mapView); mapView.onDestroy(); }
             mapView = null; mapStatus.setText(R.string.map_unavailable);
         }
-        TextView attribution = new TextView(this);
-        attribution.setText(android.text.Html.fromHtml(getString(R.string.osm_attribution), android.text.Html.FROM_HTML_MODE_LEGACY));
-        attribution.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
-        attribution.setLinkTextColor(GREEN); attribution.setTextSize(11);
-        root.addView(attribution);
         ScrollView scroll = new ScrollView(this);
         results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); scroll.addView(results);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -138,7 +133,7 @@ public final class StationMapActivity extends Activity {
         if (state != null) {
             filter = state.getString("filter", ""); page = state.getInt("page", 1);
             if (state.containsKey("locationLatitude")) {
-                currentLocation = new GeoPoint(state.getDouble("locationLatitude"), state.getDouble("locationLongitude"));
+                currentLocation = new LatLng(state.getDouble("locationLatitude"), state.getDouble("locationLongitude"));
             }
         }
         load();
@@ -181,7 +176,7 @@ public final class StationMapActivity extends Activity {
         final int requestGeneration = ++generation;
         detailGeneration++;
         stations.clear(); results.removeAllViews();
-        if (mapView != null) { mapView.getOverlays().clear(); addCurrentLocationMarker(); mapView.invalidate(); }
+        if (googleMap != null) { googleMap.clear(); addCurrentLocationMarker(); }
         previous.setEnabled(false); next.setEnabled(false); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
             @Override public void success(JSONObject response) {
@@ -203,36 +198,34 @@ public final class StationMapActivity extends Activity {
         });
     }
     private void renderMarkers() {
-        if (mapView == null) return;
-        mapView.getOverlays().clear();
-        List<GeoPoint> points = new ArrayList<>();
+        if (googleMap == null) return;
+        googleMap.clear();
+        List<LatLng> points = new ArrayList<>();
         for (Station station : stations) {
-            GeoPoint position = new GeoPoint(station.latitude, station.longitude); points.add(position);
-            Marker marker = new Marker(mapView);
-            marker.setPosition(position); marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            marker.setTitle(station.name); marker.setSnippet(station.summary());
-            marker.setOnMarkerClickListener((selected, view) -> { detail(station.id); return true; });
-            mapView.getOverlays().add(marker);
+            LatLng position = new LatLng(station.latitude, station.longitude); points.add(position);
+            var marker = googleMap.addMarker(new MarkerOptions().position(position)
+                .title(station.name).snippet(station.summary()));
+            if (marker != null) marker.setTag(station.id);
         }
         addCurrentLocationMarker();
         if (currentLocation != null) points.add(currentLocation);
-        if (points.isEmpty()) { mapView.invalidate(); return; }
+        if (points.isEmpty()) return;
         final int renderedGeneration = generation;
         mapView.post(() -> {
-            if (!alive() || mapView == null || generation != renderedGeneration) return;
-            if (points.size() == 1) { mapView.getController().setZoom(15.0); mapView.getController().setCenter(points.get(0)); }
-            else mapView.zoomToBoundingBox(BoundingBox.fromGeoPoints(points), false, 60, 16.0, null);
-            mapView.invalidate();
+            if (!alive() || googleMap == null || generation != renderedGeneration) return;
+            if (points.size() == 1) googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(points.get(0), 15f));
+            else {
+                LatLngBounds.Builder bounds = new LatLngBounds.Builder();
+                for (LatLng point : points) bounds.include(point);
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), dp(48)));
+            }
         });
     }
     private void addCurrentLocationMarker() {
-        if (mapView == null || currentLocation == null) return;
-        Marker marker = new Marker(mapView);
-        marker.setPosition(currentLocation);
-        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        marker.setIcon(getDrawable(R.drawable.ic_current_location));
-        marker.setTitle(getString(R.string.your_location));
-        mapView.getOverlays().add(marker);
+        if (googleMap == null || currentLocation == null) return;
+        googleMap.addMarker(new MarkerOptions().position(currentLocation)
+            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+            .title(getString(R.string.your_location)));
         mapStatus.setText(R.string.location_map_hint);
     }
     private void detail(String id) {
@@ -278,11 +271,8 @@ public final class StationMapActivity extends Activity {
             @Override public void onLocationChanged(Location location) {
                 if (!alive()) return;
                 stopLocation();
-                currentLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
-                if (mapView != null) {
-                    mapView.getController().setZoom(15.0);
-                    mapView.getController().setCenter(currentLocation);
-                }
+                currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                if (googleMap != null) googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
                 filter = "&latitude=" + location.getLatitude() + "&longitude=" + location.getLongitude() + "&radiusKm=25";
                 page = 1; load();
             }
@@ -309,16 +299,19 @@ public final class StationMapActivity extends Activity {
         listener = null;
     }
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
+    @Override protected void onStart() { super.onStart(); if (mapView != null) mapView.onStart(); }
     @Override protected void onResume() { super.onResume(); if (mapView != null) mapView.onResume(); }
     @Override protected void onPause() { if (mapView != null) mapView.onPause(); super.onPause(); }
-    @Override protected void onStop() { stopLocation(); super.onStop(); }
-    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); if (mapView != null) mapView.onDetach(); super.onDestroy(); }
+    @Override protected void onStop() { stopLocation(); if (mapView != null) mapView.onStop(); super.onStop(); }
+    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); googleMap = null; if (mapView != null) mapView.onDestroy(); super.onDestroy(); }
+    @Override public void onLowMemory() { super.onLowMemory(); if (mapView != null) mapView.onLowMemory(); }
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
+        if (mapView != null) mapView.onSaveInstanceState(state);
         state.putString("filter", filter); state.putInt("page", page);
         if (currentLocation != null) {
-            state.putDouble("locationLatitude", currentLocation.getLatitude());
-            state.putDouble("locationLongitude", currentLocation.getLongitude());
+            state.putDouble("locationLatitude", currentLocation.latitude);
+            state.putDouble("locationLongitude", currentLocation.longitude);
         }
     }
 }
