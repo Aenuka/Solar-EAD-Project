@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -49,7 +50,7 @@ public final class AccountRepository {
             throw new JSONException("Unexpected session response");
         String newToken = response.getString("accessToken");
         String newNic = response.getString("id");
-        Instant newExpiry = Instant.parse(response.getString("expiresAt"));
+        Instant newExpiry = OffsetDateTime.parse(response.getString("expiresAt")).toInstant();
         cache.clear();
         token = newToken; nic = newNic; expiresAt = newExpiry;
     }

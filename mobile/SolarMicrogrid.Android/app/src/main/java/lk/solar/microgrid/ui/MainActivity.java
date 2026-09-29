@@ -86,21 +86,94 @@ public final class MainActivity extends Activity {
         current = snapshot;
         Profile profile = snapshot.profile;
         screen(R.string.profile_title, R.string.profile_intro);
-        text(profile.fullName, 24, INK, true);
-        text(getString(R.string.nic_value, profile.nic), 13, MUTED, false);
-        text(getString(R.string.status_value, profile.status), 13, GREEN, true);
+
+        LinearLayout profileCard = new LinearLayout(this);
+        profileCard.setOrientation(LinearLayout.VERTICAL);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(240, 248, 242), Color.WHITE});
+        bg.setCornerRadius(dp(12));
+        profileCard.setBackground(bg);
+        profileCard.setElevation(dp(4));
+        profileCard.setPadding(dp(20), dp(20), dp(20), dp(20));
+        
+        TextView nameView = new TextView(this);
+        nameView.setText(profile.fullName);
+        nameView.setTextSize(24); nameView.setTextColor(INK); nameView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        profileCard.addView(nameView);
+        
+        TextView nicView = new TextView(this);
+        nicView.setText(getString(R.string.nic_value, profile.nic));
+        nicView.setTextSize(13); nicView.setTextColor(MUTED);
+        profileCard.addView(nicView);
+        
+        TextView statusView = new TextView(this);
+        statusView.setText(getString(R.string.status_value, profile.status));
+        statusView.setTextSize(13); statusView.setTextColor(GREEN); statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
+        sp.topMargin = dp(8);
+        profileCard.addView(statusView, sp);
+        
+        LinearLayout.LayoutParams pcp = new LinearLayout.LayoutParams(-1, -2);
+        pcp.bottomMargin = dp(20);
+        content.addView(profileCard, pcp);
+
         if (snapshot.cached) {
             String date = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(snapshot.fetchedAt));
             note(getString(R.string.offline, date));
         }
-        button(R.string.refresh, false, this::refresh);
-        button(R.string.nearby_stations, true, () -> startActivity(new android.content.Intent(this, StationMapActivity.class)));
 
-        // ===== Sajith: Reservation features =====
-        button(R.string.create_booking, true, () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class)));
-        button(R.string.my_bookings, false, () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class)));
-        button(R.string.pending_bookings, false, () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class)));
-        button(R.string.search_booking, false, () -> startActivity(new android.content.Intent(this, SearchBookingActivity.class)));
+        TextView actionsTitle = new TextView(this);
+        actionsTitle.setText("Quick Actions");
+        actionsTitle.setTextSize(16); actionsTitle.setTextColor(INK); actionsTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams atp = new LinearLayout.LayoutParams(-1, -2);
+        atp.topMargin = dp(10); atp.bottomMargin = dp(10);
+        content.addView(actionsTitle, atp);
+
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        content.addView(grid, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        grid.addView(row1, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        grid.addView(row2, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout row3 = new LinearLayout(this);
+        row3.setOrientation(LinearLayout.HORIZONTAL);
+        grid.addView(row3, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout row4 = new LinearLayout(this);
+        row4.setOrientation(LinearLayout.HORIZONTAL);
+        grid.addView(row4, new LinearLayout.LayoutParams(-1, -2));
+
+        row1.addView(createActionCard("Explore Stations", () -> startActivity(new android.content.Intent(this, StationMapActivity.class))));
+        row1.addView(createActionCard("Create Booking", () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class))));
+
+        row2.addView(createActionCard("My Bookings", () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class))));
+        row2.addView(createActionCard("Pending Bookings", () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class))));
+        
+        row3.addView(createActionCard("Search Bookings", () -> startActivity(new android.content.Intent(this, SearchBookingActivity.class))));
+        row3.addView(createActionCard("Refresh", this::refresh));
+        
+        row4.addView(createActionCard("Edit Profile", () -> showEditProfile(snapshot)));
+        row4.addView(createActionCard("Sign Out", this::confirmLogout));
+    }
+
+    private void showEditProfile(ProfileCache.Snapshot snapshot) {
+        current = snapshot;
+        Profile profile = snapshot.profile;
+        screen(R.string.profile_title, R.string.profile_intro);
+
+        TextView formTitle = new TextView(this);
+        formTitle.setText("Update Details");
+        formTitle.setTextSize(24); formTitle.setTextColor(INK); formTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams ftp = new LinearLayout.LayoutParams(-1, -2);
+        ftp.topMargin = dp(20);
+        content.addView(formTitle, ftp);
 
         EditText name = field(R.string.full_name, profile.fullName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME, 100);
         EditText email = field(R.string.email, profile.email, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, 254);
@@ -121,7 +194,8 @@ public final class MainActivity extends Activity {
             Button request = button(R.string.request_deactivation, false, this::showDeactivation);
             allow(request, !snapshot.cached);
         }
-        button(R.string.sign_out, false, this::confirmLogout);
+        
+        button(R.string.back_account, false, () -> showProfile(current));
     }
 
     private void showDeactivation() {
@@ -293,6 +367,30 @@ public final class MainActivity extends Activity {
         return true;
     }
     private static String value(EditText input) { return input.getText().toString(); }
+    private View createActionCard(String title, Runnable action) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(android.view.Gravity.CENTER);
+        card.setBackground(shape(Color.WHITE, 0));
+        card.setElevation(dp(4));
+        card.setPadding(dp(10), dp(24), dp(10), dp(24));
+        card.setClickable(true);
+        card.setOnClickListener(v -> { if (!busy) action.run(); });
+
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextSize(13);
+        titleView.setTextColor(GREEN);
+        titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleView.setGravity(android.view.Gravity.CENTER);
+        card.addView(titleView);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1.0f);
+        params.setMargins(dp(6), dp(6), dp(6), dp(6));
+        card.setLayoutParams(params);
+        return card;
+    }
+
     private GradientDrawable shape(int fill, int stroke) {
         GradientDrawable shape = new GradientDrawable(); shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);

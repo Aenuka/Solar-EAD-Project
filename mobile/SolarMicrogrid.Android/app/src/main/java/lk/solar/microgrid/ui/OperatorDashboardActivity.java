@@ -10,8 +10,11 @@ import android.os.Bundle;
 import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
@@ -20,6 +23,7 @@ public class OperatorDashboardActivity extends Activity {
     private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
     private OperatorRepository operators;
     private LinearLayout content;
+    private SwipeRefreshLayout swipeRefresh;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -30,15 +34,42 @@ public class OperatorDashboardActivity extends Activity {
             return;
         }
         
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.rgb(245, 247, 243));
+
+        swipeRefresh = new SwipeRefreshLayout(this);
+        swipeRefresh.setColorSchemeColors(GREEN);
+        swipeRefresh.setOnRefreshListener(this::loadDashboardData);
+
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(26), dp(28), dp(26), dp(80)); // Extra padding for FAB
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
+        swipeRefresh.addView(scroll, new SwipeRefreshLayout.LayoutParams(-1, -1));
         
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
+        root.addView(swipeRefresh, new FrameLayout.LayoutParams(-1, -1));
+
+        Button fab = new Button(this);
+        fab.setText("Scan QR");
+        fab.setTextColor(Color.WHITE);
+        fab.setAllCaps(false);
+        fab.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        fab.setElevation(dp(6));
+        android.graphics.drawable.GradientDrawable fabShape = new android.graphics.drawable.GradientDrawable();
+        fabShape.setCornerRadius(dp(28));
+        fabShape.setColor(GREEN);
+        fab.setBackground(fabShape);
+        fab.setPadding(dp(20), 0, dp(20), 0);
+        fab.setOnClickListener(v -> startActivity(new Intent(this, QrScannerActivity.class)));
+        
+        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(-2, dp(56));
+        fabParams.gravity = Gravity.BOTTOM | Gravity.END;
+        fabParams.setMargins(0, 0, dp(24), dp(24));
+        root.addView(fab, fabParams);
+
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
                 view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
@@ -48,8 +79,8 @@ public class OperatorDashboardActivity extends Activity {
             return insets;
         });
         
-        setContentView(scroll);
-        scroll.requestApplyInsets();
+        setContentView(root);
+        root.requestApplyInsets();
     }
 
     @Override
@@ -61,29 +92,25 @@ public class OperatorDashboardActivity extends Activity {
     }
 
     private void loadDashboardData() {
+        if (!swipeRefresh.isRefreshing()) {
+            swipeRefresh.setRefreshing(true);
+        }
         content.removeAllViews();
-        
         renderHeader();
-        
-        button(R.string.scan_transaction_qr, true, () -> {
-            startActivity(new Intent(this, QrScannerActivity.class));
-        });
-        
-        Button refreshBtn = button(R.string.refresh, false, this::loadDashboardData);
-        refreshBtn.setText("Refresh");
-        
         text("Loading dashboard...", 16, MUTED, false);
 
         operators.loadDashboard(new OperatorRepository.Callback<lk.solar.microgrid.data.OperatorDashboard>() {
             @Override
             public void success(lk.solar.microgrid.data.OperatorDashboard result) {
                 if (isDestroyed() || isFinishing()) return;
+                swipeRefresh.setRefreshing(false);
                 renderDashboard(result);
             }
 
             @Override
             public void failure(int status, String message) {
                 if (isDestroyed() || isFinishing()) return;
+                swipeRefresh.setRefreshing(false);
                 content.removeViewAt(content.getChildCount() - 1); // Remove loading text
                 text(message != null ? message : "Unable to load dashboard. Please try again.", 16, Color.RED, false);
             }
@@ -121,19 +148,13 @@ public class OperatorDashboardActivity extends Activity {
         button(R.string.view_completed_operations, false, () -> {
             startActivity(new Intent(this, CompletedOperationsActivity.class));
         });
-
-        button(R.string.scan_transaction_qr, true, () -> {
-            startActivity(new Intent(this, QrScannerActivity.class));
-        });
-        
-        Button refreshBtn = button(R.string.refresh, false, this::loadDashboardData);
-        refreshBtn.setText("Refresh");
     }
 
     private LinearLayout statCard(String title, String count, String label, int color) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        card.setBackground(shape(Color.WHITE, 0));
+        card.setElevation(dp(2));
         card.setPadding(dp(12), dp(16), dp(12), dp(16));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1.0f);
         params.rightMargin = dp(8);
@@ -159,10 +180,15 @@ public class OperatorDashboardActivity extends Activity {
     private void renderReservationCard(lk.solar.microgrid.data.Reservation r) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        int statusColor = "COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? Color.rgb(255, 152, 0) : Color.rgb(33, 150, 243);
+        android.graphics.drawable.GradientDrawable bg = shape(Color.WHITE, 0);
+        bg.setStroke(dp(2), statusColor);
+        card.setBackground(bg);
+        card.setElevation(dp(3));
         card.setPadding(dp(16), dp(16), dp(16), dp(16));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(12);
+        params.bottomMargin = dp(4);
         content.addView(card, params);
 
         TextView idView = new TextView(this);

@@ -60,8 +60,9 @@ public class QrScannerActivity extends Activity {
 
         Button cancel = new Button(this);
         cancel.setText("Cancel");
+        cancel.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         cancel.setTextColor(Color.rgb(23, 108, 77));
-        cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.TRANSPARENT));
         cancel.setOnClickListener(v -> finish());
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-1, dp(50));
         btnParams.setMargins(dp(26), dp(20), dp(26), dp(20));

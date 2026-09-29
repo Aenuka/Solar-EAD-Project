@@ -61,9 +61,17 @@ public class OperatorProfileActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
-        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+        card.setBackground(shape(Color.WHITE, 0));
+        card.setElevation(dp(4));
+        card.setPadding(dp(24), dp(32), dp(24), dp(24));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+
+        android.widget.ImageView avatar = new android.widget.ImageView(this);
+        avatar.setImageResource(R.drawable.ic_account_avatar);
+        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(80), dp(80));
+        avatarParams.gravity = android.view.Gravity.CENTER_HORIZONTAL;
+        avatarParams.bottomMargin = dp(24);
+        card.addView(avatar, avatarParams);
 
         detail(card, "Full Name", operators.getFullName());
         if (operators.getUsername() != null && !operators.getUsername().isEmpty()) {
@@ -73,12 +81,16 @@ public class OperatorProfileActivity extends Activity {
 
         Button signoutButton = new Button(this);
         signoutButton.setText("Sign Out");
-        signoutButton.setTextSize(13); signoutButton.setAllCaps(false);
+        signoutButton.setTextSize(14); signoutButton.setAllCaps(false);
+        signoutButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         signoutButton.setTextColor(Color.WHITE);
-        signoutButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(211, 47, 47)));
+        android.graphics.drawable.GradientDrawable btnBg = shape(Color.rgb(211, 47, 47), 0);
+        btnBg.setCornerRadius(dp(25));
+        signoutButton.setBackground(btnBg);
+        signoutButton.setElevation(dp(4));
         signoutButton.setMinHeight(dp(50));
         LinearLayout.LayoutParams btnLayout = new LinearLayout.LayoutParams(-1, -2);
-        btnLayout.topMargin = dp(30);
+        btnLayout.topMargin = dp(40);
         content.addView(signoutButton, btnLayout);
         
         signoutButton.setOnClickListener(view -> {
@@ -98,12 +110,14 @@ public class OperatorProfileActivity extends Activity {
 
         Button backButton = new Button(this);
         backButton.setText("Back");
-        backButton.setTextSize(13); backButton.setAllCaps(false);
-        backButton.setTextColor(GREEN);
-        backButton.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
+        backButton.setTextSize(14); backButton.setAllCaps(false);
+        backButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        backButton.setTextColor(MUTED);
+        backButton.setBackground(null);
+        backButton.setElevation(0);
         backButton.setMinHeight(dp(50));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
-        layout2.topMargin = dp(15);
+        layout2.topMargin = dp(10);
         content.addView(backButton, layout2);
         backButton.setOnClickListener(view -> finish());
     }

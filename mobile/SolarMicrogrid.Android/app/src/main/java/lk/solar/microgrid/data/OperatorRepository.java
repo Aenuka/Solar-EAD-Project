@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -55,7 +56,7 @@ public final class OperatorRepository {
             fullName = response.getString("fullName");
             this.username = username.trim();
             role = responseRole;
-            expiresAt = Instant.parse(response.getString("expiresAt"));
+            expiresAt = OffsetDateTime.parse(response.getString("expiresAt")).toInstant();
             return null;
         }, callback);
     }

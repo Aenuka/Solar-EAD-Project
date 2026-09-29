@@ -127,6 +127,9 @@ public class OperatorLoginActivity extends Activity {
         editor.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
         editor.setPadding(dp(13), dp(12), dp(13), dp(12));
         editor.setMinimumHeight(dp(50));
+        editor.setOnFocusChangeListener((v, hasFocus) -> {
+            editor.setBackground(shape(Color.WHITE, hasFocus ? GREEN : Color.rgb(213, 224, 214)));
+        });
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
         return editor;
@@ -142,8 +145,10 @@ public class OperatorLoginActivity extends Activity {
     private Button button(int label, boolean primary, Runnable action) {
         Button button = new Button(this);
         button.setText(label); button.setTextSize(13); button.setAllCaps(false);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setTextColor(primary ? Color.WHITE : GREEN);
-        button.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.rgb(234, 240, 227)));
+        button.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.TRANSPARENT));
+        if (primary) button.setElevation(dp(4));
         button.setMinHeight(dp(50)); button.setTag(true);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(15);
