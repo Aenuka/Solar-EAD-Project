@@ -63,18 +63,32 @@ public class CompletedOperationsActivity extends Activity {
     private void loadOperations() {
         content.removeAllViews();
         
+        // Top Navigation / Back button
+        TextView backBtn = new TextView(this);
+        backBtn.setText("← Back to Dashboard");
+        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        backBtn.setPadding(0, dp(10), 0, dp(20));
+        backBtn.setClickable(true);
+        backBtn.setOnClickListener(v -> finish());
+        content.addView(backBtn);
+
+        TextView eyebrow = new TextView(this);
+        eyebrow.setText("HISTORY");
+        eyebrow.setTextSize(12); eyebrow.setTextColor(MUTED); eyebrow.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        content.addView(eyebrow);
+
         TextView heading = new TextView(this);
         heading.setText("Completed Operations");
-        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setTextSize(28); heading.setTextColor(INK); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams headingLayout = new LinearLayout.LayoutParams(-1, -2);
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(4);
+        headingLayout.topMargin = dp(4); headingLayout.bottomMargin = dp(6);
         content.addView(heading, headingLayout);
 
         TextView sub = new TextView(this);
-        sub.setText("Previously finalized energy transfers");
+        sub.setText("Previously finalized energy transfers.");
         sub.setTextSize(14); sub.setTextColor(MUTED);
         LinearLayout.LayoutParams subLayout = new LinearLayout.LayoutParams(-1, -2);
-        subLayout.bottomMargin = dp(24);
+        subLayout.bottomMargin = dp(28);
         content.addView(sub, subLayout);
 
         TextView loading = new TextView(this);
@@ -86,7 +100,7 @@ public class CompletedOperationsActivity extends Activity {
             @Override
             public void success(List<Reservation> result) {
                 if (isDestroyed() || isFinishing()) return;
-                content.removeViewAt(content.getChildCount() - 1);
+                content.removeView(loading);
                 
                 if (result.isEmpty()) {
                     TextView empty = new TextView(CompletedOperationsActivity.this);
@@ -104,7 +118,7 @@ public class CompletedOperationsActivity extends Activity {
             @Override
             public void failure(int status, String message) {
                 if (isDestroyed() || isFinishing()) return;
-                content.removeViewAt(content.getChildCount() - 1);
+                content.removeView(loading);
                 
                 TextView error = new TextView(CompletedOperationsActivity.this);
                 error.setText(message != null ? message : "Unable to load completed operations. Please try again.");
@@ -120,12 +134,12 @@ public class CompletedOperationsActivity extends Activity {
         
         android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(252, 255, 252), Color.WHITE});
-        bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), Color.rgb(220, 235, 225));
+                new int[]{Color.WHITE, Color.WHITE});
+        bg.setCornerRadius(dp(16));
+        bg.setStroke(dp(1), Color.rgb(226, 232, 240));
         card.setBackground(bg);
-        card.setElevation(dp(6));
-        card.setPadding(dp(18), dp(18), dp(18), dp(18));
+        card.setElevation(dp(8));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
         card.setClickable(true);
         card.setOnClickListener(v -> showDetailsDialog(r));
         
@@ -145,66 +159,72 @@ public class CompletedOperationsActivity extends Activity {
         anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
         card.startAnimation(anim);
 
-        // Header Row: ID and Energy amount
+        // Header Row: Energy amount and Status
         LinearLayout headerRow = new LinearLayout(this);
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
         card.addView(headerRow, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView idView = new TextView(this);
-        idView.setText(r.reservationId);
-        idView.setTextSize(16); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        idView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        headerRow.addView(idView);
-
         TextView energyView = new TextView(this);
         energyView.setText(r.energyAmountKwh + " kWh");
-        energyView.setTextSize(16); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        energyView.setTextSize(18); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        energyView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
         headerRow.addView(energyView);
+
+        TextView statusView = new TextView(this);
+        statusView.setText("✓ COMPLETED");
+        statusView.setTextSize(11); 
+        statusView.setTextColor(GREEN);
+        statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        statusView.setPadding(dp(12), dp(6), dp(12), dp(6));
+        android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
+        statusBg.setCornerRadius(dp(16));
+        statusView.setBackground(statusBg);
+        headerRow.addView(statusView);
+
+        // Subtitle: ID
+        TextView idView = new TextView(this);
+        idView.setText("Ref: " + r.reservationId);
+        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
+        idParams.topMargin = dp(16);
+        card.addView(idView, idParams);
 
         // Subtitle: Station ID
         TextView stationView = new TextView(this);
         String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 12) {
-            shortStation = shortStation.substring(0, 12) + "...";
+        if (shortStation != null && shortStation.length() > 8) {
+            shortStation = shortStation.substring(0, 8) + "...";
         }
         stationView.setText("Station: " + shortStation);
-        stationView.setTextSize(13); stationView.setTextColor(MUTED);
+        stationView.setTextSize(14); stationView.setTextColor(MUTED);
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
-        sp.topMargin = dp(8);
+        sp.topMargin = dp(4);
         card.addView(stationView, sp);
 
-        // Date and Status row
-        LinearLayout footerRow = new LinearLayout(this);
-        footerRow.setOrientation(LinearLayout.HORIZONTAL);
-        footerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(-1, -2);
-        footerParams.topMargin = dp(16);
-        card.addView(footerRow, footerParams);
-
+        // Date row
         TextView detailsView = new TextView(this);
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
-        completedDate = completedDate.replace("T", " ").replace("Z", "");
-        if (completedDate.length() > 19) {
-            completedDate = completedDate.substring(0, 19);
+        
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            String cleanDate = completedDate.split("\\.")[0]; // Remove milliseconds
+            java.util.Date d = in.parse(cleanDate);
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a");
+            completedDate = out.format(d);
+        } catch (Exception e) {
+            completedDate = completedDate.replace("T", " ").replace("Z", "");
+            if (completedDate.length() > 19) {
+                completedDate = completedDate.substring(0, 19);
+            }
         }
         
-        detailsView.setText("Done on " + completedDate);
-        detailsView.setTextSize(12); detailsView.setTextColor(MUTED);
-        detailsView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        footerRow.addView(detailsView);
-
-        TextView statusView = new TextView(this);
-        statusView.setText("COMPLETED");
-        statusView.setTextSize(11); 
-        statusView.setTextColor(GREEN);
-        statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        statusView.setPadding(dp(12), dp(4), dp(12), dp(4));
-        android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
-        statusBg.setCornerRadius(dp(12));
-        statusView.setBackground(statusBg);
-        
-        footerRow.addView(statusView);
+        detailsView.setText("Completed " + completedDate);
+        detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
+        LinearLayout.LayoutParams dpL = new LinearLayout.LayoutParams(-1, -2);
+        dpL.topMargin = dp(16);
+        card.addView(detailsView, dpL);
     }
 
     private void showDetailsDialog(Reservation r) {
