@@ -29,11 +29,11 @@ import lk.solar.microgrid.data.ReservationRepository;
  * Dedicated cancel screen for a single reservation.
  * Author: Sajith
  */
-public final class CancelBookingActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77),
-            INK = Color.rgb(23, 61, 50),
-            MUTED = Color.rgb(107, 123, 117),
-            RED = Color.rgb(155, 66, 44);
+public final class CancelBookingActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN,
+            INK = SolarStyle.INK,
+            MUTED = SolarStyle.MUTED,
+            RED = SolarStyle.RED;
 
     private ReservationRepository reservations;
     private LinearLayout content;
@@ -58,15 +58,15 @@ public final class CancelBookingActivity extends Activity {
     private void buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(24), dp(20), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
         TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
+        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.cancel_booking), 28, INK, true);
         ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
         text("Reservation: " + (reservationCode == null ? reservationId : reservationCode),
@@ -88,9 +88,10 @@ public final class CancelBookingActivity extends Activity {
         reasonField.setMinLines(3);
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE); bg.setCornerRadius(dp(8));
-        bg.setStroke(dp(1), Color.rgb(213, 224, 214));
+        bg.setStroke(dp(1), SolarStyle.BORDER);
         reasonField.setBackground(bg);
         reasonField.setPadding(dp(13), dp(12), dp(13), dp(12));
+        SolarStyle.field(reasonField);
         content.addView(reasonField, new LinearLayout.LayoutParams(-1, -2));
 
         // Confirm button
@@ -98,8 +99,8 @@ public final class CancelBookingActivity extends Activity {
         confirmBtn.setText(R.string.cancel_booking);
         confirmBtn.setTextSize(13); confirmBtn.setAllCaps(false);
         confirmBtn.setTextColor(Color.WHITE);
-        confirmBtn.setBackgroundTintList(ColorStateList.valueOf(RED));
-        confirmBtn.setMinHeight(dp(50));
+        SolarStyle.danger(confirmBtn);
+        confirmBtn.setMinHeight(dp(52));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(20);
         content.addView(confirmBtn, lp);
@@ -111,8 +112,8 @@ public final class CancelBookingActivity extends Activity {
         back.setText(R.string.back_account);
         back.setTextSize(13); back.setAllCaps(false);
         back.setTextColor(GREEN);
-        back.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
-        back.setMinHeight(dp(48));
+        SolarStyle.button(back, false);
+        back.setMinHeight(dp(52));
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-1, -2);
         blp.topMargin = dp(12);
         content.addView(back, blp);
@@ -173,8 +174,7 @@ public final class CancelBookingActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setText(value); SolarStyle.text(v, size, color, bold);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = dp(6);
         content.addView(v, lp);

@@ -45,10 +45,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /** Google Maps viewer. Station coordinates and inventory come exclusively from REST. */
-public final class StationMapActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77);
-    private static final int INK = Color.rgb(23, 61, 50);
-    private static final int MUTED = Color.rgb(80, 105, 94);
+public final class StationMapActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN;
+    private static final int INK = SolarStyle.INK;
+    private static final int MUTED = SolarStyle.MUTED;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<Station> stations = new ArrayList<>();
     private AccountRepository accounts;
@@ -69,20 +69,13 @@ public final class StationMapActivity extends Activity {
         accounts = ((SolarApplication)getApplication()).accounts();
         if (!accounts.signedIn()) { finish(); return; }
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(242, 247, 243));
+        root.setBackgroundColor(SolarStyle.BACKGROUND);
         root.setPadding(dp(16), dp(12), dp(16), dp(12));
-        root.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left + dp(16), bars.top + dp(8), bars.right + dp(16), bars.bottom + dp(8));
-            }
-            return insets;
-        });
         setContentView(root); root.requestApplyInsets();
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView heading = text(getString(R.string.nearby_stations), 24, INK);
-        heading.setTypeface(null, Typeface.BOLD);
+        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         header.addView(heading, new LinearLayout.LayoutParams(0, -2, 1));
         ImageButton account = new ImageButton(this);
         account.setImageResource(R.drawable.ic_account_avatar);
@@ -92,7 +85,7 @@ public final class StationMapActivity extends Activity {
         GradientDrawable avatarBackground = new GradientDrawable();
         avatarBackground.setShape(GradientDrawable.OVAL);
         avatarBackground.setColor(Color.TRANSPARENT);
-        account.setBackground(new RippleDrawable(ColorStateList.valueOf(Color.rgb(193, 225, 207)), avatarBackground, null));
+        account.setBackground(new RippleDrawable(ColorStateList.valueOf(SolarStyle.RIPPLE), avatarBackground, null));
         account.setOnClickListener(v -> finish());
         LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(48), dp(48));
         avatarParams.leftMargin = dp(12);
@@ -154,10 +147,10 @@ public final class StationMapActivity extends Activity {
     }
     private void styleButton(Button button) {
         GradientDrawable shape = new GradientDrawable(); shape.setColor(Color.WHITE); shape.setCornerRadius(dp(12));
-        button.setBackground(new RippleDrawable(ColorStateList.valueOf(Color.rgb(193, 225, 207)), shape, null));
-        button.setBackgroundTintList(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {Color.rgb(220, 230, 223), GREEN}));
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(SolarStyle.RIPPLE), shape, null));
+        button.setBackgroundTintList(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {SolarStyle.BORDER, GREEN}));
         button.setTextColor(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {MUTED, Color.WHITE}));
-        button.setMinHeight(dp(48)); button.setPadding(dp(16), dp(10), dp(16), dp(10));
+        button.setMinHeight(dp(52)); button.setPadding(dp(16), dp(10), dp(16), dp(10));
     }
     private void addStationCard(Station station) {
         Button card = new Button(this); card.setAllCaps(false); styleButton(card);

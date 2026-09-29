@@ -17,8 +17,8 @@ import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 
-public class OperatorProfileActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public class OperatorProfileActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
     private OperatorRepository operators;
     private LinearLayout content;
 
@@ -33,36 +33,27 @@ public class OperatorProfileActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            } else {
-                view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-            }
-            return insets;
-        });
 
         setContentView(scroll);
         scroll.requestApplyInsets();
-        
+
         TextView heading = new TextView(this);
         heading.setText("Operator Profile");
-        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams headingLayout = new LinearLayout.LayoutParams(-1, -2);
         headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
         content.addView(heading, headingLayout);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, 0));
-        card.setElevation(dp(4));
+        SolarStyle.card(card);
+        card.setElevation(0);
         card.setPadding(dp(24), dp(32), dp(24), dp(24));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
@@ -82,17 +73,17 @@ public class OperatorProfileActivity extends Activity {
         Button signoutButton = new Button(this);
         signoutButton.setText("Sign Out");
         signoutButton.setTextSize(14); signoutButton.setAllCaps(false);
-        signoutButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        signoutButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         signoutButton.setTextColor(Color.WHITE);
-        android.graphics.drawable.GradientDrawable btnBg = shape(Color.rgb(211, 47, 47), 0);
+        android.graphics.drawable.GradientDrawable btnBg = shape(SolarStyle.RED, 0);
         btnBg.setCornerRadius(dp(25));
         signoutButton.setBackground(btnBg);
-        signoutButton.setElevation(dp(4));
-        signoutButton.setMinHeight(dp(50));
+        signoutButton.setElevation(0);
+        signoutButton.setMinHeight(dp(52));
         LinearLayout.LayoutParams btnLayout = new LinearLayout.LayoutParams(-1, -2);
         btnLayout.topMargin = dp(40);
         content.addView(signoutButton, btnLayout);
-        
+
         signoutButton.setOnClickListener(view -> {
             new AlertDialog.Builder(this)
                 .setTitle("Sign Out?")
@@ -111,11 +102,11 @@ public class OperatorProfileActivity extends Activity {
         Button backButton = new Button(this);
         backButton.setText("Back");
         backButton.setTextSize(14); backButton.setAllCaps(false);
-        backButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        backButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         backButton.setTextColor(MUTED);
         backButton.setBackground(null);
         backButton.setElevation(0);
-        backButton.setMinHeight(dp(50));
+        backButton.setMinHeight(dp(52));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
         layout2.topMargin = dp(10);
         content.addView(backButton, layout2);
@@ -125,22 +116,22 @@ public class OperatorProfileActivity extends Activity {
     private void detail(LinearLayout parent, String label, String value) {
         TextView viewLabel = new TextView(this);
         viewLabel.setText(label);
-        viewLabel.setTextSize(12);
+        viewLabel.setTextSize(13);
         viewLabel.setTextColor(MUTED);
         parent.addView(viewLabel);
-        
+
         TextView viewValue = new TextView(this);
         viewValue.setText(value);
         viewValue.setTextSize(16);
         viewValue.setTextColor(INK);
-        viewValue.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        viewValue.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(16);
         parent.addView(viewValue, layout);
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
-        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable(); 
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;

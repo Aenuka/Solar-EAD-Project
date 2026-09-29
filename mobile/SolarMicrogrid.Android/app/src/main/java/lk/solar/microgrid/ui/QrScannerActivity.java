@@ -24,7 +24,7 @@ import lk.solar.microgrid.data.Reservation;
 
 import java.util.List;
 
-public class QrScannerActivity extends Activity {
+public class QrScannerActivity extends SolarActivity {
     private DecoratedBarcodeView barcodeView;
     private boolean isVerifying = false;
     private OperatorRepository operators;
@@ -33,25 +33,25 @@ public class QrScannerActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         operators = ((SolarApplication) getApplication()).operators();
-        
+
         barcodeView = new DecoratedBarcodeView(this);
-        
+
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setBackgroundColor(Color.rgb(245, 247, 243));
-        
+        content.setBackgroundColor(SolarStyle.BACKGROUND);
+
         TextView title = new TextView(this);
         title.setText("Scan Transaction QR");
         title.setTextSize(24);
-        title.setTextColor(Color.rgb(23, 61, 50));
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setTextColor(SolarStyle.INK);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setPadding(dp(26), dp(30), dp(26), dp(8));
         content.addView(title);
-        
+
         TextView instructions = new TextView(this);
         instructions.setText("Align the Prosumer QR inside the frame");
         instructions.setTextSize(14);
-        instructions.setTextColor(Color.rgb(107, 123, 117));
+        instructions.setTextColor(SolarStyle.MUTED);
         instructions.setPadding(dp(26), 0, dp(26), dp(20));
         content.addView(instructions);
 
@@ -60,8 +60,8 @@ public class QrScannerActivity extends Activity {
 
         Button cancel = new Button(this);
         cancel.setText("Cancel");
-        cancel.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        cancel.setTextColor(Color.rgb(23, 108, 77));
+        cancel.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        cancel.setTextColor(SolarStyle.GREEN);
         cancel.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.TRANSPARENT));
         cancel.setOnClickListener(v -> finish());
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-1, dp(50));
@@ -69,7 +69,7 @@ public class QrScannerActivity extends Activity {
         content.addView(cancel, btnParams);
 
         setContentView(content);
-        
+
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, 1);
         } else {
@@ -94,9 +94,9 @@ public class QrScannerActivity extends Activity {
                 if (isVerifying || result.getText() == null) return;
                 isVerifying = true;
                 barcodeView.pause();
-                
+
                 Toast.makeText(QrScannerActivity.this, "Verifying transaction...", Toast.LENGTH_SHORT).show();
-                
+
                 String token = result.getText();
                 verifyToken(token);
             }
@@ -119,7 +119,7 @@ public class QrScannerActivity extends Activity {
             @Override
             public void failure(int status, String message) {
                 if (isDestroyed() || isFinishing()) return;
-                
+
                 String displayMessage = message;
                 if (status == 404 || status == 400 && message.contains("Invalid")) {
                     displayMessage = "Invalid transaction QR.";

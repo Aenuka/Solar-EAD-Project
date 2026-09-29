@@ -43,8 +43,8 @@ import lk.solar.microgrid.data.ReservationRepository;
  * Create a new reservation via the central API.
  * Author: Sajith
  */
-public final class CreateBookingActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public final class CreateBookingActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
 
     private ReservationRepository reservations;
     private LinearLayout content;
@@ -92,15 +92,15 @@ public final class CreateBookingActivity extends Activity {
     private void buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
         TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
+        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.create_booking), 32, INK, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
         headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
@@ -125,7 +125,7 @@ public final class CreateBookingActivity extends Activity {
 
         energy = field("Energy Amount (kWh)", "", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL, 12);
         energy.setHint("e.g. 25");
-        
+
         energyHint = text("Available: -", 12, MUTED, false);
 
         button("Create Booking", true, this::submit);
@@ -142,10 +142,10 @@ public final class CreateBookingActivity extends Activity {
                     List<Station> list = new ArrayList<>();
                     for (int i = 0; i < items.length(); i++) list.add(new Station(items.getJSONObject(i)));
                     if (list.isEmpty()) { showMessage("No stations found.", true); return; }
-                    
+
                     String[] names = new String[list.size()];
                     for (int i = 0; i < list.size(); i++) names[i] = list.get(i).name + "\n" + list.get(i).address;
-                    
+
                     new AlertDialog.Builder(CreateBookingActivity.this)
                         .setTitle("Select Station")
                         .setItems(names, (dialog, which) -> onStationSelected(list.get(which)))
@@ -166,14 +166,14 @@ public final class CreateBookingActivity extends Activity {
         selectedStationId = station.id;
         stationLabel.setText(station.name + "\n" + station.address);
         stationLabel.setTextColor(INK);
-        
+
         selectedSlotId = null;
         selectedSlotStartsAt = null;
         availableEnergyKwh = 0;
         slotLabel.setText("No slot selected");
         slotLabel.setTextColor(MUTED);
         energyHint.setText("Available: -");
-        
+
         setBusy(true);
         ((SolarApplication) getApplication()).accounts().station(station.id, new AccountRepository.Callback<JSONObject>() {
             @Override public void success(JSONObject response) {
@@ -211,7 +211,7 @@ public final class CreateBookingActivity extends Activity {
                 showMessage("No available slots found for this station.", true);
                 return;
             }
-            
+
             String[] display = new String[availableSlots.size()];
             DateTimeFormatter date = DateTimeFormatter.ofPattern("dd MMM yyyy");
             DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
@@ -223,7 +223,7 @@ public final class CreateBookingActivity extends Activity {
                     "\n" + s.getInt("availableSlots") + " battery slots available\n" +
                     s.getDouble("availableEnergyKwh") + " kWh available";
             }
-            
+
             new AlertDialog.Builder(CreateBookingActivity.this)
                 .setTitle("Select Available Slot")
                 .setItems(display, (dialog, which) -> {
@@ -297,8 +297,7 @@ public final class CreateBookingActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setText(value); SolarStyle.text(v, size, color, bold);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = dp(8);
         content.addView(v, lp);
@@ -313,10 +312,10 @@ public final class CreateBookingActivity extends Activity {
         editor.setInputType(inputType); editor.setText(initial);
         editor.setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
         GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE); bg.setCornerRadius(dp(8)); bg.setStroke(dp(1), Color.rgb(213, 224, 214));
+        bg.setColor(Color.WHITE); bg.setCornerRadius(dp(8)); bg.setStroke(dp(1), SolarStyle.BORDER);
         editor.setBackground(bg);
         editor.setPadding(dp(13), dp(12), dp(13), dp(12));
-        editor.setMinimumHeight(dp(50));
+        SolarStyle.field(editor);
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
         return editor;
@@ -326,8 +325,8 @@ public final class CreateBookingActivity extends Activity {
         Button b = new Button(this);
         b.setText(label); b.setTextSize(13); b.setAllCaps(false);
         b.setTextColor(primary ? Color.WHITE : GREEN);
-        b.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.rgb(234, 240, 227)));
-        b.setMinHeight(dp(50));
+        SolarStyle.button(b, primary);
+        b.setMinHeight(dp(52));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(15);
         content.addView(b, lp);
@@ -345,7 +344,7 @@ public final class CreateBookingActivity extends Activity {
 
     private void showMessage(String value, boolean error) {
         message.setText(value);
-        message.setTextColor(error ? Color.rgb(155, 66, 44) : GREEN);
+        message.setTextColor(error ? SolarStyle.RED : GREEN);
         message.setVisibility(View.VISIBLE);
     }
 

@@ -1,0 +1,8 @@
+<resources>
+    <color name="solar_blue">#0071C5</color>
+    <color name="solar_green">#047857</color>
+    <color name="solar_ink">#172B38</color>
+    <color name="solar_muted">#64748B</color>
+    <color name="solar_background">#F5F7F9</color>
+    <color name="solar_border">#E2E8F0</color>
+</resources>
