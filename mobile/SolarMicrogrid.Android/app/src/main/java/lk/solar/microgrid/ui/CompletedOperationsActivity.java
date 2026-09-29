@@ -231,41 +231,108 @@ public class CompletedOperationsActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(20), dp(20), dp(20), dp(20));
+        layout.setPadding(dp(24), dp(16), dp(24), dp(8));
         scroll.addView(layout);
 
-        detail(layout, "Booking", r.reservationId);
-        detail(layout, "Prosumer", r.prosumerNic);
-        detail(layout, "Station", r.stationId);
-        detail(layout, "Energy", r.energyAmountKwh + " kWh");
-        detail(layout, "Trading Type", r.tradingType);
-        detail(layout, "Booking Time", r.reservationDate);
-        detail(layout, "Status", r.status);
-        String completedAt = r.source.optString("completedAt", r.source.optString("updatedAt", "Unknown"));
-        detail(layout, "Completed At", completedAt);
+        // Header
+        TextView title = new TextView(this);
+        title.setText("Transfer Details");
+        title.setTextSize(22);
+        title.setTextColor(INK);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        layout.addView(title);
+        
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Ref: " + r.reservationId);
+        subtitle.setTextSize(13);
+        subtitle.setTextColor(MUTED);
+        LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(-1, -2);
+        subLp.bottomMargin = dp(24);
+        layout.addView(subtitle, subLp);
+
+        // Row 1: Energy & Trading Type
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        layout.addView(row1, new LinearLayout.LayoutParams(-1, -2));
+        
+        row1.addView(detailCell("Energy", r.energyAmountKwh + " kWh", true));
+        row1.addView(detailCell("Type", r.tradingType, false));
+
+        // Row 2: Status & Prosumer
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(16), 0, 0);
+        layout.addView(row2, new LinearLayout.LayoutParams(-1, -2));
+
+        row2.addView(detailCell("Status", r.status, true));
+        row2.addView(detailCell("Prosumer", r.prosumerNic, false));
+
+        // Station
+        String shortStation = r.stationId;
+        if (shortStation != null && shortStation.length() > 12) shortStation = shortStation.substring(0, 12) + "...";
+        LinearLayout rowStation = new LinearLayout(this);
+        rowStation.setOrientation(LinearLayout.HORIZONTAL);
+        rowStation.setPadding(0, dp(16), 0, 0);
+        layout.addView(rowStation, new LinearLayout.LayoutParams(-1, -2));
+        rowStation.addView(detailCell("Station", shortStation, false));
+
+        // Divider
+        android.view.View div = new android.view.View(this);
+        div.setBackgroundColor(Color.rgb(235, 235, 235));
+        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(-1, dp(1));
+        divLp.setMargins(0, dp(20), 0, dp(20));
+        layout.addView(div, divLp);
+
+        // Dates
+        String completedAt = r.source.optString("completedAt", r.source.optString("updatedAt", ""));
+        LinearLayout rowDates = new LinearLayout(this);
+        rowDates.setOrientation(LinearLayout.HORIZONTAL);
+        layout.addView(rowDates, new LinearLayout.LayoutParams(-1, -2));
+        
+        rowDates.addView(detailCell("Booked", formatDate(r.reservationDate), false));
+        rowDates.addView(detailCell("Completed", formatDate(completedAt), false));
 
         new AlertDialog.Builder(this)
-            .setTitle("Completed Operation Details")
             .setView(scroll)
             .setPositiveButton("Close", null)
             .show();
     }
 
-    private void detail(LinearLayout parent, String label, String value) {
-        TextView viewLabel = new TextView(this);
-        viewLabel.setText(label);
-        viewLabel.setTextSize(12);
-        viewLabel.setTextColor(MUTED);
-        parent.addView(viewLabel);
+    private LinearLayout detailCell(String label, String value, boolean isPrimary) {
+        LinearLayout cell = new LinearLayout(this);
+        cell.setOrientation(LinearLayout.VERTICAL);
+        cell.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+        TextView l = new TextView(this);
+        l.setText(label);
+        l.setTextSize(12);
+        l.setTextColor(MUTED);
+        cell.addView(l);
+
+        TextView v = new TextView(this);
+        v.setText(value);
+        v.setTextSize(15);
+        v.setTextColor(isPrimary ? GREEN : INK);
+        v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        cell.addView(v);
         
-        TextView viewValue = new TextView(this);
-        viewValue.setText(value);
-        viewValue.setTextSize(16);
-        viewValue.setTextColor(INK);
-        viewValue.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
-        layout.bottomMargin = dp(16);
-        parent.addView(viewValue, layout);
+        return cell;
+    }
+
+    private String formatDate(String iso) {
+        if (iso == null || iso.isEmpty() || iso.equals("Unknown")) return "N/A";
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            String cleanDate = iso.split("\\.")[0];
+            java.util.Date d = in.parse(cleanDate);
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy\nhh:mm a");
+            return out.format(d);
+        } catch (Exception e) {
+            String fallback = iso.replace("T", " ").replace("Z", "");
+            if (fallback.length() > 19) fallback = fallback.substring(0, 19);
+            return fallback;
+        }
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
