@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <application android:name=".SolarApplication" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules"
         android:usesCleartextTraffic="false" android:icon="@drawable/ic_solar" android:label="@string/app_name"
         android:theme="@style/AppTheme" android:supportsRtl="true">
@@ -14,5 +16,61 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.CreateBookingActivity"
+            android:exported="false"
+            android:label="@string/create_booking" />
+        <activity
+            android:name=".ui.BookingHistoryActivity"
+            android:exported="false"
+            android:label="@string/my_bookings" />
+        <activity
+            android:name=".ui.PendingBookingsActivity"
+            android:exported="false"
+            android:label="@string/pending_bookings" />
+        <activity
+            android:name=".ui.ModifyBookingActivity"
+            android:exported="false"
+            android:label="@string/modify_booking" />
+        <activity
+            android:name=".ui.CancelBookingActivity"
+            android:exported="false"
+            android:label="@string/cancel_booking" />
+        <activity
+            android:name=".ui.SearchBookingActivity"
+            android:exported="false"
+            android:label="@string/search_booking" />
+        <activity
+            android:name=".ui.BookingSummaryActivity"
+            android:exported="false"
+            android:label="@string/booking_summary_title" />
+        <activity
+            android:name=".ui.TransactionQrActivity"
+            android:exported="false"
+            android:label="Transaction QR" />
+        <activity
+            android:name=".ui.OperatorLoginActivity"
+            android:exported="false"
+            android:label="@string/operator_login_title" />
+        <activity
+            android:name=".ui.OperatorDashboardActivity"
+            android:exported="false"
+            android:label="@string/operator_dashboard_title" />
+        <activity
+            android:name=".ui.QrScannerActivity"
+            android:exported="false"
+            android:label="@string/qr_scanner_title" />
+        <activity
+            android:name=".ui.TransactionVerificationActivity"
+            android:exported="false"
+            android:label="@string/transaction_verified_title" />
+        <activity
+            android:name=".ui.OperatorProfileActivity"
+            android:exported="false"
+            android:label="Operator Profile" />
+        <activity
+            android:name=".ui.CompletedOperationsActivity"
+            android:exported="false"
+            android:label="@string/completed_operations_title" />
     </application>
 </manifest>

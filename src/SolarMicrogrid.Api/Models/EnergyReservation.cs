@@ -1,0 +1,40 @@
+﻿/*
+ * File: EnergyReservation.cs
+ * Author: Sajith
+ * Description: MongoDB model for energy reservations.
+ */
+
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
+namespace SolarMicrogrid.Api.Models;
+
+public class EnergyReservation
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string? Id { get; set; }
+
+    public string ReservationId { get; set; } = string.Empty;
+    public string ProsumerNic { get; set; } = string.Empty;
+    public string StationId { get; set; } = string.Empty;
+    public string SlotId { get; set; } = string.Empty;
+    public DateTime ReservationDate { get; set; }
+    public double EnergyAmountKwh { get; set; }
+    public string TradingType { get; set; } = string.Empty;
+    public string Status { get; set; } = "PENDING";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string? TransactionToken { get; set; }
+    public string? CancellationReason { get; set; }
+    public DateTime? CompletedAt { get; set; }
+        /// <summary>
+    /// Station version at the time of allocation (for Chamithu integration).
+    /// </summary>
+    public long? StationVersion { get; set; }
+
+    /// <summary>
+    /// Number of slots reserved in the station allocation ledger.
+    /// </summary>
+    public int AllocationSlots { get; set; } = 1;
+}

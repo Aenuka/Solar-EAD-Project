@@ -1,22 +1,24 @@
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using SolarMicrogrid.Api.Configuration;
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Endpoints;
+using SolarMicrogrid.Api.Repositories;
 using SolarMicrogrid.Api.Security;
 using SolarMicrogrid.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true).AddEnvironmentVariables();
 
-// Reference: Julio Casal YouTube tutorials
-// https://www.youtube.com/@juliocasal
 builder.Services.AddValidation();
 builder.AddMicrogridDatabase();
-builder.AddApiAuthentication();
+builder.AddApiAuthentication();   // ← Aenuka ගේ. Bearer scheme එක register කරන්නේ මේක.
 
-// Preserve the JSON rules used by the Android app and the staff portal.
+// JSON rules
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
@@ -29,6 +31,15 @@ builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddApiDocumentation();
 
+// Controllers (Sajith's)
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+    options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+    options.JsonSerializerOptions.NumberHandling = JsonNumberHandling.Strict;
+});
+
+// Services
 builder.Services.AddSingleton<PasswordService>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<AuthService>();
@@ -36,6 +47,12 @@ builder.Services.AddScoped<StaffService>();
 builder.Services.AddScoped<ProsumerService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<StationService>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<ReservationService>();
+builder.Services.AddScoped<MongoInitializer>();
+
+// Authorization
+builder.Services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 var app = builder.Build();
 
@@ -60,6 +77,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();   // ← Sajith's ReservationsController
 app.MapAuthEndpoints();
 app.MapStaffEndpoints();
 app.MapProsumersEndpoints();

@@ -89,7 +89,29 @@ final class StationDetailsDialog {
             int available = slot.getInt("availableSlots");
             double energy = slot.getDouble("availableEnergyKwh");
             card.addView(text(available + " battery slots  ·  " + number(energy) + " kWh available", 14, GREEN, false));
-            if (available == 0 || energy <= 0) card.addView(text("No availability remaining", 12, MUTED, true));
+            if (available == 0 || energy <= 0) {
+                card.addView(text("No availability remaining", 12, MUTED, true));
+            } else {
+                Button book = new Button(activity);
+                book.setText("Book this slot");
+                book.setAllCaps(false);
+                book.setTextColor(GREEN);
+                book.setBackground(background(Color.TRANSPARENT, 12));
+                book.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    android.content.Intent intent = new android.content.Intent(activity, CreateBookingActivity.class);
+                    intent.putExtra("stationId", station.id);
+                    try {
+                        intent.putExtra("slotId", slot.getString("id"));
+                        intent.putExtra("startsAt", slot.getString("startsAt"));
+                        intent.putExtra("endsAt", slot.getString("endsAt"));
+                        intent.putExtra("stationName", station.name);
+                        intent.putExtra("availableEnergyKwh", slot.getDouble("availableEnergyKwh"));
+                    } catch (JSONException e) {}
+                    activity.startActivity(intent);
+                });
+                card.addView(book, new LinearLayout.LayoutParams(-1, dp(40)));
+            }
         }
         body.addView(text("Availability is confirmed when you book.", 12, MUTED, false));
 

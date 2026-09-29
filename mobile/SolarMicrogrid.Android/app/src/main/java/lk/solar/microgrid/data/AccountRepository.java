@@ -123,4 +123,17 @@ public final class AccountRepository {
         });
     }
     private <T> void fail(Callback<T> callback, int messageId) { main.post(() -> callback.failure(0, context.getString(messageId))); }
+
+        // ===== Sajith: session access for ReservationRepository =====
+    
+    /** Active session token. Null when signed out. */
+    public String sessionToken() { return token; }
+    
+    /** Active prosumer NIC. Null when signed out. */
+    public String sessionNic() { return nic; }
+    
+    /** Shared API client — used by ReservationRepository. */
+    public ApiClient api() { return api; }
+
+
 }

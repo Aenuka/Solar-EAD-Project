@@ -1,0 +1,107 @@
+@using SolarMicrogrid.Contracts
+@{
+    ViewData["Title"] = "Booking Dashboard";
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int approvedFutureCount = ViewBag.ApprovedFutureCount ?? 0;
+    int totalCount = ViewBag.TotalCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    var recentBookings = ViewBag.RecentBookings as List<ReservationResponse> 
+                         ?? new List<ReservationResponse>();
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">LIVE OVERVIEW</p>
+        <h1>Booking Dashboard</h1>
+        <p class="muted">Real-time snapshot of reservation activity across the microgrid.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a asp-action="Index" class="button secondary">All Bookings</a>
+        <a asp-action="Pending" class="button">Review Pending</a>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="notice error">@ViewBag.Error</div>
+}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>Total bookings</span>
+        <strong>@totalCount</strong>
+        <small>All-time reservations</small>
+    </div>
+    <div class="stat-card">
+        <span>Pending</span>
+        <strong>@pendingCount</strong>
+        <small>Awaiting operator approval</small>
+    </div>
+    <div class="stat-card">
+        <span>Approved future</span>
+        <strong>@approvedFutureCount</strong>
+        <small>Ready for QR verification</small>
+    </div>
+    <div class="stat-card">
+        <span>Completed</span>
+        <strong>@completedCount</strong>
+        <small>Energy transfer finalised</small>
+    </div>
+</div>
+
+<div class="card table-card">
+    <div class="filter-bar" style="justify-content:space-between;">
+        <div>
+            <strong>Recent bookings</strong>
+            <small class="muted" style="display:block;margin-top:4px;">Last 5 reservations across the microgrid.</small>
+        </div>
+        <a asp-action="Index" class="button secondary">View all →</a>
+    </div>
+
+    @if (recentBookings.Any())
+    {
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reservation ID</th>
+                        <th>Prosumer NIC</th>
+                        <th>Station</th>
+                        <th>Date &amp; Time</th>
+                        <th>Energy (kWh)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in recentBookings)
+                    {
+                        var badgeClass = b.Status switch
+                        {
+                            "PENDING" => "badge pending",
+                            "APPROVED" => "badge approved",
+                            "COMPLETED" => "badge active",
+                            "CANCELLED" => "badge inactive",
+                            _ => "badge"
+                        };
+                        <tr>
+                            <td><strong>@b.ReservationId</strong></td>
+                            <td class="mono">@b.ProsumerNic</td>
+                            <td class="mono">@b.StationId</td>
+                            <td>@b.ReservationDate.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@b.EnergyAmountKwh</td>
+                            <td><span class="@badgeClass">@b.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <span class="empty-symbol">☀</span>
+            <h2>No bookings yet</h2>
+            <p class="muted">Recent reservations will appear here.</p>
+        </div>
+    }
+</div>
