@@ -29,37 +29,23 @@ An inactive station disappears from prosumer discovery. It remains visible to st
 
 ## Run and check in Android Studio
 
-1. Open `mobile/SolarMicrogrid.Android` as the project.
-2. Set **Settings → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK** to **JDK 17**. Use **Download JDK** if needed. The bundled JDK 25 in newer Android Studio versions is incompatible with this repository's Gradle 8.13 and produces `Unsupported class file major version 69`.
-3. Install SDK Platform 36. Minimum Android API is 26. Google Play services are not required for the map.
+1. Open `mobile/SolarMicrogrid.Android` as the project and use JDK 17 with Gradle.
+2. Install SDK Platform 36. Use a physical Android device with Google Play services, or a Google Play emulator.
+3. Enable **Maps SDK for Android** in Google Cloud and configure billing. Restrict the key to the Android application ID and signing certificate SHA-1 fingerprint. Debug builds use `lk.solar.microgrid.debug`; release builds use `lk.solar.microgrid`.
 4. Create or update `mobile/SolarMicrogrid.Android/development.properties` (ignored by Git):
 
    ```properties
    apiBaseUrl=http://10.0.2.2:5080/api/v1/
+   mapsApiKey=YOUR_GOOGLE_MAPS_API_KEY
    ```
 
-   No Maps API key is required. Existing `mapsApiKey` settings are ignored.
+   For a USB phone, set `apiBaseUrl=http://127.0.0.1:5080/api/v1/` and run `adb reverse tcp:5080 tcp:5080`. The sample `development.properties.example` documents both settings.
 5. Sync Gradle and Run `app`. Keep the API running. Sign in as a prosumer and select **Explore microgrid stations**.
-6. The native OpenStreetMap view plots active stations from REST. Pan/pinch to explore; tap a marker or list item for current details, schedules and availability.
-7. Tap **Use my location** and grant foreground location access, or enter latitude `6.9271` and longitude `79.8612` and select **Search within 25 km**. Location permission denial does not prevent manual searches or browsing all stations.
-8. Test refresh, pagination, empty nearby results, and station deactivation. Your phone needs internet for map tiles and a separate connection to the central API for station data. If tiles fail, the list remains usable. Station inventory is never served from a tile cache.
+6. The Google map plots active stations from REST. Pan or pinch to explore; tap a marker or station card for current details, schedules and availability.
+7. Tap **Use my location** and grant foreground location access to filter within 25 km. The map and station list remain usable if location access is declined.
+8. Test pagination, empty nearby results, and station deactivation. The phone needs internet for Google map tiles and a separate connection to the central API for station data.
 
-### Map provider and assignment scope
-
-At the user's request, the Google Maps SDK has been replaced by native Java osmdroid 6.1.20 with OpenStreetMap raster tiles. No Google Cloud project, billing setup or API key is used. The assignment originally specified Google Maps: obtain lecturer acceptance before marking that provider-specific requirement complete.
-
-osmdroid is a native Android library, not a cross-platform framework. Its upstream repository is archived; reassess the map library before long-term production maintenance. See [upstream status](https://github.com/osmdroid/osmdroid).
-
-The map uses HTTPS tiles, a distinct application User-Agent, private app tile storage, caching with an additional seven-day lifetime, visible linked OpenStreetMap attribution and two download threads. It offers no bulk/offline tile-download feature. Public tiles are best-effort infrastructure for interactive viewing, not a guaranteed production service. See the [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/). App tokens and station payloads are sent only to the central API, not to the tile server.
-
-For a USB phone, set `apiBaseUrl=http://127.0.0.1:5080/api/v1/`, enable USB debugging, then run from PowerShell:
-
-```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" devices
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:5080 tcp:5080
-```
-
-Rebuild after changing properties. Repeat `adb reverse` after reconnecting the phone.
+The API key is inserted into the APK manifest at build time, so an ignored local file alone does not secure it. Use Google Cloud Android app and API restrictions. Release builds require `-PmapsApiKey=...` and an HTTPS `-PapiBaseUrl=...`.
 
 ## Station and slot API contract
 
