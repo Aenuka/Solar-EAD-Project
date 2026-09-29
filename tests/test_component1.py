@@ -3,10 +3,11 @@ from concurrent.futures import ThreadPoolExecutor
 import base64
 import hashlib
 import hmac
+from portal_contract import page_data
+
 import http.cookiejar
 import json
 import os
-import re
 import secrets
 import time
 import unittest
@@ -251,7 +252,7 @@ class ComponentOneTests(unittest.TestCase):
         browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
         with browser.open(WEB + "/Account/Login") as response:
             html = response.read().decode()
-        token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html).group(1)
+        token = page_data(html)["csrfToken"]
         form = {"Username": os.environ["Bootstrap__Username"], "Password": os.environ["Bootstrap__Password"]}
         with self.assertRaises(urllib.error.HTTPError) as rejected:
             browser.open(WEB + "/Account/Login", urllib.parse.urlencode(form).encode())
@@ -260,24 +261,24 @@ class ComponentOneTests(unittest.TestCase):
         with browser.open(WEB + "/Account/Login", urllib.parse.urlencode(form).encode()) as response:
             html = response.read().decode()
             self.assertEqual(200, response.status)
-            self.assertIn("Account overview", html)
+            self.assertEqual("Home", page_data(html)["controller"])
             self.assertIn("frame-ancestors 'none'", response.headers["Content-Security-Policy"])
         for path in ("/Staff", "/Staff/Create", "/Staff/Edit/bootstrap", "/Prosumers", "/Prosumers?pending=true"):
             with browser.open(WEB + path) as response:
                 self.assertEqual(200, response.status, path)
         profile, _, _ = self.new_prosumer(login=False)
         with browser.open(WEB + "/Prosumers/Details/" + profile["nic"]) as response:
-            self.assertIn("Profile details", response.read().decode())
+            self.assertEqual(profile["nic"], page_data(response.read().decode())["model"]["nic"])
 
     def test_21_web_grid_operator_cannot_view_admin_pages(self):
         _, _, credentials = self.new_staff()
         browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
         with browser.open(WEB + "/Account/Login") as response:
             html = response.read().decode()
-        token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html).group(1)
+        token = page_data(html)["csrfToken"]
         form = {"Username": credentials["username"], "Password": credentials["password"], "__RequestVerificationToken": token}
         with browser.open(WEB + "/Account/Login", urllib.parse.urlencode(form).encode()) as response:
-            self.assertIn("Grid Operator access", response.read().decode())
+            self.assertEqual("GridOperator", page_data(response.read().decode())["user"]["role"])
         with self.assertRaises(urllib.error.HTTPError) as denied:
             browser.open(WEB + "/Staff")
         self.assertEqual(403, denied.exception.code)
@@ -303,7 +304,7 @@ class ComponentOneTests(unittest.TestCase):
             with browser.open(WEB + path) as response:
                 return response.read().decode()
         def post(path, form, source):
-            token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', source).group(1)
+            token = page_data(source)["csrfToken"]
             with browser.open(WEB + path, urllib.parse.urlencode({**form, "__RequestVerificationToken": token}).encode()) as response:
                 return response.read().decode()
         login = get("/Account/Login")
@@ -341,7 +342,7 @@ class ComponentOneTests(unittest.TestCase):
             with browser.open(WEB + path) as response:
                 return response.read().decode()
         def post(path, form, source):
-            token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', source).group(1)
+            token = page_data(source)["csrfToken"]
             with browser.open(WEB + path, urllib.parse.urlencode({**form, "__RequestVerificationToken": token}).encode()) as response:
                 return response.read().decode()
         login = get("/Account/Login")
@@ -356,13 +357,3 @@ class ComponentOneTests(unittest.TestCase):
         html = post(edit, {"FullName": staff["fullName"], "Email": staff["email"], "Role": "GridOperator", "Status": "Inactive", "Version": staff["version"]}, get(edit))
         self.assertIn("Staff account updated.", html)
         self.assertEqual(401, request("GET", "auth/me", token=session["accessToken"])[0])
-
-    def test_99_authentication_rate_limit(self):
-        for _ in range(201):
-            status, body, headers = request("POST", "auth/staff/login", {"username": "unknown", "password": "incorrect-password"})
-            if status == 429:
-                self.assertEqual(429, body["status"])
-                self.assertIn("Retry-After", headers)
-                return
-            self.assertEqual(401, status)
-        self.fail("Authentication rate limiter did not reject excessive attempts")

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
 using SolarMicrogrid.Web.ViewModels;
@@ -7,31 +8,31 @@ using SolarMicrogrid.Web.ViewModels;
 namespace SolarMicrogrid.Web.Controllers;
 
 [Authorize(Roles = Roles.Staff)]
-public sealed class StationsController(MicrogridApiClient api) : Controller
+public sealed class StationsController(MicrogridApiClient api) : PortalController
 {
     [HttpGet]
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
     {
         var stations = await api.GetAsync<PageResponse<StationResponse>>($"stations?page={page}", ct);
-        return View(stations);
+        return ReactPage(stations);
     }
 
     [HttpGet]
     public async Task<IActionResult> Details(string id, CancellationToken ct)
     {
         var station = await api.GetAsync<StationResponse>(StationPath(id), ct);
-        return View(station);
+        return ReactPage(station);
     }
 
     [HttpGet, Authorize(Roles = Roles.Backoffice)]
-    public IActionResult Create() => View(new StationInput());
+    public IActionResult Create() => ReactPage(new StationInput());
 
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
     public async Task<IActionResult> Create(StationInput model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return ReactPage(model);
         }
 
         try
@@ -43,7 +44,7 @@ public sealed class StationsController(MicrogridApiClient api) : Controller
         catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
         {
             AddErrors(exception);
-            return View(model);
+            return ReactPage(model);
         }
     }
 
@@ -62,7 +63,7 @@ public sealed class StationsController(MicrogridApiClient api) : Controller
             BatterySlots = station.BatterySlots,
             Version = station.Version
         };
-        return View(model);
+        return ReactPage(model);
     }
 
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
@@ -70,7 +71,7 @@ public sealed class StationsController(MicrogridApiClient api) : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return ReactPage(model);
         }
 
         try
@@ -82,7 +83,7 @@ public sealed class StationsController(MicrogridApiClient api) : Controller
         catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
         {
             AddErrors(exception);
-            return View(model);
+            return ReactPage(model);
         }
     }
 

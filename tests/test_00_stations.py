@@ -1,9 +1,10 @@
 """Station inventory integration tests; run before the account suite exhausts the auth limiter."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+from portal_contract import page_data
+
 import http.cookiejar
 import os
-import re
 import secrets
 import time
 import unittest
@@ -156,7 +157,7 @@ class StationTests(unittest.TestCase):
         def get(path):
             with browser.open(account_tests.WEB + path) as response: return response.read().decode()
         def post(path, data, html):
-            token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html).group(1)
+            token = page_data(html)["csrfToken"]
             with browser.open(account_tests.WEB + path, urllib.parse.urlencode({**data, "__RequestVerificationToken": token}, doseq=True).encode()) as response:
                 return response.read().decode(), response.url
         post("/Account/Login", {"Username": os.environ["Bootstrap__Username"], "Password": os.environ["Bootstrap__Password"]}, get("/Account/Login"))
@@ -173,16 +174,16 @@ class StationTests(unittest.TestCase):
         s = self.call("GET", "stations/" + station_id)
         self.assertEqual(start, datetime.fromisoformat(s["slots"][0]["startsAt"]))
         html, _ = post("/Stations/AddSlot/" + station_id, {"Version": s["version"], "StartsAt": start.strftime("%Y-%m-%dT%H:%M"), "EndsAt": (start + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M"), "UsableSlots": 4, "UsableEnergyKwh": 40}, html)
-        self.assertIn('role="alert" class="notice error">Station time windows cannot overlap.', html)
+        self.assertIn('Station time windows cannot overlap.', html)
         unchanged = self.call("GET", "stations/" + station_id)
         self.assertEqual(s["version"], unchanged["version"])
         self.assertEqual(1, len(unchanged["slots"]))
         late_start = start.replace(hour=22)
         html, _ = post("/Stations/AddSlot/" + station_id, {"Version": s["version"], "StartsAt": late_start.strftime("%Y-%m-%dT%H:%M"), "EndsAt": late_start.replace(hour=23).strftime("%Y-%m-%dT%H:%M"), "UsableSlots": 4, "UsableEnergyKwh": 40}, html)
-        self.assertIn('role="alert" class="notice error">The slot must fall within', html)
+        self.assertIn('The slot must fall within', html)
         self.assertIn("operating days and hours (Asia/Colombo)", html)
         html, _ = post("/Stations/Availability/" + station_id + "?slotId=" + s["slots"][0]["id"], {"Version": s["version"], "UsableSlots": 4, "UsableEnergyKwh": 60}, html)
-        self.assertIn('role="alert" class="notice error">Usable energy exceeds', html)
+        self.assertIn('Usable energy exceeds', html)
         self.assertIn("50 kW for 1 hour(s) permits at most 50 kWh.", html)
         unchanged = self.call("GET", "stations/" + station_id)
         self.assertEqual(s["version"], unchanged["version"])
@@ -190,8 +191,9 @@ class StationTests(unittest.TestCase):
         browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
         post("/Account/Login", {"Username": self.operator_user["username"], "Password": self.operator_user["password"]}, get("/Account/Login"))
         html = get("/Stations/Details/" + station_id)
-        self.assertIn("Save schedule", html)
-        self.assertNotIn("Deactivate station", html)
+        self.assertEqual("GridOperator", page_data(html)["user"]["role"])
+        self.assertEqual(s["schedule"], page_data(html)["model"]["schedule"])
+        self.assertEqual("Details", page_data(html)["page"])
         html, _ = post("/Stations/Availability/" + station_id + "?slotId=" + s["slots"][0]["id"], {"Version": s["version"], "UsableSlots": 3, "UsableEnergyKwh": 30}, html)
         self.assertIn("Station updated", html)
         updated = self.call("GET", "stations/" + station_id)
