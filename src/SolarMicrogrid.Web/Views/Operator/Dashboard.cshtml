@@ -1,0 +1,145 @@
+@using SolarMicrogrid.Contracts
+@{
+    ViewData["Title"] = "Grid Operator Dashboard";
+    int pendingCount = ViewBag.PendingCount ?? 0;
+    int approvedFutureCount = ViewBag.ApprovedFutureCount ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    var pendingReservations = ViewBag.PendingReservations as List<ReservationResponse> 
+                         ?? new List<ReservationResponse>();
+    var recentCompleted = ViewBag.RecentCompleted as List<ReservationResponse> 
+                         ?? new List<ReservationResponse>();
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">GRID OPERATOR WORKSPACE</p>
+        <h1>Operator Dashboard</h1>
+        <p class="muted">Monitor pending reservations and recent completed energy transfers.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a asp-controller="Bookings" asp-action="Pending" class="button">Review Pending Bookings</a>
+    </div>
+</div>
+
+@if (ViewBag.Error != null)
+{
+    <div class="notice error">@ViewBag.Error</div>
+}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span>Pending</span>
+        <strong>@pendingCount</strong>
+        <small>Awaiting your approval</small>
+    </div>
+    <div class="stat-card">
+        <span>Approved future</span>
+        <strong>@approvedFutureCount</strong>
+        <small>Ready for QR verification</small>
+    </div>
+    <div class="stat-card">
+        <span>Completed</span>
+        <strong>@completedCount</strong>
+        <small>Energy transfers finalised</small>
+    </div>
+</div>
+
+<div class="card table-card" style="margin-top: 24px;">
+    <div class="filter-bar" style="justify-content:space-between;">
+        <div>
+            <strong>Recent pending reservations</strong>
+            <small class="muted" style="display:block;margin-top:4px;">Action required for these upcoming bookings.</small>
+        </div>
+        <a asp-controller="Bookings" asp-action="Pending" class="button secondary">View all →</a>
+    </div>
+
+    @if (pendingReservations.Any())
+    {
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reservation ID</th>
+                        <th>Prosumer NIC</th>
+                        <th>Station</th>
+                        <th>Date &amp; Time</th>
+                        <th>Energy (kWh)</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in pendingReservations)
+                    {
+                        <tr>
+                            <td><strong>@b.ReservationId</strong></td>
+                            <td class="mono">@b.ProsumerNic</td>
+                            <td class="mono">@b.StationId</td>
+                            <td>@b.ReservationDate.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@b.EnergyAmountKwh</td>
+                            <td>
+                                <form asp-controller="Bookings" asp-action="Approve" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <button type="submit" class="button-quiet" style="color:var(--text-main);">Approve</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <span class="empty-symbol">☀</span>
+            <h2>No pending bookings</h2>
+            <p class="muted">You're all caught up!</p>
+        </div>
+    }
+</div>
+
+<div class="card table-card" style="margin-top: 24px;">
+    <div class="filter-bar" style="justify-content:space-between;">
+        <div>
+            <strong>Recent completed operations</strong>
+            <small class="muted" style="display:block;margin-top:4px;">Successfully finalized energy transfers.</small>
+        </div>
+    </div>
+
+    @if (recentCompleted.Any())
+    {
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Reservation ID</th>
+                        <th>Station</th>
+                        <th>Completed At</th>
+                        <th>Energy (kWh)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in recentCompleted)
+                    {
+                        <tr>
+                            <td><strong>@b.ReservationId</strong></td>
+                            <td class="mono">@b.StationId</td>
+                            <td>@((b.CompletedAt ?? b.UpdatedAt).ToString("yyyy-MM-dd HH:mm"))</td>
+                            <td>@b.EnergyAmountKwh</td>
+                            <td><span class="badge active">@b.Status</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <span class="empty-symbol">✔</span>
+            <h2>No completed operations</h2>
+            <p class="muted">Finalized transfers will appear here.</p>
+        </div>
+    }
+</div>

@@ -14,7 +14,7 @@ public sealed class HomeController(MicrogridApiClient api) : Controller
     {
         if (User.IsInRole(Roles.GridOperator))
         {
-            return View("Operator");
+            return RedirectToAction("Dashboard", "Operator");
         }
         var dashboard = await api.GetAsync<DashboardResponse>("dashboard", ct);
         return View(dashboard);
