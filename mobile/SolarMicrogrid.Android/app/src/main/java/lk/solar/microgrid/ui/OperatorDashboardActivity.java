@@ -171,61 +171,43 @@ public class OperatorDashboardActivity extends SolarActivity {
     private void renderReservationCard(lk.solar.microgrid.data.Reservation r) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        int statusColor = "COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? Color.rgb(255, 152, 0) : Color.rgb(33, 150, 243);
-        
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.WHITE, Color.WHITE});
-        bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1), Color.rgb(226, 232, 240));
-        card.setBackground(bg);
-        card.setElevation(dp(8));
+        int statusColor = "COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? SolarStyle.AMBER : SolarStyle.BLUE;
+        android.graphics.drawable.GradientDrawable bg = shape(Color.WHITE, 0);
+        bg.setStroke(dp(2), statusColor);
+        SolarStyle.card(card);
+        card.setElevation(0);
         card.setPadding(dp(20), dp(20), dp(20), dp(20));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(12);
         params.bottomMargin = dp(4);
         content.addView(card, params);
 
-        // Header Row
-        LinearLayout headerRow = new LinearLayout(this);
-        headerRow.setOrientation(LinearLayout.HORIZONTAL);
-        card.addView(headerRow, new LinearLayout.LayoutParams(-1, -2));
+        TextView idView = new TextView(this);
+        idView.setText(r.reservationId); idView.setTextSize(16); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        card.addView(idView);
 
-        TextView energyView = new TextView(this);
-        energyView.setText(r.energyAmountKwh + " kWh");
-        energyView.setTextSize(18); energyView.setTextColor(statusColor); energyView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        energyView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        headerRow.addView(energyView);
+        TextView detailsView = new TextView(this);
+        String dateStr = "COMPLETED".equals(r.status) ?
+            "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now"))
+            : r.reservationDate;
+
+        detailsView.setText(dateStr + "\n" + r.energyAmountKwh + " kWh");
+        detailsView.setTextSize(14); detailsView.setTextColor(MUTED);
+        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
+        detailsParams.topMargin = dp(4); detailsParams.bottomMargin = dp(8);
+        card.addView(detailsView, detailsParams);
 
         TextView statusView = new TextView(this);
         statusView.setText(r.status);
-        statusView.setTextSize(11); 
-        statusView.setTextColor(statusColor);
-        statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        statusView.setPadding(dp(12), dp(6), dp(12), dp(6));
-        android.graphics.drawable.GradientDrawable statusBg = shape(Color.argb(30, Color.red(statusColor), Color.green(statusColor), Color.blue(statusColor)), 0);
-        statusBg.setCornerRadius(dp(16));
-        statusView.setBackground(statusBg);
-        headerRow.addView(statusView);
+        statusView.setTextSize(13);
+        statusView.setTextColor("COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? SolarStyle.AMBER : SolarStyle.BLUE);
+        statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        statusView.setPadding(dp(8), dp(4), dp(8), dp(4));
+        statusView.setBackground(shape(SolarStyle.BACKGROUND, 0));
 
-        // Subtitle: ID
-        TextView idView = new TextView(this);
-        idView.setText("Ref: " + r.reservationId);
-        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
-        idParams.topMargin = dp(16);
-        card.addView(idView, idParams);
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-2, -2);
+        card.addView(statusView, statusParams);
 
-        TextView detailsView = new TextView(this);
-        String dateStr = "COMPLETED".equals(r.status) ? 
-            "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now")) 
-            : "Reserved: " + r.reservationDate;
-            
-        detailsView.setText(dateStr);
-        detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
-        detailsParams.topMargin = dp(8);
-        card.addView(detailsView, detailsParams);
         if ("PENDING".equals(r.status)) {
             Button approveBtn = new Button(this);
             approveBtn.setText("Approve Booking");
