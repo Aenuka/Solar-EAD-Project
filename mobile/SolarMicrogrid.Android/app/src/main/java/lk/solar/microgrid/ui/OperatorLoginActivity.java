@@ -23,8 +23,8 @@ import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 
-public class OperatorLoginActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public class OperatorLoginActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
     private OperatorRepository operators;
     private LinearLayout content;
     private TextView message;
@@ -45,10 +45,10 @@ public class OperatorLoginActivity extends Activity {
     }
 
     private void showLogin() {
-        screen(R.string.operator_login_title, R.string.login_intro);
+        screen(R.string.operator_login_title, R.string.operator_login_intro);
         EditText username = field(R.string.operator_username, "", InputType.TYPE_CLASS_TEXT, 50);
         EditText password = passwordField();
-        
+
         button(R.string.sign_in, true, () -> {
             if (!required(username, password)) return;
             setBusy(true);
@@ -65,7 +65,7 @@ public class OperatorLoginActivity extends Activity {
                 }
             });
         });
-        
+
         button(R.string.back_to_prosumer_login, false, () -> {
             startActivity(new Intent(this, MainActivity.class));
             finish();
@@ -79,26 +79,14 @@ public class OperatorLoginActivity extends Activity {
         busy = false; actions.clear(); fields.clear();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            } else view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-            return insets;
-        });
         setContentView(scroll);
         scroll.requestApplyInsets();
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
-        TextView heading = text(getString(title), 32, INK, true);
-        LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
-        text(getString(introduction), 14, MUTED, false);
+        SolarStyle.hero(content, getString(title), getString(introduction));
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
         content.addView(progress, new LinearLayout.LayoutParams(-1, dp(4)));
@@ -109,14 +97,13 @@ public class OperatorLoginActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView view = new TextView(this);
-        view.setText(value); view.setTextSize(size); view.setTextColor(color);
-        if (bold) view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        view.setText(value); SolarStyle.text(view, size, color, bold);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(8);
         content.addView(view, layout);
         return view;
     }
-    
+
     private EditText field(int label, String initial, int inputType, int maxLength) {
         TextView caption = text(getString(label), 12, INK, true);
         ((LinearLayout.LayoutParams) caption.getLayoutParams()).topMargin = dp(18);
@@ -124,32 +111,29 @@ public class OperatorLoginActivity extends Activity {
         editor.setId(View.generateViewId()); caption.setLabelFor(editor.getId());
         editor.setTextSize(15); editor.setTextColor(INK); editor.setHintTextColor(MUTED);
         editor.setInputType(inputType); editor.setText(initial);
-        editor.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        editor.setBackground(shape(Color.WHITE, SolarStyle.BORDER));
         editor.setPadding(dp(13), dp(12), dp(13), dp(12));
-        editor.setMinimumHeight(dp(50));
-        editor.setOnFocusChangeListener((v, hasFocus) -> {
-            editor.setBackground(shape(Color.WHITE, hasFocus ? GREEN : Color.rgb(213, 224, 214)));
-        });
+        SolarStyle.field(editor);
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
         return editor;
     }
-    
+
     private EditText passwordField() {
         EditText field = field(R.string.password, "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD, 128);
         field.setSaveEnabled(false);
         field.setAutofillHints(View.AUTOFILL_HINT_PASSWORD);
         return field;
     }
-    
+
     private Button button(int label, boolean primary, Runnable action) {
         Button button = new Button(this);
         button.setText(label); button.setTextSize(13); button.setAllCaps(false);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button.setTextColor(primary ? Color.WHITE : GREEN);
-        button.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.TRANSPARENT));
-        if (primary) button.setElevation(dp(4));
-        button.setMinHeight(dp(50)); button.setTag(true);
+        SolarStyle.button(button, primary);
+        if (primary) button.setElevation(0);
+        button.setMinHeight(dp(52)); button.setTag(true);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(15);
         content.addView(button, layout); actions.add(button);
@@ -164,26 +148,26 @@ public class OperatorLoginActivity extends Activity {
         for (EditText field : fields) field.setEnabled(!value);
         if (value) showMessage("Signing in...", false);
     }
-    
+
     private void showMessage(String value, boolean error) {
-        message.setText(value); message.setTextColor(error ? Color.rgb(155, 66, 44) : GREEN);
+        message.setText(value); message.setTextColor(error ? SolarStyle.RED : GREEN);
         message.setPadding(0, dp(14), 0, dp(10)); message.setVisibility(View.VISIBLE);
     }
-    
+
     private boolean required(EditText... inputs) {
         for (EditText input : inputs) if (value(input).trim().isEmpty()) {
             input.setError(getString(R.string.required_fields)); input.requestFocus(); return false;
         }
         return true;
     }
-    
+
     private static String value(EditText input) { return input.getText().toString(); }
-    
+
     private GradientDrawable shape(int fill, int stroke) {
         GradientDrawable shape = new GradientDrawable(); shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;
     }
-    
+
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
 }

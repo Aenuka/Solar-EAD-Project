@@ -15,14 +15,14 @@ import org.json.JSONObject;
 import lk.solar.microgrid.R;
 import lk.solar.microgrid.data.Reservation;
 
-public class TransactionVerificationActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public class TransactionVerificationActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
     private LinearLayout content;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         String json = getIntent().getStringExtra("reservationJson");
         if (json == null) {
             finish();
@@ -39,22 +39,13 @@ public class TransactionVerificationActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            } else {
-                view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-            }
-            return insets;
-        });
-        
+
         setContentView(scroll);
         scroll.requestApplyInsets();
 
@@ -64,8 +55,8 @@ public class TransactionVerificationActivity extends Activity {
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, 0));
-        card.setElevation(dp(4));
+        SolarStyle.card(card);
+        card.setElevation(0);
         card.setPadding(dp(20), dp(20), dp(20), dp(20));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
@@ -80,24 +71,24 @@ public class TransactionVerificationActivity extends Activity {
         Button button = new Button(this);
         button.setText(R.string.back_to_scanner);
         button.setTextSize(13); button.setAllCaps(false);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         button.setTextColor(GREEN);
-        button.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
-        button.setMinHeight(dp(50));
+        SolarStyle.button(button, false);
+        button.setMinHeight(dp(52));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
         layout2.topMargin = dp(15);
-        
+
         Button finalizeButton = new Button(this);
         finalizeButton.setText("Finalize Energy Transfer");
         finalizeButton.setTextSize(13); finalizeButton.setAllCaps(false);
-        finalizeButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        finalizeButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         finalizeButton.setTextColor(Color.WHITE);
-        finalizeButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
-        finalizeButton.setElevation(dp(4));
-        finalizeButton.setMinHeight(dp(50));
+        SolarStyle.button(finalizeButton, true);
+        finalizeButton.setElevation(0);
+        finalizeButton.setMinHeight(dp(52));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(30);
-        
+
         content.addView(finalizeButton, layout);
         content.addView(button, layout2);
         button.setOnClickListener(view -> finish());
@@ -109,7 +100,7 @@ public class TransactionVerificationActivity extends Activity {
                 .setPositiveButton("Finalize", (dialog, which) -> {
                     finalizeButton.setEnabled(false);
                     finalizeButton.setText("Completing...");
-                    
+
                     ((lk.solar.microgrid.SolarApplication) getApplication()).operators().completeTransaction(reservation.id, new lk.solar.microgrid.data.OperatorRepository.Callback<Reservation>() {
                         @Override
                         public void success(Reservation result) {
@@ -137,15 +128,15 @@ public class TransactionVerificationActivity extends Activity {
 
     private void showCompletedState(Reservation result) {
         content.removeAllViews();
-        
+
         TextView heading = text("✓ Energy Transfer Completed", 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
         headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setBackground(shape(Color.WHITE, 0));
-        card.setElevation(dp(4));
+        SolarStyle.card(card);
+        card.setElevation(0);
         card.setPadding(dp(20), dp(20), dp(20), dp(20));
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
@@ -153,18 +144,18 @@ public class TransactionVerificationActivity extends Activity {
         detail(card, "Station:", result.stationId);
         detail(card, "Energy:", result.energyAmountKwh + " kWh");
         detail(card, "Status:", result.status);
-        
+
         String completedDate = result.source.optString("completedAt", result.source.optString("updatedAt", "Now"));
         detail(card, "Completed:", completedDate);
 
         Button backButton = new Button(this);
         backButton.setText("Back to Operator Dashboard");
         backButton.setTextSize(13); backButton.setAllCaps(false);
-        backButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        backButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         backButton.setTextColor(Color.WHITE);
-        backButton.setBackgroundTintList(ColorStateList.valueOf(GREEN));
-        backButton.setElevation(dp(4));
-        backButton.setMinHeight(dp(50));
+        SolarStyle.button(backButton, true);
+        backButton.setElevation(0);
+        backButton.setMinHeight(dp(52));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(30);
         content.addView(backButton, layout);
@@ -173,10 +164,10 @@ public class TransactionVerificationActivity extends Activity {
         Button scanAnother = new Button(this);
         scanAnother.setText("Scan Another QR");
         scanAnother.setTextSize(13); scanAnother.setAllCaps(false);
-        scanAnother.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        scanAnother.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         scanAnother.setTextColor(GREEN);
-        scanAnother.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
-        scanAnother.setMinHeight(dp(50));
+        SolarStyle.button(scanAnother, false);
+        scanAnother.setMinHeight(dp(52));
         LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
         layout2.topMargin = dp(15);
         content.addView(scanAnother, layout2);
@@ -189,15 +180,15 @@ public class TransactionVerificationActivity extends Activity {
     private void detail(LinearLayout parent, String label, String value) {
         TextView viewLabel = new TextView(this);
         viewLabel.setText(label);
-        viewLabel.setTextSize(12);
+        viewLabel.setTextSize(13);
         viewLabel.setTextColor(MUTED);
         parent.addView(viewLabel);
-        
+
         TextView viewValue = new TextView(this);
         viewValue.setText(value);
         viewValue.setTextSize(16);
         viewValue.setTextColor(INK);
-        viewValue.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        viewValue.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(16);
         parent.addView(viewValue, layout);
@@ -205,8 +196,7 @@ public class TransactionVerificationActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView view = new TextView(this);
-        view.setText(value); view.setTextSize(size); view.setTextColor(color);
-        if (bold) view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        view.setText(value); SolarStyle.text(view, size, color, bold);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(8);
         content.addView(view, layout);
@@ -214,7 +204,7 @@ public class TransactionVerificationActivity extends Activity {
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
-        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable(); 
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;

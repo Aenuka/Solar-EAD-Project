@@ -29,8 +29,8 @@ import lk.solar.microgrid.data.Profile;
 import lk.solar.microgrid.data.ProfileCache;
 
 /** Native Android widgets. This activity manages presentation only; the API owns account rules. */
-public final class MainActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public final class MainActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
     private AccountRepository accounts;
     private LinearLayout content;
     private TextView message;
@@ -91,29 +91,29 @@ public final class MainActivity extends Activity {
         profileCard.setOrientation(LinearLayout.VERTICAL);
         android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(240, 248, 242), Color.WHITE});
+                new int[]{SolarStyle.SKY, Color.WHITE});
         bg.setCornerRadius(dp(12));
-        profileCard.setBackground(bg);
-        profileCard.setElevation(dp(4));
+        SolarStyle.card(profileCard);
+        profileCard.setElevation(0);
         profileCard.setPadding(dp(20), dp(20), dp(20), dp(20));
-        
+
         TextView nameView = new TextView(this);
         nameView.setText(profile.fullName);
-        nameView.setTextSize(24); nameView.setTextColor(INK); nameView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        nameView.setTextSize(24); nameView.setTextColor(INK); nameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         profileCard.addView(nameView);
-        
+
         TextView nicView = new TextView(this);
         nicView.setText(getString(R.string.nic_value, profile.nic));
         nicView.setTextSize(13); nicView.setTextColor(MUTED);
         profileCard.addView(nicView);
-        
+
         TextView statusView = new TextView(this);
         statusView.setText(getString(R.string.status_value, profile.status));
-        statusView.setTextSize(13); statusView.setTextColor(GREEN); statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        statusView.setTextSize(13); statusView.setTextColor(GREEN); statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
         sp.topMargin = dp(8);
         profileCard.addView(statusView, sp);
-        
+
         LinearLayout.LayoutParams pcp = new LinearLayout.LayoutParams(-1, -2);
         pcp.bottomMargin = dp(20);
         content.addView(profileCard, pcp);
@@ -125,7 +125,7 @@ public final class MainActivity extends Activity {
 
         TextView actionsTitle = new TextView(this);
         actionsTitle.setText("Quick Actions");
-        actionsTitle.setTextSize(16); actionsTitle.setTextColor(INK); actionsTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        actionsTitle.setTextSize(16); actionsTitle.setTextColor(INK); actionsTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams atp = new LinearLayout.LayoutParams(-1, -2);
         atp.topMargin = dp(10); atp.bottomMargin = dp(10);
         content.addView(actionsTitle, atp);
@@ -155,10 +155,10 @@ public final class MainActivity extends Activity {
 
         row2.addView(createActionCard("My Bookings", () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class))));
         row2.addView(createActionCard("Pending Bookings", () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class))));
-        
+
         row3.addView(createActionCard("Search Bookings", () -> startActivity(new android.content.Intent(this, SearchBookingActivity.class))));
         row3.addView(createActionCard("Refresh", this::refresh));
-        
+
         row4.addView(createActionCard("Edit Profile", () -> showEditProfile(snapshot)));
         row4.addView(createActionCard("Sign Out", this::confirmLogout));
     }
@@ -170,7 +170,7 @@ public final class MainActivity extends Activity {
 
         TextView formTitle = new TextView(this);
         formTitle.setText("Update Details");
-        formTitle.setTextSize(24); formTitle.setTextColor(INK); formTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        formTitle.setTextSize(24); formTitle.setTextColor(INK); formTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams ftp = new LinearLayout.LayoutParams(-1, -2);
         ftp.topMargin = dp(20);
         content.addView(formTitle, ftp);
@@ -194,7 +194,7 @@ public final class MainActivity extends Activity {
             Button request = button(R.string.request_deactivation, false, this::showDeactivation);
             allow(request, !snapshot.cached);
         }
-        
+
         button(R.string.back_account, false, () -> showProfile(current));
     }
 
@@ -273,26 +273,14 @@ public final class MainActivity extends Activity {
         busy = false; actions.clear(); fields.clear();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            } else view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-            return insets;
-        });
         setContentView(scroll);
         scroll.requestApplyInsets();
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
-        TextView heading = text(getString(title), 32, INK, true);
-        LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
-        text(getString(introduction), 14, MUTED, false);
+        SolarStyle.hero(content, getString(title), getString(introduction));
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
         content.addView(progress, new LinearLayout.LayoutParams(-1, dp(4)));
@@ -303,8 +291,7 @@ public final class MainActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView view = new TextView(this);
-        view.setText(value); view.setTextSize(size); view.setTextColor(color);
-        if (bold) view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        view.setText(value); SolarStyle.text(view, size, color, bold);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.bottomMargin = dp(8);
         content.addView(view, layout);
@@ -313,7 +300,7 @@ public final class MainActivity extends Activity {
     private void note(String value) {
         TextView view = text(value, 13, INK, false);
         view.setPadding(dp(14), dp(14), dp(14), dp(14));
-        view.setBackground(shape(Color.rgb(233, 240, 221), 0));
+        view.setBackground(shape(SolarStyle.MINT, 0));
     }
     private EditText field(int label, String initial, int inputType, int maxLength) {
         TextView caption = text(getString(label), 12, INK, true);
@@ -323,9 +310,9 @@ public final class MainActivity extends Activity {
         editor.setTextSize(15); editor.setTextColor(INK); editor.setHintTextColor(MUTED);
         editor.setInputType(inputType); editor.setText(initial);
         editor.setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
-        editor.setBackground(shape(Color.WHITE, Color.rgb(213, 224, 214)));
+        editor.setBackground(shape(Color.WHITE, SolarStyle.BORDER));
         editor.setPadding(dp(13), dp(12), dp(13), dp(12));
-        editor.setMinimumHeight(dp(50));
+        SolarStyle.field(editor);
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
         return editor;
@@ -340,8 +327,8 @@ public final class MainActivity extends Activity {
         Button button = new Button(this);
         button.setText(label); button.setTextSize(13); button.setAllCaps(false);
         button.setTextColor(primary ? Color.WHITE : GREEN);
-        button.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.rgb(234, 240, 227)));
-        button.setMinHeight(dp(50)); button.setTag(true);
+        SolarStyle.button(button, primary);
+        button.setMinHeight(dp(52)); button.setTag(true);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
         layout.topMargin = dp(15);
         content.addView(button, layout); actions.add(button);
@@ -357,7 +344,7 @@ public final class MainActivity extends Activity {
         if (value) showMessage(getString(R.string.working), false);
     }
     private void showMessage(String value, boolean error) {
-        message.setText(value); message.setTextColor(error ? Color.rgb(155, 66, 44) : GREEN);
+        message.setText(value); message.setTextColor(error ? SolarStyle.RED : GREEN);
         message.setPadding(0, dp(14), 0, dp(10)); message.setVisibility(View.VISIBLE);
     }
     private boolean required(EditText... inputs) {
@@ -371,8 +358,8 @@ public final class MainActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(android.view.Gravity.CENTER);
-        card.setBackground(shape(Color.WHITE, 0));
-        card.setElevation(dp(4));
+        SolarStyle.card(card);
+        card.setElevation(0);
         card.setPadding(dp(10), dp(24), dp(10), dp(24));
         card.setClickable(true);
         card.setOnClickListener(v -> { if (!busy) action.run(); });
@@ -381,7 +368,7 @@ public final class MainActivity extends Activity {
         titleView.setText(title);
         titleView.setTextSize(13);
         titleView.setTextColor(GREEN);
-        titleView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         titleView.setGravity(android.view.Gravity.CENTER);
         card.addView(titleView);
 

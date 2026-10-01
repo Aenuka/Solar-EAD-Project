@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
 using SolarMicrogrid.Web.ViewModels;
@@ -7,24 +8,24 @@ using SolarMicrogrid.Web.ViewModels;
 namespace SolarMicrogrid.Web.Controllers;
 
 [Authorize(Roles = Roles.Backoffice)]
-public sealed class StaffController(MicrogridApiClient api) : Controller
+public sealed class StaffController(MicrogridApiClient api) : PortalController
 {
     [HttpGet]
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
     {
         var staff = await api.GetAsync<PageResponse<StaffResponse>>($"staff-users?page={page}", ct);
-        return View(staff);
+        return ReactPage(staff);
     }
 
     [HttpGet]
-    public IActionResult Create() => View(new StaffCreateViewModel());
+    public IActionResult Create() => ReactPage(new StaffCreateViewModel());
 
     [HttpPost]
     public async Task<IActionResult> Create(StaffCreateViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return ReactPage(model);
         }
 
         try
@@ -37,7 +38,7 @@ public sealed class StaffController(MicrogridApiClient api) : Controller
         catch (ApiFailureException exception) when (exception.StatusCode is 400 or 409)
         {
             AddErrors(exception);
-            return View(model);
+            return ReactPage(model);
         }
     }
 
@@ -56,7 +57,7 @@ public sealed class StaffController(MicrogridApiClient api) : Controller
             Status = user.Status,
             Version = user.Version
         };
-        return View(model);
+        return ReactPage(model);
     }
 
     [HttpPost]
@@ -81,7 +82,7 @@ public sealed class StaffController(MicrogridApiClient api) : Controller
         var user = await api.GetAsync<StaffResponse>($"staff-users/{Uri.EscapeDataString(id)}", ct);
         model.Username = user.Username;
         model.IsProtected = user.IsProtected;
-        return View(model);
+        return ReactPage(model);
     }
 
     private void AddErrors(ApiFailureException exception)

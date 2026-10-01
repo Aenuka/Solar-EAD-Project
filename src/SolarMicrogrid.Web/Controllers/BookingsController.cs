@@ -6,13 +6,14 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
 
 namespace SolarMicrogrid.Web.Controllers;
 
 [Authorize(Roles = "Backoffice,GridOperator")]
-public class BookingsController : Controller
+public class BookingsController : PortalController
 {
     private readonly MicrogridApiClient _api;
 
@@ -29,14 +30,14 @@ public class BookingsController : Controller
         try
         {
             var bookings = await _api.SearchReservationsAsync(status, stationId, null, ct);
-            ViewBag.FilterStatus = status;
-            ViewBag.FilterStation = stationId;
-            return View(bookings);
+            PageMeta["FilterStatus"] = status;
+            PageMeta["FilterStation"] = stationId;
+            return ReactPage(bookings);
         }
         catch (Exception ex)
         {
-            ViewBag.Error = ex.Message;
-            return View(new List<ReservationResponse>());
+            PageMeta["Error"] = ex.Message;
+            return ReactPage(new List<ReservationResponse>());
         }
     }
 
@@ -48,12 +49,12 @@ public class BookingsController : Controller
         try
         {
             var bookings = await _api.GetPendingReservationsAsync(ct);
-            return View(bookings);
+            return ReactPage(bookings);
         }
         catch (Exception ex)
         {
-            ViewBag.Error = ex.Message;
-            return View(new List<ReservationResponse>());
+            PageMeta["Error"] = ex.Message;
+            return ReactPage(new List<ReservationResponse>());
         }
     }
 
@@ -61,7 +62,6 @@ public class BookingsController : Controller
     /// Approves a pending reservation.
     /// </summary>
     [HttpPost]
-    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Approve(string id, CancellationToken ct)
     {
         try
@@ -71,8 +71,7 @@ public class BookingsController : Controller
         }
         catch (Exception ex)
         {
-            // Instead of TempData or complex error handling, we can just log or pass error
-            // to a view. Since it's a redirect, we could use TempData for a simple error message.
+            // Preserve the error for React after the redirect.
             TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(Pending));
         }
@@ -86,32 +85,32 @@ public class BookingsController : Controller
         try
         {
             // Fetch all bookings once, then compute stats locally
-            var allBookings = await _api.SearchReservationsAsync(null, null, null, ct) 
+            var allBookings = await _api.SearchReservationsAsync(null, null, null, ct)
                               ?? new List<ReservationResponse>();
 
             var now = DateTime.UtcNow;
 
-            ViewBag.PendingCount = allBookings.Count(b => b.Status == "PENDING");
-            ViewBag.ApprovedFutureCount = allBookings.Count(b => 
+            PageMeta["PendingCount"] = allBookings.Count(b => b.Status == "PENDING");
+            PageMeta["ApprovedFutureCount"] = allBookings.Count(b =>
                 b.Status == "APPROVED" && b.ReservationDate > now);
-            ViewBag.TotalCount = allBookings.Count;
-            ViewBag.CompletedCount = allBookings.Count(b => b.Status == "COMPLETED");
-            ViewBag.RecentBookings = allBookings
+            PageMeta["TotalCount"] = allBookings.Count;
+            PageMeta["CompletedCount"] = allBookings.Count(b => b.Status == "COMPLETED");
+            PageMeta["RecentBookings"] = allBookings
                 .OrderByDescending(b => b.CreatedAt)
                 .Take(5)
                 .ToList();
 
-            return View();
+            return ReactPage();
         }
         catch (Exception ex)
         {
-            ViewBag.Error = ex.Message;
-            ViewBag.PendingCount = 0;
-            ViewBag.ApprovedFutureCount = 0;
-            ViewBag.TotalCount = 0;
-            ViewBag.CompletedCount = 0;
-            ViewBag.RecentBookings = new List<ReservationResponse>();
-            return View();
+            PageMeta["Error"] = ex.Message;
+            PageMeta["PendingCount"] = 0;
+            PageMeta["ApprovedFutureCount"] = 0;
+            PageMeta["TotalCount"] = 0;
+            PageMeta["CompletedCount"] = 0;
+            PageMeta["RecentBookings"] = new List<ReservationResponse>();
+            return ReactPage();
         }
     }
 }

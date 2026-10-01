@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
 using SolarMicrogrid.Web.ViewModels;
@@ -7,15 +8,15 @@ using SolarMicrogrid.Web.ViewModels;
 namespace SolarMicrogrid.Web.Controllers;
 
 [Authorize(Roles = Roles.Backoffice)]
-public sealed class ProsumersController(MicrogridApiClient api) : Controller
+public sealed class ProsumersController(MicrogridApiClient api) : PortalController
 {
     [HttpGet]
     public async Task<IActionResult> Index(string? search, AccountStatus? status, bool pending = false,
         int page = 1, CancellationToken ct = default)
     {
-        ViewBag.Search = search;
-        ViewBag.Status = status;
-        ViewBag.Pending = pending;
+        PageMeta["Search"] = search;
+        PageMeta["Status"] = status;
+        PageMeta["Pending"] = pending;
 
         var path = $"prosumers?page={page}&search={Uri.EscapeDataString(search ?? "")}";
         if (status.HasValue)
@@ -28,7 +29,7 @@ public sealed class ProsumersController(MicrogridApiClient api) : Controller
         }
 
         var accounts = await api.GetAsync<PageResponse<ProsumerResponse>>(path, ct);
-        return View(accounts);
+        return ReactPage(accounts);
     }
 
     [HttpGet]
@@ -45,7 +46,7 @@ public sealed class ProsumersController(MicrogridApiClient api) : Controller
             Version = user.Version,
             Account = user
         };
-        return View(model);
+        return ReactPage(model);
     }
 
     [HttpPost]
@@ -68,7 +69,7 @@ public sealed class ProsumersController(MicrogridApiClient api) : Controller
         }
 
         model.Account = await GetAsync(id, ct);
-        return View(model);
+        return ReactPage(model);
     }
 
     [HttpPost]

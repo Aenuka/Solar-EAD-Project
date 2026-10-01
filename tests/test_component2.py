@@ -2,6 +2,7 @@ import os
 import unittest
 from datetime import datetime, timedelta, timezone
 import secrets
+import time
 import test_component1 as account_tests
 
 request = account_tests.request
@@ -25,7 +26,7 @@ class PasinduTests(unittest.TestCase):
         
         cls.prosumer_nic = "199011112222"
         pwd = secrets.token_urlsafe(18)
-        code, _, _ = request("POST", "prosumers", {"nic": cls.prosumer_nic, "fullName": "Test Prosumer", "email": "tp@example.test", "phone": "+94771112222", "address": "Test", "password": pwd})
+        code, _, _ = request("POST", "prosumers", {"nic": cls.prosumer_nic, "fullName": "Test Prosumer", "email": "tp@example.test", "phone": "+94771112222", "address": "10 Test Road", "password": pwd})
         if code != 201 and code != 409:
             assert False, "Failed to create prosumer"
             
@@ -41,13 +42,17 @@ class PasinduTests(unittest.TestCase):
         code, _, _ = request("PUT", f"stations/{s['id']}/schedule", {"version": s["version"], "days": list(range(7)), "opensAt": "00:00", "closesAt": "23:59"}, self.operator)
         _, s, _ = request("GET", f"stations/{s['id']}", token=self.admin)
         
-        code, _, _ = request("POST", f"stations/{s['id']}/slots", {"version": s["version"], "startsAt": start_time.isoformat(), "endsAt": (start_time + timedelta(hours=1)).isoformat(), "usableSlots": 2, "usableEnergyKwh": 40}, self.operator)
+        code, result, _ = request("POST", f"stations/{s['id']}/slots", {"version": s["version"], "startsAt": start_time.isoformat(), "endsAt": (start_time + timedelta(hours=1)).isoformat(), "usableSlots": 2, "usableEnergyKwh": 40}, self.operator)
+        self.assertEqual(200, code, result)
         _, s, _ = request("GET", f"stations/{s['id']}", token=self.admin)
         return s
 
     def test_pasindu_qr_and_dashboard_flow(self):
         now = datetime.now(COLOMBO)
-        start = now - timedelta(minutes=10)
+        # Create and reserve a future window, then verify once it starts.
+        start = now + timedelta(seconds=10)
+        if start.hour == 23:
+            self.skipTest("Avoid a window crossing the operating day's boundary")
         s = self.create_station_and_slot(start)
         slot_id = s["slots"][0]["id"]
         
@@ -73,6 +78,7 @@ class PasinduTests(unittest.TestCase):
         code, qr, _ = request("GET", f"reservations/{res_id}/transaction", token=self.prosumer)
         self.assertEqual(200, code)
         token = qr["transactionToken"]
+        time.sleep(max(0, (start - datetime.now(COLOMBO)).total_seconds()) + 0.1)
         
         code, verified, _ = request("GET", f"Reservations/verify?token={token}", token=self.operator)
         self.assertEqual(200, code, verified)

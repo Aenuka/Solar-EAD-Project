@@ -6,11 +6,11 @@ For a tutorial comparison and guided reading order, see [Understanding the backe
 
 ## Boundaries
 
-The .NET solution contains API, MVC and Contracts projects. Contracts has only DTOs, role/status values and input annotations. MVC references Contracts but never the API implementation or MongoDB driver. Android has independent Java DTOs matching the same JSON contract.
+The .NET solution contains API, Web and Contracts projects. The Web project hosts a React JSX and Tailwind CSS frontend. Contracts has only DTOs, role/status values and input annotations. Web references Contracts but never the API implementation or MongoDB driver. Android has independent Java DTOs matching the same JSON contract.
 
 API endpoint groups own HTTP binding, endpoint authorization and response status. Services own registration, immutable identity, allowed account transitions and concurrency rules. Concrete repositories in `Data/` own MongoDB filters and persistence. Password hashing and signed-token creation are in the API Security layer. JSON rejects unknown fields to prevent accidentally accepting administrative properties in public requests.
 
-MVC uses a typed HTTP client. The signed API token is contained in an encrypted, HttpOnly authentication ticket, never rendered into a page. MVC checks its session with the API, applies page-level role checks and validates antiforgery tokens on POSTs. These checks supplement API enforcement. Android Activities handle forms; AccountRepository coordinates network and cache; ApiClient handles HTTP; ProfileCache uses Android SQLiteOpenHelper.
+The web controllers use a typed HTTP client. React renders pages from safely escaped bootstrap data and submits antiforgery-protected forms for JSON responses. The signed API token is contained in an encrypted, HttpOnly authentication ticket, never rendered into a page. MVC checks its session with the API, applies page-level role checks and validates antiforgery tokens on POSTs. These checks supplement API enforcement. Android Activities handle forms; AccountRepository coordinates network and cache; ApiClient handles HTTP; ProfileCache uses Android SQLiteOpenHelper.
 
 ## Permission matrix
 
@@ -35,7 +35,7 @@ Staff usernames have a unique index. Prosumer uniqueness is guaranteed by MongoD
 
 The latest deactivation request is embedded with its reason, decision status, reviewer, timestamps and decision note. Account status, decision, security version and recent event are written together in one atomic document replacement guarded by the expected version. This works on a standalone MongoDB server and avoids a multi-document transaction requirement.
 
-Recent events are explicitly bounded to the last 100 per account. The API returns this recent history, and MVC displays the latest 10. This is not a permanent compliance audit archive; a full retention policy and archive can be added independently. A later request replaces the embedded latest request, while its preceding events remain within that bounded history.
+Recent events are explicitly bounded to the last 100 per account. The API returns this recent history, and React displays the latest 10. This is not a permanent compliance audit archive; a full retention policy and archive can be added independently. A later request replaces the embedded latest request, while its preceding events remain within that bounded history.
 
 All API timestamps are UTC ISO-8601 with MongoDB millisecond precision. Names/addresses are trimmed; passwords are never trimmed. NIC normalization follows the [Department for Registration of Persons FAQ](https://drp.gov.lk/en/faq.php). Account validation does not establish a person's legal identity.
 

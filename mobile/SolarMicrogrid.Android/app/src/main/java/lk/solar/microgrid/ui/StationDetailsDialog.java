@@ -23,9 +23,9 @@ import lk.solar.microgrid.data.Station;
 /** Read-only station overview with scrollable availability and a persistent close action. */
 final class StationDetailsDialog {
     private final Activity activity;
-    private static final int INK = Color.rgb(23, 61, 50);
-    private static final int MUTED = Color.rgb(100, 119, 110);
-    private static final int GREEN = Color.rgb(23, 108, 77);
+    private static final int INK = SolarStyle.INK;
+    private static final int MUTED = SolarStyle.MUTED;
+    private static final int GREEN = SolarStyle.GREEN;
 
     private StationDetailsDialog(Activity activity) { this.activity = activity; }
 
@@ -80,7 +80,7 @@ final class StationDetailsDialog {
             OffsetDateTime start = local(slot.getString("startsAt"));
             OffsetDateTime end = local(slot.getString("endsAt"));
             LinearLayout card = column(14);
-            card.setBackground(background(Color.rgb(242, 247, 243), 14));
+            card.setBackground(background(SolarStyle.BACKGROUND, 14));
             LinearLayout.LayoutParams spacing = new LinearLayout.LayoutParams(-1, -2);
             spacing.setMargins(0, dp(8), 0, dp(4));
             body.addView(card, spacing);
@@ -144,7 +144,7 @@ final class StationDetailsDialog {
         TextView view = new TextView(activity);
         view.setText(value); view.setTextSize(size); view.setTextColor(color);
         view.setPadding(0, dp(5), 0, dp(5));
-        if (bold) view.setTypeface(null, Typeface.BOLD);
+        if (bold) view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         return view;
     }
     private void metric(LinearLayout row, String value, String label) {

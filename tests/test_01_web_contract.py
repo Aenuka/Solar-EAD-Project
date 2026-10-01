@@ -1,4 +1,6 @@
-"""MVC form/session regressions for the tutorial-style .NET refactor."""
+"""React portal JSON form/session regression tests."""
+from portal_contract import page_data
+
 import http.cookiejar
 import os
 import re
@@ -24,13 +26,14 @@ class WebContractTests(unittest.TestCase):
     def setUp(self):
         self.cookies = http.cookiejar.CookieJar()
         self.browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookies))
+        self.browser.addheaders = [("Accept", "application/json")]
 
     def get(self, path):
         with self.browser.open(WEB + path, timeout=20) as response:
             return response.read().decode(), response.url
 
     def post(self, path, data, html):
-        token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html).group(1)
+        token = page_data(html)["csrfToken"]
         body = urllib.parse.urlencode({**data, "__RequestVerificationToken": token}).encode()
         with self.browser.open(WEB + path, body, timeout=20) as response:
             return response.read().decode(), response.url
@@ -64,6 +67,27 @@ class WebContractTests(unittest.TestCase):
         _, url = self.get("/Staff")
         self.assertIn("/Account/Login", url)
 
+    def test_bootstrap_is_escaped_and_does_not_expose_passwords(self):
+        self.browser.addheaders = [("Accept", "text/html")]
+        html, _ = self.get("/Account/Login")
+        self.assertIn('<div id="root"></div>', html)
+        self.assertRegex(html, r'src="/app/assets/[^\"]+\.js"')
+        hostile_name = '</script><script>alert(1)</script>'
+        password = secrets.token_urlsafe(20)
+        html, _ = self.post("/Account/Login", {"Username": hostile_name, "Password": password}, html)
+        self.assertEqual(hostile_name, page_data(html)["model"]["username"])
+        self.assertNotIn(hostile_name, html)
+        self.assertNotIn(password, html)
+        self.assertNotIn("password", page_data(html)["model"])
+        self.assertEqual(1, len(re.findall('id="portal-data"', html)))
+
+    def test_json_posts_still_require_antiforgery(self):
+        self.get("/Account/Login")
+        with self.assertRaises(urllib.error.HTTPError) as rejected:
+            self.browser.open(WEB + "/Account/Login", urllib.parse.urlencode({"Username": "someone", "Password": "password"}).encode())
+        self.assertEqual(400, rejected.exception.code)
+        rejected.exception.close()
+
     def test_invalid_staff_form_keeps_values_without_creating_account(self):
         self.login()
         code, before, _ = request("GET", "staff-users", token=self.admin)
@@ -74,8 +98,9 @@ class WebContractTests(unittest.TestCase):
             "Password": "short", "Role": "GridOperator",
         }, html)
         self.assertIn("/Staff/Create", url)
-        self.assertIn('value="Keep this name"', html)
-        self.assertIn("validation-summary-errors", html)
+        self.assertEqual("Keep this name", page_data(html)["model"]["fullName"])
+        self.assertTrue(page_data(html)["errors"])
+        self.assertNotIn("password", page_data(html)["model"])
         code, after, _ = request("GET", "staff-users", token=self.admin)
         self.assertEqual(200, code)
         self.assertEqual(before["total"], after["total"])
@@ -92,7 +117,7 @@ class WebContractTests(unittest.TestCase):
             "Version": station["version"], "StartsAt": "", "EndsAt": "", "UsableSlots": "", "UsableEnergyKwh": "",
         }, html)
         self.assertIn("/Stations/Details/", url)
-        self.assertIn('role="alert" class="notice error"', html)
+        self.assertTrue(page_data(html)["notices"]["error"])
         self.assertIn("required", html)
         code, after, _ = request("GET", "stations/" + station["id"], token=self.admin)
         self.assertEqual(200, code)

@@ -10,12 +10,12 @@ Component 4 (Chamithu): station management, operating schedules, energy window i
 |---|---|
 | `src/SolarMicrogrid.Api` | ASP.NET Core REST API, account rules, authorization and MongoDB access |
 | `src/SolarMicrogrid.Contracts` | API request/response DTOs shared by the .NET applications; no database dependencies |
-| `src/SolarMicrogrid.Web` | ASP.NET Core MVC staff portal; calls the API over HTTP |
+| `src/SolarMicrogrid.Web` | React JSX + Tailwind CSS staff portal hosted by ASP.NET Core; calls the API over HTTP |
 | `mobile/SolarMicrogrid.Android` | Native Java Android application using Android widgets, HTTP and SQLite |
 | `tests` | HTTP integration tests against a real, isolated MongoDB instance |
 
 ```text
-MVC controllers → API client ─────────────┐
+React UI → C# controllers → API client ─────────────┐
                                         ├→ API endpoints → Services → Repositories → MongoDB
 Android UI → AccountRepository → HTTP ───┘
                   ↕
@@ -26,7 +26,7 @@ MongoDB is authoritative. SQLite stores only the signed-in prosumer's last serve
 
 ## Run the API and web application
 
-Prerequisites: .NET SDK 10.0.300 or later in the .NET 10 family, Python 3, and a MongoDB connection (Atlas in the cloud, `mongod` on PATH, or Docker).
+Prerequisites: Node.js 20.19+ (or 22.12+) with npm, .NET SDK 10.0.300 or later in the .NET 10 family, Python 3, and a MongoDB connection (Atlas in the cloud, `mongod` on PATH, or Docker).
 
 ### MongoDB Atlas with local Android SQLite
 
@@ -65,7 +65,7 @@ Then, from the repository root:
 python3 scripts/run_dev.py
 ```
 
-The script creates local credentials, builds the solution, and starts the API and MVC app. When configured for the default local MongoDB connection, it starts an installed `mongod` with data in `.local/mongodb` if port 27017 is not already listening. Atlas connections skip that step. It only stops processes it started.
+The script creates local credentials, builds the solution, and starts the API and React staff portal. When configured for the default local MongoDB connection, it starts an installed `mongod` with data in `.local/mongodb` if port 27017 is not already listening. Atlas connections skip that step. It only stops processes it started.
 
 - Staff portal: <http://localhost:5081>
 - API: <http://localhost:5080/api/v1>
@@ -86,6 +86,8 @@ dotnet run --project src/SolarMicrogrid.Web
 ```
 
 For your own environment, configure `Mongo__ConnectionString`, `Mongo__DatabaseName`, `Jwt__SigningKey` (at least 32 characters), `Jwt__Issuer`, `Jwt__Audience`, and the web application's `Api__BaseUrl`. For first-time staff provisioning, provide `Bootstrap__Username`, `Bootstrap__Password` (12–128 characters), `Bootstrap__Email`, and optionally `Bootstrap__FullName`. Keep these in environment settings or user secrets.
+
+Frontend source, watch mode, and tests: [React staff portal guide](src/SolarMicrogrid.Web/README.md). The .NET build installs and builds the React/Tailwind frontend automatically.
 
 ## Run Android
 
@@ -139,7 +141,7 @@ cd mobile/SolarMicrogrid.Android
 ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
-The Python suite starts temporary API/MVC/MongoDB processes and cleans them up afterward. It tests authorization, forged tokens, uniqueness under concurrent registration, optimistic concurrency, opposing deactivation decisions, session revocation, account reactivation, MVC login/antiforgery and rate limiting. MongoDB data is isolated from development data. If `mongod` is unavailable, use `TEST_MONGO_URL` for a disposable server; each test run creates a uniquely named database there and leaves that database for inspection.
+The Python suite starts temporary API/web/MongoDB processes and cleans them up afterward. It tests authorization, forged tokens, uniqueness under concurrent registration, optimistic concurrency, opposing deactivation decisions, session revocation, account reactivation, React portal login/antiforgery and rate limiting. MongoDB data is isolated from development data. If `mongod` is unavailable, use `TEST_MONGO_URL` for a disposable server; each test run creates a uniquely named database there and leaves that database for inspection.
 
 The test runner also refreshes `docs/openapi.json` from the running API. Native Android unit tests cover request shapes, profile parsing and validation error parsing. `assembleDebug` produces `mobile/SolarMicrogrid.Android/app/build/outputs/apk/debug/app-debug.apk`.
 

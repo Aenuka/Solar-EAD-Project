@@ -14,6 +14,7 @@ public sealed class StaffCreateViewModel
     [Required, EmailAddress, StringLength(254)]
     public string Email { get; set; } = "";
 
+    [System.Text.Json.Serialization.JsonIgnore]
     [Required, DataType(DataType.Password), StringLength(128, MinimumLength = 12)]
     public string Password { get; set; } = "";
 
