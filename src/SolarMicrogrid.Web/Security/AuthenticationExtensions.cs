@@ -17,9 +17,7 @@ public static class AuthenticationExtensions
                 options.Cookie.Name = "SolarMicrogrid.Session";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                    ? CookieSecurePolicy.SameAsRequest
-                    : CookieSecurePolicy.Always;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
                 options.LoginPath = "/Account/Login";
                 options.AccessDeniedPath = "/Account/AccessDenied";
                 options.SlidingExpiration = false;
@@ -67,18 +65,9 @@ public static class AuthenticationExtensions
         {
             throw new ApiFailureException(503, "The account service is temporarily unavailable.");
         }
-        catch (TaskCanceledException)
+        catch (TaskCanceledException) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
         {
-            if (context.HttpContext.RequestAborted.IsCancellationRequested)
-            {
-                // The browser aborted the request (e.g. user closed tab or refreshed).
-                // Safely exit without failing the pipeline.
-                return;
-            }
-            
-            // The API timed out (took longer than the HttpClient timeout).
-            context.RejectPrincipal();
-            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            throw new ApiFailureException(503, "The account service is temporarily unavailable.");
         }
     }
 }

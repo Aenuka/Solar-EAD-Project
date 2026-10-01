@@ -11,11 +11,11 @@ public static class ApiClientExtensions
         {
             throw new InvalidOperationException("Api:BaseUrl must end with '/'.");
         }
-        if (!builder.Environment.IsDevelopment() && apiUrl.Scheme != "https")
+/*        if (!builder.Environment.IsDevelopment() && apiUrl.Scheme != "https")
         {
             throw new InvalidOperationException("Configure an HTTPS Api:BaseUrl outside Development.");
         }
-
+*/
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHttpClient<MicrogridApiClient>(client =>
         {
