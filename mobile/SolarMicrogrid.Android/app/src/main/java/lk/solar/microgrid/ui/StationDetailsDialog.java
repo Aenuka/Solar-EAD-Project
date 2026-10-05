@@ -28,12 +28,15 @@ final class StationDetailsDialog {
     private static final int MUTED = SolarStyle.MUTED;
     private static final int GREEN = SolarStyle.GREEN;
 
+    // Keeps the hosting activity for displaying the dialog. *****
     private StationDetailsDialog(Activity activity) { this.activity = activity; }
 
+    // Opens the details dialog for the selected station. *****
     static void show(Activity activity, Station station) throws JSONException {
         new StationDetailsDialog(activity).open(station);
     }
 
+    // Builds station details and bookable energy windows from the API response. *****
     private void open(Station station) throws JSONException {
         Dialog dialog = new Dialog(activity);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -145,11 +148,19 @@ final class StationDetailsDialog {
         dialog.show();
     }
 
-    private OffsetDateTime local(String value) { return OffsetDateTime.parse(value).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30)); }
+    // Converts an API timestamp to Sri Lanka local time for display. *****
+    private OffsetDateTime local(String value) {
+         return OffsetDateTime.parse(value).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
+    }
+    // Formats a numeric station value to at most two decimal places. *****
     private String number(double value) { NumberFormat format = NumberFormat.getNumberInstance(); format.setMaximumFractionDigits(2); return format.format(value); }
+    // Converts density-independent units to screen pixels. *****
     private int dp(int value) { return Math.round(value * activity.getResources().getDisplayMetrics().density); }
+    // Creates a padded vertical container for dialog content. *****
     private LinearLayout column(int padding) { LinearLayout view = new LinearLayout(activity); view.setOrientation(LinearLayout.VERTICAL); view.setPadding(dp(padding), dp(padding), dp(padding), dp(padding)); return view; }
+    // Creates a rounded background for a dialog element. *****
     private GradientDrawable background(int color, int radius) { GradientDrawable drawable = new GradientDrawable(); drawable.setColor(color); drawable.setCornerRadius(dp(radius)); return drawable; }
+    // Creates consistently styled text for station details. *****
     private TextView text(String value, int size, int color, boolean bold) {
         TextView view = new TextView(activity);
         view.setText(value); view.setTextSize(size); view.setTextColor(color);
@@ -157,6 +168,7 @@ final class StationDetailsDialog {
         if (bold) view.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         return view;
     }
+    // Adds one labeled capacity or availability metric to a row. *****
     private void metric(LinearLayout row, String value, String label) {
         LinearLayout cell = column(6);
         cell.addView(text(value, 16, INK, true));

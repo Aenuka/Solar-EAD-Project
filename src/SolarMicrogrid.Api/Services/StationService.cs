@@ -1,3 +1,7 @@
+// File: StationService.cs
+// Purpose: Validates station operations and maintains version-checked energy inventory.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Models;
@@ -9,6 +13,7 @@ namespace SolarMicrogrid.Api.Services;
 // Booking/QR services must use this service rather than keep a second inventory counter.
 public sealed class StationService(StationRepository repository)
 {
+    // Loads station details, hiding inactive stations from public users. *****
     public async Task<StationResponse> GetAsync(string id, bool isStaff, CancellationToken ct)
     {
         var station = await FindAsync(id, ct);
@@ -20,6 +25,7 @@ public sealed class StationService(StationRepository repository)
         return ToResponse(station, isStaff);
     }
 
+    // Lists stations with optional nearby filtering and pagination. *****
     public async Task<PageResponse<StationResponse>> ListAsync(bool isStaff, bool activeOnly, int page, int pageSize,
         double? latitude, double? longitude, double radiusKm, CancellationToken ct)
     {
@@ -51,6 +57,7 @@ public sealed class StationService(StationRepository repository)
         return new PageResponse<StationResponse>(items, all.Count, page, pageSize);
     }
 
+    // Validates and stores a new station. *****
     public async Task<StationResponse> CreateAsync(StationInput request, CancellationToken ct)
     {
         Validate(request);
@@ -60,6 +67,7 @@ public sealed class StationService(StationRepository repository)
         return ToResponse(station, true);
     }
 
+    // Updates station details while checking existing window capacity. *****
     public async Task<StationResponse> UpdateAsync(string id, StationUpdate request, CancellationToken ct)
     {
         Validate(request);
@@ -75,6 +83,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Changes station status only when active reservations permit it. *****
     public async Task<StationResponse> StatusAsync(string id, StationStatusInput request, CancellationToken ct)
     {
         Validate(request);
@@ -90,6 +99,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Changes operating hours without invalidating existing energy windows. *****
     public async Task<StationResponse> ScheduleAsync(string id, ScheduleInput request, CancellationToken ct)
     {
         Validate(request);
@@ -116,6 +126,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Adds a future energy window within the station schedule and capacity. *****
     public async Task<StationResponse> AddSlotAsync(string id, SlotInput request, CancellationToken ct)
     {
         Validate(request);
@@ -158,6 +169,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Updates future availability without reducing it below allocated usage. *****
     public async Task<StationResponse> AvailabilityAsync(string id, string slotId, AvailabilityInput request, CancellationToken ct)
     {
         Validate(request);
@@ -176,6 +188,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Archives a window only when its allocation history allows removal. *****
     public async Task<StationResponse> RemoveSlotAsync(string id, string slotId, StationVersion request, CancellationToken ct)
     {
         Validate(request);
@@ -196,6 +209,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Reserves window inventory once per booking within the seven-day limit. *****
     public async Task<StationResponse> ReserveAsync(string id, string slotId, AllocationInput request, CancellationToken ct)
     {
         Validate(request);
@@ -235,6 +249,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Moves or changes a reservation in one version-checked station update. *****
     public async Task<StationResponse> ModifyAllocationAsync(string id, string previousSlotId, string slotId,
         AllocationInput request, DateTime reservationDate, CancellationToken ct)
     {
@@ -262,6 +277,7 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Completes or cancels an allocation while enforcing its timing rules. *****
     public async Task<StationResponse> EndAllocationAsync(string id, string slotId, string bookingId,
         StationVersion request, bool complete, CancellationToken ct)
     {
@@ -295,9 +311,11 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    // Finds a station or reports that its identifier does not exist. *****
     private async Task<SolarStation> FindAsync(string id, CancellationToken ct) =>
         await repository.FindAsync(id, ct) ?? throw NotFound();
 
+    // Saves a station using its version to reject concurrent changes. *****
     private async Task<StationResponse> SaveAsync(SolarStation station, CancellationToken ct)
     {
         var previousVersion = station.Version;
@@ -312,6 +330,7 @@ public sealed class StationService(StationRepository repository)
         return ToResponse(station, true);
     }
 
+    // Copies validated physical station details into the stored model. *****
     private static void UpdateDetails(SolarStation station, StationInput request)
     {
         station.Name = request.Name.Trim();
@@ -323,6 +342,7 @@ public sealed class StationService(StationRepository repository)
         station.BatterySlots = request.BatterySlots;
     }
 
+    // Applies data annotation validation before changing station data. *****
     private static void Validate(object input)
     {
         // Keep validation here too: later booking components can call the service directly.
@@ -333,14 +353,18 @@ public sealed class StationService(StationRepository repository)
         }
     }
 
+    // Creates a standard not-found error for missing stations, windows, or allocations. *****
     private static ApiException NotFound() =>
         new(404, "station_not_found", "The station, slot or allocation was not found.");
 
+    // Identifies allocations that still reserve station inventory. *****
     private static bool IsReserved(StationAllocation allocation) => allocation.Status == "Reserved";
 
+    // Counts active reservations across all station windows. *****
     private static int CountActiveReservations(SolarStation station) =>
         station.Slots.Sum(slot => slot.Allocations.Count(IsReserved));
 
+    // Prevents window inventory from exceeding physical capacity or allocated usage. *****
     private static void CheckLimits(SolarStation station, EnergySlot slot)
     {
         // Completed energy remains consumed; only cancellation returns inventory.
@@ -364,6 +388,7 @@ public sealed class StationService(StationRepository repository)
         }
     }
 
+    // Checks a window against operating days and hours in Sri Lanka time. *****
     private static bool WithinSchedule(SolarStation station, EnergySlot slot)
     {
         var colomboOffset = TimeSpan.FromMinutes(330);
@@ -375,6 +400,7 @@ public sealed class StationService(StationRepository repository)
             TimeOnly.FromDateTime(end.DateTime) <= TimeOnly.ParseExact(station.ClosesAt, "HH:mm");
     }
 
+    // Builds a station response with available inventory and role-specific details. *****
     private static StationResponse ToResponse(SolarStation station, bool isStaff)
     {
         var slots = station.Slots
@@ -401,6 +427,7 @@ public sealed class StationService(StationRepository repository)
             schedule, CountActiveReservations(station), slots);
     }
 
+    // Calculates the great-circle distance used for nearby station discovery. *****
     private static double CalculateDistanceKm(double latitude, double longitude, double otherLatitude, double otherLongitude)
     {
         const double radians = Math.PI / 180;

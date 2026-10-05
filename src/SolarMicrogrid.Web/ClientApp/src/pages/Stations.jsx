@@ -17,6 +17,7 @@ import {
   usePortal,
 } from "../components";
 
+// Routes staff to station listing, registration, editing, or details. *****
 export function Stations() {
   const { data } = usePortal();
   const m = data.model;
@@ -115,6 +116,7 @@ export function Stations() {
   );
 }
 
+// Collects a station's location and physical capacity for creation or editing. *****
 function StationForm({ model: m, create }) {
   // The edit DTO has no ID; it stays in the existing route.
   const id =
@@ -217,6 +219,7 @@ function StationForm({ model: m, create }) {
   );
 }
 
+// Keeps window availability fields within the station's physical limits. *****
 function CapacityFields({ station, slot }) {
   return (
     <div className="form-grid">
@@ -244,6 +247,7 @@ function CapacityFields({ station, slot }) {
   );
 }
 
+// Shows station status, schedule, energy windows, and staff actions. *****
 function StationDetails({ station: s, backoffice }) {
   const action = (name, slotId) =>
     path("Stations", name, s.id) +

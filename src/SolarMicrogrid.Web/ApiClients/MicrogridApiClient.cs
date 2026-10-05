@@ -1,8 +1,10 @@
 /**
  * @author Aenuka Buddhakorala
  * IT number: IT23214934
+ * File: MicrogridApiClient.cs
  * File functionality:
  * - Sends portal requests to the API with the session's JWT bearer token and supports account operations and logout.
+ * Contributors: Shared web API client used by station and reservation features.
  */
 
 using System.Net;
@@ -21,18 +23,23 @@ public sealed class MicrogridApiClient(HttpClient http, IHttpContextAccessor acc
         Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
     };
 
+    // Retrieves a typed response from the API.
     public Task<T> GetAsync<T>(string path, CancellationToken ct) =>
         SendAsync<T>(HttpMethod.Get, path, null, ct);
 
+    // Sends a typed POST request with a JSON body.
     public Task<T> PostAsync<T>(string path, object body, CancellationToken ct) =>
         SendAsync<T>(HttpMethod.Post, path, body, ct);
 
+    // Sends a typed partial update to the API.
     public Task<T> PatchAsync<T>(string path, object body, CancellationToken ct) =>
         SendAsync<T>(HttpMethod.Patch, path, body, ct);
 
+    // Sends PUT requests used by station schedule and availability updates. *****
     public Task<T> PutAsync<T>(string path, object body, CancellationToken ct) =>
         SendAsync<T>(HttpMethod.Put, path, body, ct);
 
+    // Ends the current API session.
     public async Task LogoutAsync(CancellationToken ct) =>
         await SendAsync<object>(HttpMethod.Post, "auth/logout", null, ct);
 
@@ -90,6 +97,7 @@ public Task<ReservationResponse> ApproveReservationAsync(string id, Cancellation
 public Task<ApprovedFutureCountResponse> GetApprovedFutureCountAsync(CancellationToken ct)
     => GetAsync<ApprovedFutureCountResponse>("reservations/approved-future/count", ct);
 
+    // Adds authentication, sends the request, and reads its typed response.
     private async Task<T> SendAsync<T>(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(method, path);
@@ -130,6 +138,7 @@ public Task<ApprovedFutureCountResponse> GetApprovedFutureCountAsync(Cancellatio
         }
     }
 
+    // Converts an unsuccessful HTTP response into an API failure.
     private static async Task<ApiFailureException> ReadFailureAsync(HttpResponseMessage response, CancellationToken ct)
     {
         ApiProblem? problem = null;

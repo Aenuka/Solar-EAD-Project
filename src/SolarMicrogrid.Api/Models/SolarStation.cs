@@ -1,7 +1,12 @@
+// File: SolarStation.cs
+// Purpose: Stores station details, operating schedule, and energy windows.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace SolarMicrogrid.Api.Models;
 
+// Stores station capacity, operating hours, availability windows, and the concurrency version. *****
 public sealed class SolarStation
 {
     [BsonId]

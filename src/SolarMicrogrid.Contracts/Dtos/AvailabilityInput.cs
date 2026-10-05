@@ -1,3 +1,7 @@
+// File: AvailabilityInput.cs
+// Purpose: Validates updated usable station window capacity.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
