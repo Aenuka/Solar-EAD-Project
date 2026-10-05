@@ -15,7 +15,7 @@ public sealed class HomeController(MicrogridApiClient api) : PortalController
     {
         if (User.IsInRole(Roles.GridOperator))
         {
-            return ReactPage(page: "Operator");
+            return RedirectToAction("Dashboard", "Operator");
         }
         var dashboard = await api.GetAsync<DashboardResponse>("dashboard", ct);
         return ReactPage(dashboard);

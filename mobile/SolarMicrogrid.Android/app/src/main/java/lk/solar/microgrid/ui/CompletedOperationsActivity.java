@@ -54,18 +54,32 @@ public class CompletedOperationsActivity extends SolarActivity {
     private void loadOperations() {
         content.removeAllViews();
 
+        // Top Navigation / Back button
+        TextView backBtn = new TextView(this);
+        backBtn.setText("← Back to Dashboard");
+        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        backBtn.setPadding(0, dp(10), 0, dp(20));
+        backBtn.setClickable(true);
+        backBtn.setOnClickListener(v -> finish());
+        content.addView(backBtn);
+
+        TextView eyebrow = new TextView(this);
+        eyebrow.setText("HISTORY");
+        eyebrow.setTextSize(12); eyebrow.setTextColor(MUTED); eyebrow.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        content.addView(eyebrow);
+
         TextView heading = new TextView(this);
         heading.setText("Completed Operations");
         heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams headingLayout = new LinearLayout.LayoutParams(-1, -2);
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(4);
+        headingLayout.topMargin = dp(4); headingLayout.bottomMargin = dp(6);
         content.addView(heading, headingLayout);
 
         TextView sub = new TextView(this);
-        sub.setText("Previously finalized energy transfers");
+        sub.setText("Previously finalized energy transfers.");
         sub.setTextSize(14); sub.setTextColor(MUTED);
         LinearLayout.LayoutParams subLayout = new LinearLayout.LayoutParams(-1, -2);
-        subLayout.bottomMargin = dp(24);
+        subLayout.bottomMargin = dp(28);
         content.addView(sub, subLayout);
 
         TextView loading = new TextView(this);
@@ -77,7 +91,7 @@ public class CompletedOperationsActivity extends SolarActivity {
             @Override
             public void success(List<Reservation> result) {
                 if (isDestroyed() || isFinishing()) return;
-                content.removeViewAt(content.getChildCount() - 1);
+                content.removeView(loading);
 
                 if (result.isEmpty()) {
                     TextView empty = new TextView(CompletedOperationsActivity.this);
@@ -95,7 +109,7 @@ public class CompletedOperationsActivity extends SolarActivity {
             @Override
             public void failure(int status, String message) {
                 if (isDestroyed() || isFinishing()) return;
-                content.removeViewAt(content.getChildCount() - 1);
+                content.removeView(loading);
 
                 TextView error = new TextView(CompletedOperationsActivity.this);
                 error.setText(message != null ? message : "Unable to load completed operations. Please try again.");
@@ -109,11 +123,6 @@ public class CompletedOperationsActivity extends SolarActivity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
 
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(252, 255, 252), Color.WHITE});
-        bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), Color.rgb(220, 235, 225));
         SolarStyle.card(card);
         card.setElevation(0);
         card.setPadding(dp(18), dp(18), dp(18), dp(18));
@@ -136,107 +145,180 @@ public class CompletedOperationsActivity extends SolarActivity {
         anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
         card.startAnimation(anim);
 
-        // Header Row: ID and Energy amount
+        // Header Row: Energy amount and Status
         LinearLayout headerRow = new LinearLayout(this);
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
         card.addView(headerRow, new LinearLayout.LayoutParams(-1, -2));
 
-        TextView idView = new TextView(this);
-        idView.setText(r.reservationId);
-        idView.setTextSize(16); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        idView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        headerRow.addView(idView);
-
         TextView energyView = new TextView(this);
         energyView.setText(r.energyAmountKwh + " kWh");
-        energyView.setTextSize(16); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        energyView.setTextSize(18); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        energyView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
         headerRow.addView(energyView);
+
+        TextView statusView = new TextView(this);
+        statusView.setText("✓ COMPLETED");
+        statusView.setTextSize(11);
+        statusView.setTextColor(GREEN);
+        statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        statusView.setPadding(dp(12), dp(6), dp(12), dp(6));
+        android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
+        statusBg.setCornerRadius(dp(16));
+        statusView.setBackground(statusBg);
+        headerRow.addView(statusView);
+
+        // Subtitle: ID
+        TextView idView = new TextView(this);
+        idView.setText("Ref: " + r.reservationId);
+        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
+        idParams.topMargin = dp(16);
+        card.addView(idView, idParams);
 
         // Subtitle: Station ID
         TextView stationView = new TextView(this);
         String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 12) {
-            shortStation = shortStation.substring(0, 12) + "...";
+        if (shortStation != null && shortStation.length() > 8) {
+            shortStation = shortStation.substring(0, 8) + "...";
         }
         stationView.setText("Station: " + shortStation);
-        stationView.setTextSize(13); stationView.setTextColor(MUTED);
+        stationView.setTextSize(14); stationView.setTextColor(MUTED);
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
-        sp.topMargin = dp(8);
+        sp.topMargin = dp(4);
         card.addView(stationView, sp);
 
-        // Date and Status row
-        LinearLayout footerRow = new LinearLayout(this);
-        footerRow.setOrientation(LinearLayout.HORIZONTAL);
-        footerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(-1, -2);
-        footerParams.topMargin = dp(16);
-        card.addView(footerRow, footerParams);
-
+        // Date row
         TextView detailsView = new TextView(this);
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
-        completedDate = completedDate.replace("T", " ").replace("Z", "");
-        if (completedDate.length() > 19) {
-            completedDate = completedDate.substring(0, 19);
+
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            String cleanDate = completedDate.split("\\.")[0]; // Remove milliseconds
+            java.util.Date d = in.parse(cleanDate);
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a");
+            completedDate = out.format(d);
+        } catch (Exception e) {
+            completedDate = completedDate.replace("T", " ").replace("Z", "");
+            if (completedDate.length() > 19) {
+                completedDate = completedDate.substring(0, 19);
+            }
         }
 
-        detailsView.setText("Done on " + completedDate);
+        detailsView.setText("Completed " + completedDate);
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
-        detailsView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        footerRow.addView(detailsView);
-
-        TextView statusView = new TextView(this);
-        statusView.setText("COMPLETED");
-        statusView.setTextSize(11);
-        statusView.setTextColor(GREEN);
-        statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        statusView.setPadding(dp(12), dp(4), dp(12), dp(4));
-        android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
-        statusBg.setCornerRadius(dp(12));
-        statusView.setBackground(statusBg);
-
-        footerRow.addView(statusView);
+        LinearLayout.LayoutParams dpL = new LinearLayout.LayoutParams(-1, -2);
+        dpL.topMargin = dp(16);
+        card.addView(detailsView, dpL);
     }
 
     private void showDetailsDialog(Reservation r) {
         ScrollView scroll = new ScrollView(this);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(dp(20), dp(20), dp(20), dp(20));
+        layout.setPadding(dp(24), dp(16), dp(24), dp(8));
         scroll.addView(layout);
 
-        detail(layout, "Booking", r.reservationId);
-        detail(layout, "Prosumer", r.prosumerNic);
-        detail(layout, "Station", r.stationId);
-        detail(layout, "Energy", r.energyAmountKwh + " kWh");
-        detail(layout, "Trading Type", r.tradingType);
-        detail(layout, "Booking Time", r.reservationDate);
-        detail(layout, "Status", r.status);
-        String completedAt = r.source.optString("completedAt", r.source.optString("updatedAt", "Unknown"));
-        detail(layout, "Completed At", completedAt);
+        // Header
+        TextView title = new TextView(this);
+        title.setText("Transfer Details");
+        title.setTextSize(22);
+        title.setTextColor(INK);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        layout.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Ref: " + r.reservationId);
+        subtitle.setTextSize(13);
+        subtitle.setTextColor(MUTED);
+        LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(-1, -2);
+        subLp.bottomMargin = dp(24);
+        layout.addView(subtitle, subLp);
+
+        // Row 1: Energy & Trading Type
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        layout.addView(row1, new LinearLayout.LayoutParams(-1, -2));
+
+        row1.addView(detailCell("Energy", r.energyAmountKwh + " kWh", true));
+        row1.addView(detailCell("Type", r.tradingType, false));
+
+        // Row 2: Status & Prosumer
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setPadding(0, dp(16), 0, 0);
+        layout.addView(row2, new LinearLayout.LayoutParams(-1, -2));
+
+        row2.addView(detailCell("Status", r.status, true));
+        row2.addView(detailCell("Prosumer", r.prosumerNic, false));
+
+        // Station
+        String shortStation = r.stationId;
+        if (shortStation != null && shortStation.length() > 12) shortStation = shortStation.substring(0, 12) + "...";
+        LinearLayout rowStation = new LinearLayout(this);
+        rowStation.setOrientation(LinearLayout.HORIZONTAL);
+        rowStation.setPadding(0, dp(16), 0, 0);
+        layout.addView(rowStation, new LinearLayout.LayoutParams(-1, -2));
+        rowStation.addView(detailCell("Station", shortStation, false));
+
+        // Divider
+        android.view.View div = new android.view.View(this);
+        div.setBackgroundColor(Color.rgb(235, 235, 235));
+        LinearLayout.LayoutParams divLp = new LinearLayout.LayoutParams(-1, dp(1));
+        divLp.setMargins(0, dp(20), 0, dp(20));
+        layout.addView(div, divLp);
+
+        // Dates
+        String completedAt = r.source.optString("completedAt", r.source.optString("updatedAt", ""));
+        LinearLayout rowDates = new LinearLayout(this);
+        rowDates.setOrientation(LinearLayout.HORIZONTAL);
+        layout.addView(rowDates, new LinearLayout.LayoutParams(-1, -2));
+
+        rowDates.addView(detailCell("Booked", formatDate(r.reservationDate), false));
+        rowDates.addView(detailCell("Completed", formatDate(completedAt), false));
 
         new AlertDialog.Builder(this)
-            .setTitle("Completed Operation Details")
             .setView(scroll)
             .setPositiveButton("Close", null)
             .show();
     }
 
-    private void detail(LinearLayout parent, String label, String value) {
-        TextView viewLabel = new TextView(this);
-        viewLabel.setText(label);
-        viewLabel.setTextSize(13);
-        viewLabel.setTextColor(MUTED);
-        parent.addView(viewLabel);
+    private LinearLayout detailCell(String label, String value, boolean isPrimary) {
+        LinearLayout cell = new LinearLayout(this);
+        cell.setOrientation(LinearLayout.VERTICAL);
+        cell.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
 
-        TextView viewValue = new TextView(this);
-        viewValue.setText(value);
-        viewValue.setTextSize(16);
-        viewValue.setTextColor(INK);
-        viewValue.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
-        layout.bottomMargin = dp(16);
-        parent.addView(viewValue, layout);
+        TextView l = new TextView(this);
+        l.setText(label);
+        l.setTextSize(12);
+        l.setTextColor(MUTED);
+        cell.addView(l);
+
+        TextView v = new TextView(this);
+        v.setText(value);
+        v.setTextSize(15);
+        v.setTextColor(isPrimary ? GREEN : INK);
+        v.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        cell.addView(v);
+
+        return cell;
+    }
+
+    private String formatDate(String iso) {
+        if (iso == null || iso.isEmpty() || iso.equals("Unknown")) return "N/A";
+        try {
+            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            String cleanDate = iso.split("\\.")[0];
+            java.util.Date d = in.parse(cleanDate);
+            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy\nhh:mm a");
+            return out.format(d);
+        } catch (Exception e) {
+            String fallback = iso.replace("T", " ").replace("Z", "");
+            if (fallback.length() > 19) fallback = fallback.substring(0, 19);
+            return fallback;
+        }
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {

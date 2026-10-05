@@ -43,33 +43,62 @@ public class OperatorProfileActivity extends SolarActivity {
         setContentView(scroll);
         scroll.requestApplyInsets();
 
-        TextView heading = new TextView(this);
-        heading.setText("Operator Profile");
-        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams headingLayout = new LinearLayout.LayoutParams(-1, -2);
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
-        content.addView(heading, headingLayout);
+        // Top Navigation / Back button
+        TextView backBtn = new TextView(this);
+        backBtn.setText("← Back");
+        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        backBtn.setPadding(0, dp(10), 0, dp(20));
+        backBtn.setClickable(true);
+        backBtn.setOnClickListener(v -> finish());
+        content.addView(backBtn);
 
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        SolarStyle.card(card);
-        card.setElevation(0);
-        card.setPadding(dp(24), dp(32), dp(24), dp(24));
-        content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+        // Profile Header Section (Avatar + Name + Role Badge)
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(-1, -2);
+        headerParams.topMargin = dp(20);
+        headerParams.bottomMargin = dp(32);
+        content.addView(header, headerParams);
 
         android.widget.ImageView avatar = new android.widget.ImageView(this);
         avatar.setImageResource(R.drawable.ic_account_avatar);
-        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(80), dp(80));
-        avatarParams.gravity = android.view.Gravity.CENTER_HORIZONTAL;
-        avatarParams.bottomMargin = dp(24);
-        card.addView(avatar, avatarParams);
+        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(100), dp(100));
+        avatarParams.bottomMargin = dp(16);
+        header.addView(avatar, avatarParams);
 
-        detail(card, "Full Name", operators.getFullName());
+        TextView name = new TextView(this);
+        name.setText(operators.getFullName() != null ? operators.getFullName() : "Operator");
+        name.setTextSize(24); name.setTextColor(INK); name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        name.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        header.addView(name);
+
+        TextView roleBadge = new TextView(this);
+        roleBadge.setText("GRID OPERATOR");
+        roleBadge.setTextSize(11);
+        roleBadge.setTextColor(GREEN);
+        roleBadge.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        roleBadge.setPadding(dp(12), dp(6), dp(12), dp(6));
+        android.graphics.drawable.GradientDrawable badgeBg = shape(Color.rgb(234, 247, 239), 0);
+        badgeBg.setCornerRadius(dp(16));
+        roleBadge.setBackground(badgeBg);
+        LinearLayout.LayoutParams badgeParams = new LinearLayout.LayoutParams(-2, -2);
+        badgeParams.topMargin = dp(12);
+        header.addView(roleBadge, badgeParams);
+
+        // Account Details Card
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        SolarStyle.card(card);
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+        content.addView(card, new LinearLayout.LayoutParams(-1, -2));
+
         if (operators.getUsername() != null && !operators.getUsername().isEmpty()) {
             detail(card, "Username", operators.getUsername());
         }
         detail(card, "Role", "Grid Operator");
 
+        // Sign Out Button
         Button signoutButton = new Button(this);
         signoutButton.setText("Sign Out");
         signoutButton.setTextSize(14); signoutButton.setAllCaps(false);
@@ -86,8 +115,8 @@ public class OperatorProfileActivity extends SolarActivity {
 
         signoutButton.setOnClickListener(view -> {
             new AlertDialog.Builder(this)
-                .setTitle("Sign Out?")
-                .setMessage("Are you sure you want to sign out?")
+                .setTitle("Sign Out")
+                .setMessage("Are you sure you want to log out of your session?")
                 .setPositiveButton("Sign Out", (dialog, which) -> {
                     operators.logout();
                     Intent intent = new Intent(this, OperatorLoginActivity.class);
@@ -98,19 +127,6 @@ public class OperatorProfileActivity extends SolarActivity {
                 .setNegativeButton("Cancel", null)
                 .show();
         });
-
-        Button backButton = new Button(this);
-        backButton.setText("Back");
-        backButton.setTextSize(14); backButton.setAllCaps(false);
-        backButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        backButton.setTextColor(MUTED);
-        backButton.setBackground(null);
-        backButton.setElevation(0);
-        backButton.setMinHeight(dp(52));
-        LinearLayout.LayoutParams layout2 = new LinearLayout.LayoutParams(-1, -2);
-        layout2.topMargin = dp(10);
-        content.addView(backButton, layout2);
-        backButton.setOnClickListener(view -> finish());
     }
 
     private void detail(LinearLayout parent, String label, String value) {
@@ -126,7 +142,7 @@ public class OperatorProfileActivity extends SolarActivity {
         viewValue.setTextColor(INK);
         viewValue.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
-        layout.bottomMargin = dp(16);
+        layout.bottomMargin = dp(8);
         parent.addView(viewValue, layout);
     }
 

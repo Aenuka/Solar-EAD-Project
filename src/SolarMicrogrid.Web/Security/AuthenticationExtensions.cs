@@ -67,9 +67,18 @@ public static class AuthenticationExtensions
         {
             throw new ApiFailureException(503, "The account service is temporarily unavailable.");
         }
-        catch (TaskCanceledException) when (!context.HttpContext.RequestAborted.IsCancellationRequested)
+        catch (TaskCanceledException)
         {
-            throw new ApiFailureException(503, "The account service is temporarily unavailable.");
+            if (context.HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                // The browser aborted the request (e.g. user closed tab or refreshed).
+                // Safely exit without failing the pipeline.
+                return;
+            }
+
+            // The API timed out (took longer than the HttpClient timeout).
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
     }
 }

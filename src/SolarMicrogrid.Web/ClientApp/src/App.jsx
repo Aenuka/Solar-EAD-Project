@@ -13,6 +13,7 @@ import { Brand, Form, Heading, Notice, PortalContext } from "./components";
 import { Login, Overview, Prosumers, Staff } from "./pages/Accounts";
 import { Stations } from "./pages/Stations";
 import { Bookings } from "./pages/Bookings";
+import { Operator } from "./pages/Operator";
 
 export default function App({ initialData }) {
   const [data, setData] = useState(initialData);
@@ -191,7 +192,9 @@ function Shell({ data, children }) {
             const active =
               key === "Requests"
                 ? pending
-                : key === data.controller && !pending;
+                : (key === data.controller ||
+                    (key === "Home" && data.controller === "Operator")) &&
+                  !pending;
             return (
               <a
                 key={key}
@@ -232,6 +235,7 @@ function Page({ data }) {
     );
   if (data.controller === "Account" && data.page === "Login") return <Login />;
   if (data.controller === "Home") return <Overview />;
+  if (data.controller === "Operator") return <Operator />;
   if (data.controller === "Staff") return <Staff />;
   if (data.controller === "Prosumers") return <Prosumers />;
   if (data.controller === "Stations") return <Stations />;
