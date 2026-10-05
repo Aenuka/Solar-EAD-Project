@@ -175,17 +175,26 @@ public class CompletedOperationsActivity extends SolarActivity {
         idParams.topMargin = dp(16);
         card.addView(idView, idParams);
 
-        // Subtitle: Station ID
+        // Subtitle: Station
         TextView stationView = new TextView(this);
-        String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 8) {
-            shortStation = shortStation.substring(0, 8) + "...";
+        String displayStation = (r.stationName != null && !r.stationName.isEmpty()) ? r.stationName : r.stationId;
+        if (displayStation != null && displayStation.length() > 25) {
+            displayStation = displayStation.substring(0, 25) + "...";
         }
-        stationView.setText("Station: " + shortStation);
+        stationView.setText("Station: " + (displayStation != null ? displayStation : "Unknown"));
         stationView.setTextSize(14); stationView.setTextColor(MUTED);
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
         sp.topMargin = dp(4);
         card.addView(stationView, sp);
+
+        // Subtitle: User
+        TextView userView = new TextView(this);
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName + " (" + r.prosumerNic + ")" : r.prosumerNic;
+        userView.setText("User: " + (displayUser != null ? displayUser : "Unknown"));
+        userView.setTextSize(14); userView.setTextColor(MUTED);
+        LinearLayout.LayoutParams up = new LinearLayout.LayoutParams(-1, -2);
+        up.topMargin = dp(4);
+        card.addView(userView, up);
 
         // Date row
         TextView detailsView = new TextView(this);
@@ -250,17 +259,18 @@ public class CompletedOperationsActivity extends SolarActivity {
         row2.setPadding(0, dp(16), 0, 0);
         layout.addView(row2, new LinearLayout.LayoutParams(-1, -2));
 
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName : r.prosumerNic;
         row2.addView(detailCell("Status", r.status, true));
-        row2.addView(detailCell("Prosumer", r.prosumerNic, false));
+        row2.addView(detailCell("Prosumer", displayUser, false));
 
         // Station
-        String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 12) shortStation = shortStation.substring(0, 12) + "...";
+        String displayStation = (r.stationName != null && !r.stationName.isEmpty()) ? r.stationName : r.stationId;
+        if (displayStation != null && displayStation.length() > 25) displayStation = displayStation.substring(0, 25) + "...";
         LinearLayout rowStation = new LinearLayout(this);
         rowStation.setOrientation(LinearLayout.HORIZONTAL);
         rowStation.setPadding(0, dp(16), 0, 0);
         layout.addView(rowStation, new LinearLayout.LayoutParams(-1, -2));
-        rowStation.addView(detailCell("Station", shortStation, false));
+        rowStation.addView(detailCell("Station", displayStation, false));
 
         // Divider
         android.view.View div = new android.view.View(this);

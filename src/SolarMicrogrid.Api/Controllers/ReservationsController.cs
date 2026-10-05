@@ -17,10 +17,14 @@ namespace SolarMicrogrid.Api.Controllers;
 public class ReservationsController : ControllerBase
 {
     private readonly ReservationService _service;
+    private readonly ProsumerService _prosumerService;
+    private readonly StationService _stationService;
 
-    public ReservationsController(ReservationService service)
+    public ReservationsController(ReservationService service, ProsumerService prosumerService, StationService stationService)
     {
         _service = service;
+        _prosumerService = prosumerService;
+        _stationService = stationService;
     }
 
     private static ReservationResponse Map(EnergyReservation r) => new()
@@ -42,6 +46,26 @@ public class ReservationsController : ControllerBase
         StationVersion = r.StationVersion,
         AllocationSlots = r.AllocationSlots
     };
+
+    private async Task<ReservationResponse> MapAsync(EnergyReservation r, CancellationToken ct)
+    {
+        var response = Map(r);
+        try
+        {
+            var p = await _prosumerService.GetAsync(r.ProsumerNic, ct);
+            response.ProsumerName = p.FullName;
+        }
+        catch { }
+
+        try
+        {
+            var s = await _stationService.GetAsync(r.StationId, true, ct);
+            response.StationName = s.Name;
+        }
+        catch { }
+
+        return response;
+    }
 
     // ===== CREATE =====
     [HttpPost]
@@ -98,10 +122,16 @@ public class ReservationsController : ControllerBase
         [FromQuery] string? stationId,
         [FromQuery] string? nic,
         [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to)
+        [FromQuery] DateTime? to,
+        CancellationToken ct)
     {
         var list = await _service.SearchAsync(status, stationId, nic, from, to);
-        return Ok(list.Select(Map));
+        var mapped = new List<ReservationResponse>();
+        foreach (var r in list)
+        {
+            mapped.Add(await MapAsync(r, ct));
+        }
+        return Ok(mapped);
     }
 
     // ===== APPROVED FUTURE COUNT =====
@@ -118,17 +148,25 @@ public class ReservationsController : ControllerBase
     /// </summary>
     [Authorize(Roles = "GridOperator")]
     [HttpGet("dashboard")]
-    public async Task<IActionResult> GetDashboard()
+    public async Task<IActionResult> GetDashboard(CancellationToken ct)
     {
         var (pending, approvedFutureCount, completed) = await _service.GetDashboardDataAsync();
         
+        var pendingMapped = new List<ReservationResponse>();
+        foreach (var r in pending)
+            pendingMapped.Add(await MapAsync(r, ct));
+            
+        var completedMapped = new List<ReservationResponse>();
+        foreach (var r in completed.OrderByDescending(c => c.CompletedAt).Take(5))
+            completedMapped.Add(await MapAsync(r, ct));
+
         var response = new OperatorDashboardResponse
         {
             PendingCount = pending.Count,
             ApprovedFutureCount = approvedFutureCount,
             CompletedCount = completed.Count,
-            PendingReservations = pending.Select(Map).ToList(),
-            RecentCompletedReservations = completed.OrderByDescending(c => c.CompletedAt).Take(5).Select(Map).ToList()
+            PendingReservations = pendingMapped,
+            RecentCompletedReservations = completedMapped
         };
         
         return Ok(response);

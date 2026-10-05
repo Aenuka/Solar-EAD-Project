@@ -202,24 +202,68 @@ public class OperatorDashboardActivity extends SolarActivity {
         statusView.setBackground(statusBg);
         headerRow.addView(statusView);
 
-        // Subtitle: ID
-        TextView idView = new TextView(this);
-        idView.setText("Ref: " + r.reservationId);
-        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
-        idParams.topMargin = dp(16);
-        card.addView(idView, idParams);
+        // Station ID
+        TextView stationView = new TextView(this);
+        String displayStation = (r.stationName != null && !r.stationName.isEmpty()) ? r.stationName : r.stationId;
+        stationView.setText("Station: " + (displayStation != null && !displayStation.isEmpty() ? displayStation : "Unknown"));
+        stationView.setTextSize(14); stationView.setTextColor(INK);
+        LinearLayout.LayoutParams stationParams = new LinearLayout.LayoutParams(-1, -2);
+        stationParams.topMargin = dp(16);
+        card.addView(stationView, stationParams);
 
-        TextView detailsView = new TextView(this);
+        // User NIC & Name
+        TextView userView = new TextView(this);
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName + " (" + r.prosumerNic + ")" : r.prosumerNic;
+        userView.setText("User: " + (displayUser != null && !displayUser.isEmpty() ? displayUser : "Unknown"));
+        userView.setTextSize(14); userView.setTextColor(INK);
+        LinearLayout.LayoutParams userParams = new LinearLayout.LayoutParams(-1, -2);
+        userParams.topMargin = dp(4);
+        card.addView(userView, userParams);
+
+        // Details (Type & Slots)
+        if (r.tradingType != null && !r.tradingType.isEmpty()) {
+            TextView detailsTxt = new TextView(this);
+            detailsTxt.setText("Type: " + r.tradingType + " | Slots: " + r.allocationSlots);
+            detailsTxt.setTextSize(14); detailsTxt.setTextColor(INK);
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
+            detailsParams.topMargin = dp(4);
+            card.addView(detailsTxt, detailsParams);
+        }
+
+        // Formatted Date / Time
+        String formattedDate = r.reservationDate;
+        try {
+            java.text.SimpleDateFormat inFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+            inFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date date = inFormat.parse(r.reservationDate);
+            java.text.SimpleDateFormat outFormat = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault());
+            formattedDate = outFormat.format(date);
+        } catch (Exception e) {
+            try {
+                java.text.SimpleDateFormat inFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+                java.util.Date date = inFormat.parse(r.reservationDate);
+                java.text.SimpleDateFormat outFormat = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault());
+                formattedDate = outFormat.format(date);
+            } catch (Exception ex) {}
+        }
+
+        TextView timeView = new TextView(this);
         String dateStr = "COMPLETED".equals(r.status) ?
             "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now"))
-            : "Reserved: " + r.reservationDate;
+            : "Reserved: " + formattedDate;
+        timeView.setText(dateStr);
+        timeView.setTextSize(14); timeView.setTextColor(INK);
+        LinearLayout.LayoutParams timeParams = new LinearLayout.LayoutParams(-1, -2);
+        timeParams.topMargin = dp(4);
+        card.addView(timeView, timeParams);
 
-        detailsView.setText(dateStr);
-        detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
-        LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
-        detailsParams.topMargin = dp(4); detailsParams.bottomMargin = dp(8);
-        card.addView(detailsView, detailsParams);
+        // Subtitle: ID (small and muted now)
+        TextView idView = new TextView(this);
+        idView.setText("Ref: " + r.reservationId);
+        idView.setTextSize(12); idView.setTextColor(MUTED);
+        LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
+        idParams.topMargin = dp(8); idParams.bottomMargin = dp(8);
+        card.addView(idView, idParams);
 
         if ("PENDING".equals(r.status)) {
             Button approveBtn = new Button(this);
