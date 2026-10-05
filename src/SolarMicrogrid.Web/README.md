@@ -1,5 +1,10 @@
 # React staff portal
 
+The interface uses Apple-inspired system typography, white and grey surfaces,
+compact translucent navigation, and blue actions. On phones, sign-in comes
+before the illustration, dashboard metrics become readable rows, and tables
+support horizontal keyboard scrolling. Motion respects the device preference.
+
 The web UI is React JSX with Tailwind CSS, built by Vite. ASP.NET Core hosts the
 compiled assets and keeps the existing controller routes, server-side validation,
 cookie authentication, antiforgery protection, and API client. The REST API,
@@ -37,7 +42,10 @@ browser after a change; there is no separate frontend origin or CORS setup.
 - `ClientApp/src/pages/` contains account, station, and booking JSX components.
 - `ClientApp/src/components.jsx` shares accessible forms, dialogs, tables,
   pagination, notices, and cards.
-- `ClientApp/src/styles.css` imports Tailwind and defines the blue/green theme.
+- `ClientApp/src/styles.css` imports Tailwind and defines the neutral surfaces,
+  system typography, blue actions, responsive navigation, and reduced-motion styles.
+- `ClientApp/src/SolarScene.jsx` draws the local solar illustration used by the
+  sign-in and overview screens, without loading external images.
 - `Presentation/ReactPageResult.cs` sends controller page data in a React
   bootstrap document or JSON when `Accept: application/json` is requested.
 - `Controllers/` and `ViewModels/` retain existing form binding, validation,

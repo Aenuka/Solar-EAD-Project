@@ -16,8 +16,8 @@ import lk.solar.microgrid.data.OperatorRepository;
 import lk.solar.microgrid.data.Reservation;
 import java.util.List;
 
-public class CompletedOperationsActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77), INK = Color.rgb(23, 61, 50), MUTED = Color.rgb(107, 123, 117);
+public class CompletedOperationsActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN, INK = SolarStyle.INK, MUTED = SolarStyle.MUTED;
     private OperatorRepository operators;
     private LinearLayout content;
 
@@ -32,21 +32,12 @@ public class CompletedOperationsActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
-        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
-            if (Build.VERSION.SDK_INT >= 30) {
-                var bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
-            } else {
-                view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
-            }
-            return insets;
-        });
 
         setContentView(scroll);
         scroll.requestApplyInsets();
@@ -62,11 +53,11 @@ public class CompletedOperationsActivity extends Activity {
 
     private void loadOperations() {
         content.removeAllViews();
-        
+
         // Top Navigation / Back button
         TextView backBtn = new TextView(this);
         backBtn.setText("← Back to Dashboard");
-        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         backBtn.setPadding(0, dp(10), 0, dp(20));
         backBtn.setClickable(true);
         backBtn.setOnClickListener(v -> finish());
@@ -74,12 +65,12 @@ public class CompletedOperationsActivity extends Activity {
 
         TextView eyebrow = new TextView(this);
         eyebrow.setText("HISTORY");
-        eyebrow.setTextSize(12); eyebrow.setTextColor(MUTED); eyebrow.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        eyebrow.setTextSize(12); eyebrow.setTextColor(MUTED); eyebrow.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         content.addView(eyebrow);
 
         TextView heading = new TextView(this);
         heading.setText("Completed Operations");
-        heading.setTextSize(28); heading.setTextColor(INK); heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams headingLayout = new LinearLayout.LayoutParams(-1, -2);
         headingLayout.topMargin = dp(4); headingLayout.bottomMargin = dp(6);
         content.addView(heading, headingLayout);
@@ -101,7 +92,7 @@ public class CompletedOperationsActivity extends Activity {
             public void success(List<Reservation> result) {
                 if (isDestroyed() || isFinishing()) return;
                 content.removeView(loading);
-                
+
                 if (result.isEmpty()) {
                     TextView empty = new TextView(CompletedOperationsActivity.this);
                     empty.setText("No completed operations yet.");
@@ -119,10 +110,10 @@ public class CompletedOperationsActivity extends Activity {
             public void failure(int status, String message) {
                 if (isDestroyed() || isFinishing()) return;
                 content.removeView(loading);
-                
+
                 TextView error = new TextView(CompletedOperationsActivity.this);
                 error.setText(message != null ? message : "Unable to load completed operations. Please try again.");
-                error.setTextSize(16); error.setTextColor(Color.RED);
+                error.setTextSize(16); error.setTextColor(SolarStyle.RED);
                 content.addView(error);
             }
         });
@@ -131,27 +122,22 @@ public class CompletedOperationsActivity extends Activity {
     private void renderCard(Reservation r, int index) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.WHITE, Color.WHITE});
-        bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1), Color.rgb(226, 232, 240));
-        card.setBackground(bg);
-        card.setElevation(dp(8));
-        card.setPadding(dp(20), dp(20), dp(20), dp(20));
+
+        SolarStyle.card(card);
+        card.setElevation(0);
+        card.setPadding(dp(18), dp(18), dp(18), dp(18));
         card.setClickable(true);
         card.setOnClickListener(v -> showDetailsDialog(r));
-        
+
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(12);
         params.bottomMargin = dp(6);
         content.addView(card, params);
 
         android.view.animation.TranslateAnimation anim = new android.view.animation.TranslateAnimation(
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f, 
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f, 
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f, 
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
+            android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
             android.view.animation.Animation.RELATIVE_TO_SELF, 0f
         );
         anim.setDuration(400);
@@ -166,15 +152,15 @@ public class CompletedOperationsActivity extends Activity {
 
         TextView energyView = new TextView(this);
         energyView.setText(r.energyAmountKwh + " kWh");
-        energyView.setTextSize(18); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        energyView.setTextSize(18); energyView.setTextColor(GREEN); energyView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         energyView.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
         headerRow.addView(energyView);
 
         TextView statusView = new TextView(this);
         statusView.setText("✓ COMPLETED");
-        statusView.setTextSize(11); 
+        statusView.setTextSize(11);
         statusView.setTextColor(GREEN);
-        statusView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         statusView.setPadding(dp(12), dp(6), dp(12), dp(6));
         android.graphics.drawable.GradientDrawable statusBg = shape(Color.rgb(234, 247, 239), 0);
         statusBg.setCornerRadius(dp(16));
@@ -184,7 +170,7 @@ public class CompletedOperationsActivity extends Activity {
         // Subtitle: ID
         TextView idView = new TextView(this);
         idView.setText("Ref: " + r.reservationId);
-        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
         idParams.topMargin = dp(16);
         card.addView(idView, idParams);
@@ -205,7 +191,7 @@ public class CompletedOperationsActivity extends Activity {
         TextView detailsView = new TextView(this);
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
-        
+
         try {
             java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
             in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
@@ -219,7 +205,7 @@ public class CompletedOperationsActivity extends Activity {
                 completedDate = completedDate.substring(0, 19);
             }
         }
-        
+
         detailsView.setText("Completed " + completedDate);
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
         LinearLayout.LayoutParams dpL = new LinearLayout.LayoutParams(-1, -2);
@@ -239,9 +225,9 @@ public class CompletedOperationsActivity extends Activity {
         title.setText("Transfer Details");
         title.setTextSize(22);
         title.setTextColor(INK);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         layout.addView(title);
-        
+
         TextView subtitle = new TextView(this);
         subtitle.setText("Ref: " + r.reservationId);
         subtitle.setTextSize(13);
@@ -254,7 +240,7 @@ public class CompletedOperationsActivity extends Activity {
         LinearLayout row1 = new LinearLayout(this);
         row1.setOrientation(LinearLayout.HORIZONTAL);
         layout.addView(row1, new LinearLayout.LayoutParams(-1, -2));
-        
+
         row1.addView(detailCell("Energy", r.energyAmountKwh + " kWh", true));
         row1.addView(detailCell("Type", r.tradingType, false));
 
@@ -288,7 +274,7 @@ public class CompletedOperationsActivity extends Activity {
         LinearLayout rowDates = new LinearLayout(this);
         rowDates.setOrientation(LinearLayout.HORIZONTAL);
         layout.addView(rowDates, new LinearLayout.LayoutParams(-1, -2));
-        
+
         rowDates.addView(detailCell("Booked", formatDate(r.reservationDate), false));
         rowDates.addView(detailCell("Completed", formatDate(completedAt), false));
 
@@ -313,9 +299,9 @@ public class CompletedOperationsActivity extends Activity {
         v.setText(value);
         v.setTextSize(15);
         v.setTextColor(isPrimary ? GREEN : INK);
-        v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         cell.addView(v);
-        
+
         return cell;
     }
 
@@ -336,7 +322,7 @@ public class CompletedOperationsActivity extends Activity {
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
-        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable(); 
+        android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;

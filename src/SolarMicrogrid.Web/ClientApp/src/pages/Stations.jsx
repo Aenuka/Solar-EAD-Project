@@ -50,11 +50,32 @@ export function Stations() {
             <a
               key={s.id}
               href={path("Stations", "Details", s.id)}
-              className="card group transition hover:border-sky-300 hover:shadow-sm"
+              className="card station-card group"
             >
-              <div className="mb-7 flex justify-between">
-                <span className="rounded-2xl bg-sky-50 p-3 text-sky-600">
-                  <Sun size={25} />
+              <div className="station-visual" aria-hidden="true">
+                <svg viewBox="0 0 160 100" width="140" fill="none">
+                  <path
+                    d="M53 64v23M109 48v38"
+                    stroke="#bbc2cc"
+                    strokeWidth="5"
+                  />
+                  <path
+                    d="m19 41 76-26 49 43-76 27Z"
+                    fill="#163d6b"
+                    stroke="#b5c7dc"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="m35 36 49 43M52 30l49 43M68 25l49 43M85 20l49 43M32 52l76-26M45 63l76-26M57 74l76-26"
+                    stroke="#82a8d0"
+                    strokeWidth="0.8"
+                  />
+                  <circle cx="128" cy="17" r="11" fill="#f7d799" />
+                </svg>
+              </div>
+              <div className="mb-4 flex justify-between">
+                <span className="eyebrow mb-0 self-center">
+                  Microgrid station
                 </span>
                 <Badge>{s.active ? "Active" : "Inactive"}</Badge>
               </div>
@@ -246,7 +267,7 @@ function StationDetails({ station: s, backoffice }) {
           </a>
         )}
       </Heading>
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="metrics-grid">
         <Stat
           label="Power capacity"
           value={`${s.capacityKw} kW`}
@@ -321,10 +342,7 @@ function StationDetails({ station: s, backoffice }) {
                   "Friday",
                   "Saturday",
                 ].map((day, index) => (
-                  <label
-                    key={day}
-                    className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                  >
+                  <label key={day} className="schedule-day">
                     <input
                       type="checkbox"
                       name="Days"

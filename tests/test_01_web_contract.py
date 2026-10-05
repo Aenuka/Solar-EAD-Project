@@ -134,6 +134,32 @@ class WebContractTests(unittest.TestCase):
         _, url = self.get("/Stations")
         self.assertIn("/Account/Login", url)
 
+    def test_operator_landing_and_dashboard_return_react_data(self):
+        _, credentials, _ = self.new_operator()
+        html, url = self.login(credentials["username"], credentials["password"])
+        self.assertIn("/Operator/Dashboard", url)
+        data = page_data(html)
+        self.assertEqual("Operator", data["controller"])
+        self.assertEqual("Dashboard", data["page"])
+        self.assertFalse(data["meta"].get("Error"))
+        for key in ("PendingCount", "ApprovedFutureCount", "CompletedCount"):
+            self.assertIsInstance(data["meta"][key], int)
+        for key in ("PendingReservations", "RecentCompleted"):
+            self.assertIsInstance(data["meta"][key], list)
+            self.assertLessEqual(len(data["meta"][key]), 5)
+        self.browser.addheaders = [("Accept", "text/html")]
+        html, _ = self.get("/Operator/Dashboard")
+        self.assertIn('<div id="root"></div>', html)
+        self.assertEqual("Operator", page_data(html)["controller"])
+
+    def test_operator_dashboard_denies_backoffice_access(self):
+        self.login()
+        with self.assertRaises(urllib.error.HTTPError) as rejected:
+            self.get("/Operator/Dashboard")
+        self.assertEqual(403, rejected.exception.code)
+        self.assertNotEqual("Operator", page_data(rejected.exception.read().decode())["controller"])
+        rejected.exception.close()
+
     def test_revoked_account_rejects_existing_browser_cookie(self):
         staff, credentials, _ = self.new_operator()
         self.login(credentials["username"], credentials["password"])

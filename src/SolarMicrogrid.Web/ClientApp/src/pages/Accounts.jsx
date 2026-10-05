@@ -1,4 +1,5 @@
 import { ArrowRight, Leaf, ShieldCheck, Sun, Users } from "lucide-react";
+import { SolarScene } from "../SolarScene";
 import {
   ActionLink,
   Badge,
@@ -19,62 +20,61 @@ import {
 export function Login() {
   const { data } = usePortal();
   return (
-    <div className="grid overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-sm lg:grid-cols-2">
-      <div className="relative flex min-h-80 flex-col justify-between overflow-hidden bg-gradient-to-br from-sky-50 via-sky-100/70 to-emerald-100 p-8 sm:p-12">
+    <>
+      <div className="mb-8 flex items-center justify-between">
         <Brand />
-        <div className="relative z-10 my-14">
-          <p className="eyebrow">A brighter connection</p>
-          <h1 className="max-w-sm text-4xl leading-tight sm:text-5xl">
-            Clean energy.
-            <br />
-            Connected people.
-          </h1>
-          <p className="mt-5 max-w-sm leading-relaxed text-slate-600">
-            One workspace for your solar community, from everyday connections to
-            a more sustainable tomorrow.
+        <span className="text-xs text-slate-500">Staff portal</span>
+      </div>
+      <div className="login-layout">
+        <div className="login-story">
+          <div>
+            <p className="eyebrow">A brighter connection</p>
+            <h1 className="display-title">
+              Good energy.
+              <br />
+              <span className="text-sky-600">Great possibilities.</span>
+            </h1>
+            <p className="mt-5 max-w-sm text-lg leading-relaxed text-slate-500">
+              Your people. Your power. One beautifully connected microgrid.
+            </p>
+          </div>
+          <SolarScene />
+        </div>
+        <div className="login-form">
+          <span className="mb-7 flex size-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-800">
+            <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+          </span>
+          <h2 className="text-3xl">Welcome back.</h2>
+          <p className="muted mb-8 mt-3">
+            Sign in to your microgrid workspace.
+          </p>
+          <Form action="/Account/Login">
+            <Field
+              label="Username"
+              name="Username"
+              value={data.model?.username}
+              autoComplete="username"
+              maxLength={50}
+              required
+            />
+            <Field
+              label="Password"
+              name="Password"
+              type="password"
+              autoComplete="current-password"
+              maxLength={128}
+              required
+            />
+            <Save>
+              Sign in <ArrowRight size={16} />
+            </Save>
+          </Form>
+          <p className="muted mt-8 border-t border-slate-100 pt-6 text-xs">
+            Secure access for Backoffice and Grid Operators.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-emerald-800">
-          <Leaf size={18} /> Powered by a shared future
-        </div>
-        <Sun
-          size={220}
-          strokeWidth={0.5}
-          className="pointer-events-none absolute -bottom-8 -right-12 text-sky-500/15"
-          aria-hidden="true"
-        />
       </div>
-      <div className="flex flex-col justify-center p-8 sm:p-14">
-        <p className="eyebrow">Staff portal</p>
-        <h2 className="text-3xl">Welcome back.</h2>
-        <p className="muted mb-8 mt-3">Sign in to manage your microgrid.</p>
-        <Form action="/Account/Login">
-          <Field
-            label="Username"
-            name="Username"
-            value={data.model?.username}
-            autoComplete="username"
-            maxLength={50}
-            required
-          />
-          <Field
-            label="Password"
-            name="Password"
-            type="password"
-            autoComplete="current-password"
-            maxLength={128}
-            required
-          />
-          <Save>
-            Sign in <ArrowRight size={16} />
-          </Save>
-        </Form>
-        <p className="muted mt-8 flex items-center gap-2 text-xs">
-          <ShieldCheck size={16} /> Secure access for Backoffice and Grid
-          Operators
-        </p>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -84,25 +84,36 @@ export function Overview() {
   const m = data.model || {};
   return (
     <>
-      <Heading
-        eyebrow={
-          operator ? "Grid operator workspace" : "Your community, at a glance"
-        }
-        title={
-          operator
-            ? `Welcome, ${data.user.name.split(" ")[0]}.`
-            : "A brighter overview."
-        }
-        description="Your people, your stations, and the energy that connects them."
-      >
-        {!operator && (
-          <a className="btn" href="/Staff/Create">
-            Add staff member
-          </a>
-        )}
-      </Heading>
+      <section className="overview-hero">
+        <div className="overview-copy">
+          <p className="eyebrow">
+            {operator
+              ? "Grid operator workspace"
+              : "Your community, at a glance"}
+          </p>
+          <h1 className="display-title">
+            {operator
+              ? `Welcome, ${data.user.name.split(" ")[0]}.`
+              : "A brighter overview."}
+          </h1>
+          <p className="hero-description">
+            Your people, your stations, and the energy that connects them.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-5">
+            <a className="btn" href="/Stations">
+              Explore stations
+            </a>
+            {!operator && (
+              <a className="text-link" href="/Staff/Create">
+                Add staff member <ArrowRight size={16} />
+              </a>
+            )}
+          </div>
+        </div>
+        <SolarScene />
+      </section>
       {!operator && (
-        <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="metrics-grid">
           <Stat
             label="Active prosumers"
             value={m.activeProsumers}
@@ -134,11 +145,12 @@ export function Overview() {
         </div>
       )}
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-100 to-emerald-100 p-8 sm:p-10 lg:col-span-3">
+        <section className="feature-panel feature-panel-dark lg:col-span-3">
           <p className="eyebrow">Energy, together</p>
           <h2 className="max-w-sm text-3xl leading-tight">
-            Small connections.
-            <br />A more sustainable future.
+            Local energy.
+            <br />
+            Lasting possibilities.
           </h2>
           <p className="mb-8 mt-4 max-w-sm text-sm leading-relaxed text-slate-600">
             Keep your microgrid running smoothly. Manage station schedules and
@@ -150,7 +162,7 @@ export function Overview() {
           <Leaf
             size={150}
             strokeWidth={0.7}
-            className="pointer-events-none absolute -bottom-5 -right-4 text-emerald-600/15"
+            className="pointer-events-none absolute -bottom-5 -right-4 text-slate-100"
             aria-hidden="true"
           />
         </section>
@@ -360,11 +372,7 @@ export function Prosumers() {
         <Badge>{`${m.total} ${pending ? "pending" : "accounts"}`}</Badge>
       </Heading>
       <section className="card overflow-hidden !p-0">
-        <form
-          action="/Prosumers"
-          method="get"
-          className="flex flex-wrap items-end gap-4 p-6"
-        >
+        <form action="/Prosumers" method="get" className="filter-toolbar">
           <Hidden name="pending" value={String(pending)} />
           <div className="min-w-52 flex-1">
             <Field

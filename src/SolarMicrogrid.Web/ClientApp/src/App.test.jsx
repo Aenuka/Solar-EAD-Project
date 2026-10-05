@@ -41,6 +41,82 @@ const response = (data, url) => ({
 });
 
 describe("React portal workflows", () => {
+  it("closes mobile navigation with Escape and restores focus to its button", async () => {
+    const user = userEvent.setup();
+    render(<App initialData={base} />);
+    const toggle = screen.getByRole("button", { name: "Open navigation" });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).not.toHaveClass("hidden");
+    await user.keyboard("{Escape}");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveFocus();
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toHaveClass("hidden");
+  });
+
+  it("renders the operator dashboard and submits pending approval with antiforgery", async () => {
+    const user = userEvent.setup();
+    const booking = {
+      id: "reservation-1",
+      reservationId: "RES-001",
+      prosumerNic: "199012345678",
+      stationId: "station-1",
+      reservationDate: "2026-10-05T10:00:00Z",
+      energyAmountKwh: 12,
+    };
+    const initial = {
+      ...base,
+      controller: "Operator",
+      page: "Dashboard",
+      user: { ...base.user, role: "GridOperator" },
+      meta: {
+        PendingCount: 1,
+        ApprovedFutureCount: 2,
+        CompletedCount: 1,
+        PendingReservations: [booking],
+        RecentCompleted: [
+          {
+            ...booking,
+            id: "reservation-2",
+            reservationId: "RES-002",
+            completedAt: "2026-10-05T09:00:00Z",
+          },
+        ],
+      },
+    };
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      response(
+        {
+          ...initial,
+          controller: "Bookings",
+          page: "Pending",
+          model: [],
+        },
+        "http://localhost/Bookings/Pending",
+      ),
+    );
+    render(<App initialData={initial} />);
+    expect(
+      screen.getByRole("heading", { name: "Operator Dashboard" }),
+    ).toBeVisible();
+    expect(screen.getByText("RES-001")).toBeVisible();
+    expect(screen.getByText("RES-002")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await user.click(screen.getByRole("button", { name: "Approve" }));
+    await screen.findByRole("heading", { name: "Pending reservations" });
+    expect(fetch.mock.calls[0][0]).toBe("/Bookings/Approve/reservation-1");
+    expect(fetch.mock.calls[0][1].body.get("__RequestVerificationToken")).toBe(
+      "csrf-test",
+    );
+  });
+
   it("submits login with the antiforgery token and renders a server redirect", async () => {
     const user = userEvent.setup();
     const fetch = vi
