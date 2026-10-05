@@ -1,16 +1,12 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -67,7 +63,7 @@ public class OperatorLoginActivity extends SolarActivity {
         });
 
         button(R.string.back_to_prosumer_login, false, () -> {
-            startActivity(new Intent(this, MainActivity.class));
+            startActivity(new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
             finish();
         });
     }

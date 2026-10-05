@@ -1,12 +1,8 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -42,7 +38,7 @@ public class TransactionVerificationActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
 
@@ -51,7 +47,7 @@ public class TransactionVerificationActivity extends SolarActivity {
 
         TextView heading = text(getString(R.string.transaction_verified_title), 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(20);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -131,7 +127,7 @@ public class TransactionVerificationActivity extends SolarActivity {
 
         TextView heading = text("✓ Energy Transfer Completed", 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(20);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);

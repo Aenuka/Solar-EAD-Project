@@ -1,8 +1,6 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -58,14 +56,12 @@ public final class SearchBookingActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.search_booking), 28, INK, true);
-        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
+        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(8);
         text(getString(R.string.search_criteria), 14, MUTED, false);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);

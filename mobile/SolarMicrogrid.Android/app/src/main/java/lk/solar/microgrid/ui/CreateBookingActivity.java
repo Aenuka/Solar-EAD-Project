@@ -1,12 +1,7 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.InputFilter;
@@ -20,13 +15,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import android.content.Intent;
 import org.json.JSONArray;
@@ -95,15 +87,13 @@ public final class CreateBookingActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.create_booking), 32, INK, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(12);
         text("Pick a station, a slot, and a time within the next 7 days.", 14, MUTED, false);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -277,7 +267,7 @@ public final class CreateBookingActivity extends SolarActivity {
                                     "\nStation: " + r.stationId +
                                     "\nEnergy: " + r.energyAmountKwh + " kWh" +
                                     "\nStatus: " + r.status)
-                        .setPositiveButton("OK", (d, w) -> finish())
+                        .setPositiveButton("View bookings", (d, w) -> SolarNavigation.open(CreateBookingActivity.this, SolarNavigation.Tab.BOOKINGS))
                         .setCancelable(false).show();
                 }
                 @Override public void failure(int status, String text) {
@@ -294,6 +284,7 @@ public final class CreateBookingActivity extends SolarActivity {
     }
 
     // ---- Helper views (same as MainActivity) ----
+
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);

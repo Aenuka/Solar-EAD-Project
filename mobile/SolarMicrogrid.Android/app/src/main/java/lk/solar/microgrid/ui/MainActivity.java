@@ -1,17 +1,12 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.view.View;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -37,16 +32,122 @@ public final class MainActivity extends SolarActivity {
     private ProgressBar progress;
     private final List<Button> actions = new ArrayList<>();
     private final List<EditText> fields = new ArrayList<>();
+    private final List<String> initialValues = new ArrayList<>();
     private ProfileCache.Snapshot current;
     private boolean busy;
+    private String page = "login";
+    private boolean accountSelected;
+    private int requestGeneration;
+    private SolarNavigation.Tab pendingTab;
+
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         accounts = ((SolarApplication) getApplication()).accounts();
-        if (accounts.signedIn()) refresh(); else showLogin();
+        accountSelected = "ACCOUNT".equals(getIntent().getStringExtra(SolarNavigation.DESTINATION));
+        readPendingTab(getIntent());
+        if (state != null) accountSelected = state.getBoolean("accountSelected", accountSelected);
+        if (accounts.signedIn()) {
+            if (state != null && state.containsKey("profile")) {
+                try {
+                    current = new ProfileCache.Snapshot(new Profile(new org.json.JSONObject(state.getString("profile"))),
+                            state.getBoolean("cached"), state.getLong("fetchedAt"));
+                    String restored = state.getString("page", "home");
+                    if ("edit".equals(restored)) showEditProfile(current);
+                    else if ("deactivate".equals(restored)) showDeactivation();
+                    else showDestination(current);
+                } catch (org.json.JSONException e) { refresh(); }
+            } else refresh();
+        } else if (state != null && "register".equals(state.getString("page"))) showRegister();
+        else showLogin();
+        if (state != null) {
+            ArrayList<String> draft = state.getStringArrayList("draft");
+            if (draft != null) for (int i = 0; i < Math.min(fields.size(), draft.size()); i++) {
+                if ((fields.get(i).getInputType() & InputType.TYPE_MASK_VARIATION) != InputType.TYPE_TEXT_VARIATION_PASSWORD)
+                    fields.get(i).setText(draft.get(i));
+            }
+        }
+    }
+
+    @Override protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        accountSelected = "ACCOUNT".equals(intent.getStringExtra(SolarNavigation.DESTINATION));
+        readPendingTab(intent);
+        if (accounts.signedIn() && current != null) showDestination(current);
+        else if (accounts.signedIn()) refresh();
+        else showLogin();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (accounts != null && !accounts.signedIn() && current != null) { current = null; showLogin(); }
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("page", page);
+        state.putBoolean("accountSelected", accountSelected);
+        if (current != null && accounts.signedIn()) {
+            state.putString("profile", current.profile.json.toString());
+            state.putBoolean("cached", current.cached);
+            state.putLong("fetchedAt", current.fetchedAt);
+        }
+        ArrayList<String> draft = new ArrayList<>();
+        for (EditText field : fields) draft.add((field.getInputType() & InputType.TYPE_MASK_VARIATION)
+                == InputType.TYPE_TEXT_VARIATION_PASSWORD ? "" : value(field));
+        state.putStringArrayList("draft", draft);
+    }
+
+    @Override protected SolarNavigation.Tab navigationTab() {
+        if ("home".equals(page) || "account".equals(page) || "loading".equals(page))
+            return accountSelected ? SolarNavigation.Tab.ACCOUNT : SolarNavigation.Tab.HOME;
+        return null;
+    }
+    @Override protected boolean showsBackNavigation() {
+        return "register".equals(page) || "edit".equals(page) || "deactivate".equals(page);
+    }
+    @Override protected void selectTab(SolarNavigation.Tab tab) {
+        if (busy) return;
+        if (tab == SolarNavigation.Tab.HOME || tab == SolarNavigation.Tab.ACCOUNT) {
+            accountSelected = tab == SolarNavigation.Tab.ACCOUNT;
+            if (current != null) showDestination(current); else refresh();
+        } else super.selectTab(tab);
+    }
+    @Override protected void navigateBack() {
+        if (busy) return;
+        if ("register".equals(page) || "edit".equals(page) || "deactivate".equals(page)) {
+            Runnable back = "register".equals(page) ? this::showLogin : () -> showProfile(current);
+            boolean changed = false;
+            for (int i = 0; i < fields.size(); i++) changed |= !value(fields.get(i)).equals(initialValues.get(i));
+            if (!changed) { back.run(); return; }
+            new AlertDialog.Builder(this).setTitle("Discard changes?")
+                    .setMessage("Your unsaved changes will be lost.")
+                    .setNegativeButton("Keep editing", null)
+                    .setPositiveButton("Discard", (dialog, which) -> back.run()).show();
+        } else if (accountSelected && current != null) { accountSelected = false; showHome(current); }
+        else super.navigateBack();
+    }
+    private void showDestination(ProfileCache.Snapshot snapshot) {
+        if (accountSelected) showProfile(snapshot); else showHome(snapshot);
+        if (pendingTab != null) {
+            SolarNavigation.Tab destination = pendingTab;
+            pendingTab = null;
+            SolarNavigation.open(this, destination);
+        }
+    }
+    private void readPendingTab(android.content.Intent intent) {
+        String destination = intent.getStringExtra(SolarNavigation.DESTINATION);
+        if ("EXPLORE".equals(destination)) pendingTab = SolarNavigation.Tab.EXPLORE;
+        else if ("BOOKINGS".equals(destination)) pendingTab = SolarNavigation.Tab.BOOKINGS;
+        else pendingTab = null;
+        intent.removeExtra(SolarNavigation.DESTINATION);
     }
 
     private void showLogin() {
+        requestGeneration++;
+        pendingTab = null;
+        page = "login"; accountSelected = false;
         screen(R.string.welcome, R.string.login_intro);
         EditText nic = field(R.string.nic, "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS, 12);
         nic.setHint(R.string.nic_hint);
@@ -58,12 +159,14 @@ public final class MainActivity extends SolarActivity {
             accounts.login(value(nic), value(password), signInCallback());
         });
         button(R.string.register_link, false, this::showRegister);
-        button(R.string.grid_operator_link, false, () -> {
+        Button operator = button(R.string.grid_operator_link, false, () -> {
             startActivity(new android.content.Intent(this, OperatorLoginActivity.class));
         });
+        SolarStyle.link(operator);
     }
 
     private void showRegister() {
+        page = "register"; setTitle(R.string.register_title);
         screen(R.string.register_title, R.string.register_intro);
         EditText nic = field(R.string.nic, "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS, 12);
         nic.setHint(R.string.nic_hint);
@@ -79,101 +182,99 @@ public final class MainActivity extends SolarActivity {
             setBusy(true);
             accounts.register(value(nic), value(name), value(email), value(phone), value(address), value(password), signInCallback());
         });
-        button(R.string.back_sign_in, false, this::showLogin);
+    }
+
+    private void showHome(ProfileCache.Snapshot snapshot) {
+        current = snapshot; page = "home"; accountSelected = false;
+        screen("Home", "A little energy. A brighter community.");
+        TextView greeting = text("Welcome back, " + snapshot.profile.fullName.split(" ")[0] + ".", 20, INK, true);
+        ((LinearLayout.LayoutParams) greeting.getLayoutParams()).bottomMargin = dp(16);
+        if (snapshot.cached) offlineNote(snapshot);
+
+        LinearLayout feature = SolarStyle.group(content);
+        feature.setPadding(dp(24), dp(24), dp(24), dp(24));
+        android.widget.ImageView icon = new android.widget.ImageView(this);
+        icon.setImageResource(R.drawable.ic_nav_bolt);
+        feature.addView(icon, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        TextView heading = new TextView(this);
+        heading.setText("Put your energy to work.");
+        SolarStyle.text(heading, 28, INK, true);
+        LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(-1, -2);
+        headingParams.topMargin = dp(16); headingParams.bottomMargin = dp(8);
+        feature.addView(heading, headingParams);
+        TextView detail = new TextView(this);
+        detail.setText("Find a nearby microgrid, choose an available slot, and book your next energy transfer.");
+        SolarStyle.text(detail, 17, MUTED, false);
+        feature.addView(detail);
+        Button explore = new Button(this);
+        explore.setText("Explore stations"); SolarStyle.button(explore, true);
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-1, -2);
+        buttonParams.topMargin = dp(24);
+        feature.addView(explore, buttonParams);
+        explore.setOnClickListener(v -> selectTab(SolarNavigation.Tab.EXPLORE));
+
+        SolarStyle.section(content, "Your next step");
+        LinearLayout group = SolarStyle.group(content);
+        SolarStyle.row(group, R.drawable.ic_nav_bookings, "Make a booking", "Choose a station and an energy slot",
+                () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class)));
+        SolarStyle.row(group, R.drawable.ic_nav_home, "View your bookings", "Upcoming transfers, history, and QR codes",
+                () -> selectTab(SolarNavigation.Tab.BOOKINGS));
+        text("Station availability is checked live when you book.", 14, MUTED, false);
     }
 
     private void showProfile(ProfileCache.Snapshot snapshot) {
-        current = snapshot;
+        current = snapshot; page = "account"; accountSelected = true;
         Profile profile = snapshot.profile;
-        screen(R.string.profile_title, R.string.profile_intro);
-
-        LinearLayout profileCard = new LinearLayout(this);
-        profileCard.setOrientation(LinearLayout.VERTICAL);
-        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-                new int[]{SolarStyle.SKY, Color.WHITE});
-        bg.setCornerRadius(dp(12));
-        SolarStyle.card(profileCard);
-        profileCard.setElevation(0);
-        profileCard.setPadding(dp(20), dp(20), dp(20), dp(20));
-
-        TextView nameView = new TextView(this);
-        nameView.setText(profile.fullName);
-        nameView.setTextSize(24); nameView.setTextColor(INK); nameView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        profileCard.addView(nameView);
-
-        TextView nicView = new TextView(this);
-        nicView.setText(getString(R.string.nic_value, profile.nic));
-        nicView.setTextSize(13); nicView.setTextColor(MUTED);
-        profileCard.addView(nicView);
-
-        TextView statusView = new TextView(this);
-        statusView.setText(getString(R.string.status_value, profile.status));
-        statusView.setTextSize(13); statusView.setTextColor(GREEN); statusView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
-        sp.topMargin = dp(8);
-        profileCard.addView(statusView, sp);
-
-        LinearLayout.LayoutParams pcp = new LinearLayout.LayoutParams(-1, -2);
-        pcp.bottomMargin = dp(20);
-        content.addView(profileCard, pcp);
-
-        if (snapshot.cached) {
-            String date = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(snapshot.fetchedAt));
-            note(getString(R.string.offline, date));
+        screen("Account", "Your details, all in one place.");
+        LinearLayout identity = SolarStyle.group(content);
+        identity.setPadding(dp(20), dp(24), dp(20), dp(24));
+        android.widget.ImageView avatar = new android.widget.ImageView(this);
+        avatar.setImageResource(R.drawable.ic_account_avatar);
+        identity.addView(avatar, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        TextView name = new TextView(this);
+        name.setText(profile.fullName); SolarStyle.text(name, 24, INK, true);
+        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(-1, -2);
+        nameParams.topMargin = dp(16); nameParams.bottomMargin = dp(8);
+        identity.addView(name, nameParams);
+        TextView nic = new TextView(this);
+        nic.setText(getString(R.string.nic_value, profile.nic)); SolarStyle.text(nic, 14, MUTED, false);
+        identity.addView(nic);
+        TextView status = new TextView(this);
+        status.setText(profile.status); SolarStyle.badge(status, GREEN);
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-2, -2);
+        statusParams.topMargin = dp(12);
+        identity.addView(status, statusParams);
+        if (snapshot.cached) offlineNote(snapshot);
+        SolarStyle.section(content, "Personal information");
+        LinearLayout details = SolarStyle.group(content);
+        SolarStyle.row(details, R.drawable.ic_nav_account, "Email", profile.email, null);
+        SolarStyle.row(details, R.drawable.ic_nav_account, "Phone", profile.phone, null);
+        SolarStyle.row(details, R.drawable.ic_nav_home, "Address", profile.address, null);
+        LinearLayout settings = SolarStyle.group(content);
+        SolarStyle.row(settings, R.drawable.ic_nav_account, "Edit personal details", "Name and contact information", () -> showEditProfile(snapshot));
+        SolarStyle.row(settings, R.drawable.ic_nav_explore, "Refresh account", "Get the latest account information", this::refresh);
+        if (profile.requestStatus != null) note(getString(R.string.last_request, profile.requestStatus));
+        if (profile.decisionNote != null) text(profile.decisionNote, 14, MUTED, false);
+        if (!"Pending".equals(profile.requestStatus)) {
+            View deactivate = SolarStyle.row(settings, R.drawable.ic_nav_account, "Request deactivation", "Submit a request for review", this::showDeactivation);
+            deactivate.setEnabled(!snapshot.cached);
+            deactivate.setAlpha(snapshot.cached ? 0.5f : 1f);
         }
+        SolarStyle.danger(button(R.string.sign_out, false, this::confirmLogout));
+    }
 
-        TextView actionsTitle = new TextView(this);
-        actionsTitle.setText("Quick Actions");
-        actionsTitle.setTextSize(16); actionsTitle.setTextColor(INK); actionsTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams atp = new LinearLayout.LayoutParams(-1, -2);
-        atp.topMargin = dp(10); atp.bottomMargin = dp(10);
-        content.addView(actionsTitle, atp);
-
-        LinearLayout grid = new LinearLayout(this);
-        grid.setOrientation(LinearLayout.VERTICAL);
-        content.addView(grid, new LinearLayout.LayoutParams(-1, -2));
-
-        LinearLayout row1 = new LinearLayout(this);
-        row1.setOrientation(LinearLayout.HORIZONTAL);
-        grid.addView(row1, new LinearLayout.LayoutParams(-1, -2));
-
-        LinearLayout row2 = new LinearLayout(this);
-        row2.setOrientation(LinearLayout.HORIZONTAL);
-        grid.addView(row2, new LinearLayout.LayoutParams(-1, -2));
-
-        LinearLayout row3 = new LinearLayout(this);
-        row3.setOrientation(LinearLayout.HORIZONTAL);
-        grid.addView(row3, new LinearLayout.LayoutParams(-1, -2));
-
-        LinearLayout row4 = new LinearLayout(this);
-        row4.setOrientation(LinearLayout.HORIZONTAL);
-        grid.addView(row4, new LinearLayout.LayoutParams(-1, -2));
-
-        row1.addView(createActionCard("Explore Stations", () -> startActivity(new android.content.Intent(this, StationMapActivity.class))));
-        row1.addView(createActionCard("Create Booking", () -> startActivity(new android.content.Intent(this, CreateBookingActivity.class))));
-
-        row2.addView(createActionCard("My Bookings", () -> startActivity(new android.content.Intent(this, BookingHistoryActivity.class))));
-        row2.addView(createActionCard("Pending Bookings", () -> startActivity(new android.content.Intent(this, PendingBookingsActivity.class))));
-
-        row3.addView(createActionCard("Search Bookings", () -> startActivity(new android.content.Intent(this, SearchBookingActivity.class))));
-        row3.addView(createActionCard("Refresh", this::refresh));
-
-        row4.addView(createActionCard("Edit Profile", () -> showEditProfile(snapshot)));
-        row4.addView(createActionCard("Sign Out", this::confirmLogout));
+    private void offlineNote(ProfileCache.Snapshot snapshot) {
+        String date = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(snapshot.fetchedAt));
+        note(getString(R.string.offline, date));
     }
 
     private void showEditProfile(ProfileCache.Snapshot snapshot) {
+        if (busy) return;
         current = snapshot;
         Profile profile = snapshot.profile;
-        screen(R.string.profile_title, R.string.profile_intro);
-
-        TextView formTitle = new TextView(this);
-        formTitle.setText("Update Details");
-        formTitle.setTextSize(24); formTitle.setTextColor(INK); formTitle.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        LinearLayout.LayoutParams ftp = new LinearLayout.LayoutParams(-1, -2);
-        ftp.topMargin = dp(20);
-        content.addView(formTitle, ftp);
+        page = "edit"; setTitle("Edit details");
+        screen("Edit details", "Keep your contact information up to date.");
+        if (snapshot.cached) offlineNote(snapshot);
 
         EditText name = field(R.string.full_name, profile.fullName, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME, 100);
         EditText email = field(R.string.email, profile.email, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, 254);
@@ -185,21 +286,13 @@ public final class MainActivity extends SolarActivity {
             accounts.save(value(name), value(email), value(phone), value(address), profile.version, profileCallback(R.string.profile_saved));
         });
         allow(save, !snapshot.cached);
-        if (profile.requestStatus != null) {
-            note(getString(R.string.last_request, profile.requestStatus));
-            if (profile.decisionNote != null) text(profile.decisionNote, 13, MUTED, false);
-        }
-        if ("Pending".equals(profile.requestStatus)) note(getString(R.string.request_pending));
-        else {
-            Button request = button(R.string.request_deactivation, false, this::showDeactivation);
-            allow(request, !snapshot.cached);
-        }
-
-        button(R.string.back_account, false, () -> showProfile(current));
+        button(R.string.cancel, false, this::navigateBack);
     }
 
     private void showDeactivation() {
+        if (busy) return;
         if (current == null || current.cached) { showMessage(getString(R.string.offline_writes), true); return; }
+        page = "deactivate"; setTitle(R.string.request_title);
         screen(R.string.request_title, R.string.request_intro);
         EditText reason = field(R.string.reason, "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE, 500);
         reason.setMinLines(4);
@@ -212,11 +305,13 @@ public final class MainActivity extends SolarActivity {
                     accounts.deactivate(reasonText, current.profile.version, profileCallback(R.string.request_sent));
                 }).show();
         });
-        button(R.string.back_account, false, () -> showProfile(current));
+        button(R.string.cancel, false, this::navigateBack);
     }
 
     private void refresh() {
-        screen(R.string.profile_title, R.string.profile_intro);
+        if (busy) return;
+        page = "loading";
+        screen(accountSelected ? "Account" : "Home", "Getting your account ready…");
         button(R.string.refresh, false, this::refresh);
         button(R.string.sign_out, false, this::confirmLogout);
         setBusy(true);
@@ -238,25 +333,30 @@ public final class MainActivity extends SolarActivity {
     }
 
     private AccountRepository.Callback<ProfileCache.Snapshot> signInCallback() {
+        final int generation = ++requestGeneration;
         return new AccountRepository.Callback<>() {
             @Override public void success(ProfileCache.Snapshot snapshot) {
-                if (!alive()) return;
-                // Keep the account page underneath the map for My account and Back.
-                showProfile(snapshot);
-                startActivity(new android.content.Intent(MainActivity.this, StationMapActivity.class));
+                if (!alive() || generation != requestGeneration) return;
+                accountSelected = false;
+                showHome(snapshot);
             }
-            @Override public void failure(int status, String text) { handleFailure(status, text); }
+            @Override public void failure(int status, String text) {
+                if (generation == requestGeneration) handleFailure(status, text);
+            }
         };
     }
 
     private AccountRepository.Callback<ProfileCache.Snapshot> profileCallback(int successMessage) {
+        final int generation = ++requestGeneration;
         return new AccountRepository.Callback<>() {
             @Override public void success(ProfileCache.Snapshot snapshot) {
-                if (!alive()) return;
-                showProfile(snapshot);
+                if (!alive() || generation != requestGeneration) return;
+                if (successMessage != 0) showProfile(snapshot); else showDestination(snapshot);
                 if (successMessage != 0) showMessage(getString(successMessage), false);
             }
-            @Override public void failure(int status, String text) { handleFailure(status, text); }
+            @Override public void failure(int status, String text) {
+                if (generation == requestGeneration) handleFailure(status, text);
+            }
         };
     }
     private void handleFailure(int status, String text) {
@@ -269,18 +369,24 @@ public final class MainActivity extends SolarActivity {
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
 
     @SuppressWarnings("deprecation")
-    private void screen(int title, int introduction) {
-        busy = false; actions.clear(); fields.clear();
+    private void screen(int title, int introduction) { screen(getString(title), getString(introduction)); }
+
+    private void screen(String title, String introduction) {
+        busy = false; actions.clear(); fields.clear(); initialValues.clear();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
         scroll.requestApplyInsets();
-        SolarStyle.hero(content, getString(title), getString(introduction));
+        if ("login".equals(page)) {
+            TextView brand = text(getString(R.string.brand), 16, INK, true);
+            SolarStyle.brand(brand);
+        }
+        SolarStyle.hero(content, title, introduction);
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
         content.addView(progress, new LinearLayout.LayoutParams(-1, dp(4)));
@@ -315,6 +421,7 @@ public final class MainActivity extends SolarActivity {
         SolarStyle.field(editor);
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
+        initialValues.add(initial);
         return editor;
     }
     private EditText passwordField() {
@@ -338,14 +445,17 @@ public final class MainActivity extends SolarActivity {
     private void allow(Button button, boolean allowed) { button.setTag(allowed); button.setEnabled(allowed && !busy); }
     private void setBusy(boolean value) {
         busy = value;
+        if (value) {
+            android.view.inputmethod.InputMethodManager keyboard = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (keyboard != null) keyboard.hideSoftInputFromWindow(content.getWindowToken(), 0);
+        }
         progress.setVisibility(value ? View.VISIBLE : View.GONE);
         for (Button action : actions) action.setEnabled(!value && Boolean.TRUE.equals(action.getTag()));
         for (EditText field : fields) field.setEnabled(!value);
         if (value) showMessage(getString(R.string.working), false);
     }
     private void showMessage(String value, boolean error) {
-        message.setText(value); message.setTextColor(error ? SolarStyle.RED : GREEN);
-        message.setPadding(0, dp(14), 0, dp(10)); message.setVisibility(View.VISIBLE);
+        message.setText(value); SolarStyle.notice(message, error); message.setVisibility(View.VISIBLE);
     }
     private boolean required(EditText... inputs) {
         for (EditText input : inputs) if (value(input).trim().isEmpty()) {
@@ -354,30 +464,6 @@ public final class MainActivity extends SolarActivity {
         return true;
     }
     private static String value(EditText input) { return input.getText().toString(); }
-    private View createActionCard(String title, Runnable action) {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setGravity(android.view.Gravity.CENTER);
-        SolarStyle.card(card);
-        card.setElevation(0);
-        card.setPadding(dp(10), dp(24), dp(10), dp(24));
-        card.setClickable(true);
-        card.setOnClickListener(v -> { if (!busy) action.run(); });
-
-        TextView titleView = new TextView(this);
-        titleView.setText(title);
-        titleView.setTextSize(13);
-        titleView.setTextColor(GREEN);
-        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        titleView.setGravity(android.view.Gravity.CENTER);
-        card.addView(titleView);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1.0f);
-        params.setMargins(dp(6), dp(6), dp(6), dp(6));
-        card.setLayoutParams(params);
-        return card;
-    }
-
     private GradientDrawable shape(int fill, int stroke) {
         GradientDrawable shape = new GradientDrawable(); shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);

@@ -1,16 +1,12 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 import lk.solar.microgrid.data.Reservation;
@@ -35,7 +31,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
 
@@ -54,14 +50,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     private void loadOperations() {
         content.removeAllViews();
 
-        // Top Navigation / Back button
-        TextView backBtn = new TextView(this);
-        backBtn.setText("← Back to Dashboard");
-        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        backBtn.setPadding(0, dp(10), 0, dp(20));
-        backBtn.setClickable(true);
-        backBtn.setOnClickListener(v -> finish());
-        content.addView(backBtn);
+
 
         TextView eyebrow = new TextView(this);
         eyebrow.setText("HISTORY");
@@ -123,7 +112,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
 
-        SolarStyle.card(card);
+        SolarStyle.interactiveCard(card);
         card.setElevation(0);
         card.setPadding(dp(18), dp(18), dp(18), dp(18));
         card.setClickable(true);
@@ -133,17 +122,6 @@ public class CompletedOperationsActivity extends SolarActivity {
         params.topMargin = dp(12);
         params.bottomMargin = dp(6);
         content.addView(card, params);
-
-        android.view.animation.TranslateAnimation anim = new android.view.animation.TranslateAnimation(
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f
-        );
-        anim.setDuration(400);
-        anim.setStartOffset(index * 50L);
-        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
-        card.startAnimation(anim);
 
         // Header Row: Energy amount and Status
         LinearLayout headerRow = new LinearLayout(this);

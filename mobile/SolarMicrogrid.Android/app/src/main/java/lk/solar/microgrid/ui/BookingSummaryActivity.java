@@ -1,12 +1,9 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -38,14 +35,12 @@ public final class BookingSummaryActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.booking_summary_title), 28, INK, true);
-        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
+        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(8);
         text("Reservation details:", 14, MUTED, false);
 
         String reservationCode = getIntent().getStringExtra("reservationCode");

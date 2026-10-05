@@ -40,7 +40,7 @@ An inactive station disappears from prosumer discovery. It remains visible to st
    ```
 
    For a USB phone, set `apiBaseUrl=http://127.0.0.1:5080/api/v1/` and run `adb reverse tcp:5080 tcp:5080`. The sample `development.properties.example` documents both settings.
-5. Sync Gradle and Run `app`. Keep the API running. Sign in as a prosumer and select **Explore microgrid stations**.
+5. Sync Gradle and Run `app`. Keep the API running. Sign in as a prosumer and select the **Explore** tab (or **Explore stations** on Home).
 6. The Google map plots active stations from REST. Pan or pinch to explore; tap a marker or station card for current details, schedules and availability.
 7. Tap **Use my location** and grant foreground location access to filter within 25 km. The map and station list remain usable if location access is declined.
 8. Test pagination, empty nearby results, and station deactivation. The phone needs internet for Google map tiles and a separate connection to the central API for station data.

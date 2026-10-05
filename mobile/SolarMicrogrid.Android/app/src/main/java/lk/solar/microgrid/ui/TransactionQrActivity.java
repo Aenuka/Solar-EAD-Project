@@ -1,6 +1,5 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -63,7 +62,7 @@ public final class TransactionQrActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
