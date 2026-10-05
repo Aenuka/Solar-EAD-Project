@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Returns a prosumer profile, account status, version, deactivation request, and recent account events.
+ */
+
 namespace SolarMicrogrid.Contracts;
 
 // Reference: Julio Casal YouTube tutorials

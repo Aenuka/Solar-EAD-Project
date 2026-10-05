@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates a Backoffice deactivation-review decision, note, and account version.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

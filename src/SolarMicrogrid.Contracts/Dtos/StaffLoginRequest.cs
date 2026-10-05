@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates the username and password submitted for staff login.
+ */
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Contracts;

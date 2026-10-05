@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Persists and queries prosumer accounts in MongoDB, filters account listings, and revokes sessions.
+ */
+
 using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Driver;

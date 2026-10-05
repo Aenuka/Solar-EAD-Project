@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Caches server-confirmed prosumer profiles in device-private SQLite without storing passwords or JWT tokens.
+ */
+
 package lk.solar.microgrid.data;
 
 import android.content.ContentValues;

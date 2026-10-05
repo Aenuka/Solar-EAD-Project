@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Authenticates staff and prosumers, issues access tokens, looks up accounts, and revokes sessions on logout.
+ */
+
 using SolarMicrogrid.Api.Models;
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Security;

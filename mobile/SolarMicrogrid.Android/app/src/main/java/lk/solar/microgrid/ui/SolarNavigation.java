@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Provides prosumer and operator navigation destinations, including their respective account screens.
+ */
+
 package lk.solar.microgrid.ui;
 
 import android.app.Activity;

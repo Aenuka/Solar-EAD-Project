@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Manages prosumer registration, profiles, deactivation requests, review decisions, reactivation, and session revocation.
+ */
+
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Models;
 using SolarMicrogrid.Api.Security;

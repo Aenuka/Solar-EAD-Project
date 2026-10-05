@@ -1,3 +1,9 @@
+<!--
+    @author Aenuka Buddhakorala
+    IT number: IT23214934
+    File functionality:
+    - Defines navigation labels for prosumer and operator screens, including account destinations.
+-->
 <resources>
     <string name="nav_home">Home</string>
     <string name="nav_explore">Explore</string>

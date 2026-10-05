@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines staff and prosumer login endpoints, authenticated current-user lookup, and logout.
+ */
+
 using System.Security.Claims;
 using SolarMicrogrid.Api.Services;
 using SolarMicrogrid.Contracts;

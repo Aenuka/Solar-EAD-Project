@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Hashes account passwords and verifies login credentials using ASP.NET Core Identity.
+ */
+
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using SolarMicrogrid.Api.Models;

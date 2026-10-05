@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Sends portal requests to the API with the session's JWT bearer token and supports account operations and logout.
+ */
+
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;

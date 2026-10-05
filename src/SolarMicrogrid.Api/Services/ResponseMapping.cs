@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Maps account documents to response models, records account events, and checks update versions.
+ */
+
 using SolarMicrogrid.Api.Models;
 using SolarMicrogrid.Contracts;
 

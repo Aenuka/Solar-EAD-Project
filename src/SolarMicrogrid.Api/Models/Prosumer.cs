@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Represents a prosumer account with contact details and an optional deactivation request.
+ */
+
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace SolarMicrogrid.Api.Models;

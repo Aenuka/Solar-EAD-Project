@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Provides shared React form controls, validation messages, and antiforgery-protected submissions used by account pages.
+ */
+
 import { createContext, useContext, useId, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, CircleAlert, Sun, X } from "lucide-react";
 

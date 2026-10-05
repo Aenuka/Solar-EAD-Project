@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates prosumer registration details, including NIC, contact information, and password.
+ */
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Contracts;

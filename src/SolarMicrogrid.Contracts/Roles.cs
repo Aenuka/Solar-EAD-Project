@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines shared Backoffice, GridOperator, and Prosumer role names used for authorization.
+ */
+
 namespace SolarMicrogrid.Contracts;
 
 public static class Roles

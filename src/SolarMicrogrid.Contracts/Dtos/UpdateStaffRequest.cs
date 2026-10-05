@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates staff profile, role, status, and version updates.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

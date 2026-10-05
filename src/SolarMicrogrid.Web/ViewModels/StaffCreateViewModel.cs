@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Validates the staff-account creation form, including credentials, contact details, and role.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using SolarMicrogrid.Contracts;
 

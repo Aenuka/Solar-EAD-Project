@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Validates and normalizes Sri Lankan NIC values used to identify prosumer accounts during registration and login.
+ */
+
 using System.Text.RegularExpressions;
 
 namespace SolarMicrogrid.Api.Services;

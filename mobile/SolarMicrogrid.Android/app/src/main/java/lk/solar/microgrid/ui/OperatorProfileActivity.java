@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Displays the signed-in Grid Operator's identity and role and provides local session logout.
+ */
+
 package lk.solar.microgrid.ui;
 
 import android.app.AlertDialog;

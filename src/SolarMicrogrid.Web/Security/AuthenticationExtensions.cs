@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Configures staff cookie sessions and validates their stored JWT against the API to reject revoked or unauthorized sessions.
+ */
+
 using System.Net;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authentication;

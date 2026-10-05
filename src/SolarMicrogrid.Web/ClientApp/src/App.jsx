@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Renders the React portal, submits authenticated forms, and selects pages and navigation based on the current user's role.
+ */
+
 import { useEffect, useRef, useState } from "react";
 import {
   ClipboardList,

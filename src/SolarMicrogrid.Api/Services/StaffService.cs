@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Creates and updates staff accounts, roles, and statuses while protecting privileged accounts and revoking changed sessions.
+ */
+
 using SolarMicrogrid.Api.Data;
 using SolarMicrogrid.Api.Models;
 using SolarMicrogrid.Api.Security;

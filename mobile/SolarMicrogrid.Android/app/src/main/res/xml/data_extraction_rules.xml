@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    @author Aenuka Buddhakorala
+    IT number: IT23214934
+    File functionality:
+    - Excludes private app data, including cached account information, from cloud backups and device transfers.
+-->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" path="." />

@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Persists and queries staff accounts in MongoDB, handles duplicate usernames, and revokes sessions.
+ */
+
 using MongoDB.Driver;
 using SolarMicrogrid.Api.Models;
 

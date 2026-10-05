@@ -1,3 +1,9 @@
+<!--
+    @author Aenuka Buddhakorala
+    IT number: IT23214934
+    File functionality:
+    - Defines shared Android themes and dialog styles used by login and account-management screens.
+-->
 <resources>
     <style name="AppThemeBase" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans-serif</item>

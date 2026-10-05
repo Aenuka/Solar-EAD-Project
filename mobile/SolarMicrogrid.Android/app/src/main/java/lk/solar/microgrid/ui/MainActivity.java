@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Builds the prosumer login, registration, profile, profile-editing, deactivation, and logout screens in Java.
+ */
+
 package lk.solar.microgrid.ui;
 
 import android.app.AlertDialog;

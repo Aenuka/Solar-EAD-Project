@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Parses prosumer profile, account status, version, and deactivation-request details from API responses.
+ */
+
 package lk.solar.microgrid.data;
 
 import org.json.JSONException;

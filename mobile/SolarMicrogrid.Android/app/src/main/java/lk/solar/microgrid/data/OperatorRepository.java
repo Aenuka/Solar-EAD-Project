@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Handles Grid Operator login, role checks, in-memory JWT sessions, logout, and authenticated operator API requests.
+ */
+
 package lk.solar.microgrid.data;
 
 import android.content.Context;
