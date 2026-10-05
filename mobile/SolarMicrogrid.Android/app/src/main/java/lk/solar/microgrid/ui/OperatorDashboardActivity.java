@@ -53,15 +53,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
         Button fab = new Button(this);
         fab.setText("Scan QR");
-        fab.setTextColor(Color.WHITE);
-        fab.setAllCaps(false);
-        fab.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        fab.setElevation(0);
-        android.graphics.drawable.GradientDrawable fabShape = new android.graphics.drawable.GradientDrawable();
-        fabShape.setCornerRadius(dp(28));
-        fabShape.setColor(GREEN);
-        fab.setBackground(fabShape);
-        fab.setPadding(dp(20), 0, dp(20), 0);
+        SolarStyle.button(fab, true);
         fab.setOnClickListener(v -> startActivity(new Intent(this, QrScannerActivity.class)));
 
         FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(-2, dp(56));
@@ -115,7 +107,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
         // Stats
         LinearLayout statsLayout = new LinearLayout(this);
-        statsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        statsLayout.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams statsParams = new LinearLayout.LayoutParams(-1, -2);
         statsParams.topMargin = dp(20);
         content.addView(statsLayout, statsParams);
@@ -143,28 +135,36 @@ public class OperatorDashboardActivity extends SolarActivity {
 
     private LinearLayout statCard(String title, String count, String label, int color) {
         LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
         SolarStyle.card(card);
-        card.setElevation(0);
-        card.setPadding(dp(12), dp(16), dp(12), dp(16));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1.0f);
-        params.rightMargin = dp(8);
+        card.setPadding(dp(22), dp(20), dp(22), dp(20));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.bottomMargin = dp(8);
         card.setLayoutParams(params);
 
-        TextView titleView = new TextView(this);
-        titleView.setText(title); titleView.setTextSize(13); titleView.setTextColor(INK);
-        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        card.addView(titleView);
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        card.addView(labels, new LinearLayout.LayoutParams(0, -2, 1.0f));
 
-        TextView countView = new TextView(this);
-        countView.setText(count); countView.setTextSize(28); countView.setTextColor(color);
-        countView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        card.addView(countView);
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        SolarStyle.text(titleView, 15, INK, true);
+        labels.addView(titleView);
 
         TextView labelView = new TextView(this);
-        labelView.setText(label); labelView.setTextSize(13); labelView.setTextColor(MUTED);
-        card.addView(labelView);
+        labelView.setText(label);
+        SolarStyle.text(labelView, 14, MUTED, false);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(-1, -2);
+        labelParams.topMargin = dp(4);
+        labels.addView(labelView, labelParams);
 
+        TextView countView = new TextView(this);
+        countView.setText(count);
+        SolarStyle.text(countView, 36, color, true);
+        LinearLayout.LayoutParams countParams = new LinearLayout.LayoutParams(-2, -2);
+        countParams.leftMargin = dp(16);
+        card.addView(countView, countParams);
         return card;
     }
 
@@ -227,7 +227,7 @@ public class OperatorDashboardActivity extends SolarActivity {
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
         headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(-1, -2);
-        headerParams.topMargin = dp(30); headerParams.bottomMargin = dp(12);
+        headerParams.topMargin = dp(12); headerParams.bottomMargin = dp(12);
         content.addView(headerRow, headerParams);
 
         LinearLayout titleCol = new LinearLayout(this);
@@ -242,7 +242,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
         TextView name = new TextView(this);
         name.setText(operators.getFullName() != null ? operators.getFullName() : "Operator");
-        name.setTextSize(24); name.setTextColor(INK); name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        SolarStyle.text(name, 16, MUTED, false);
         titleCol.addView(name);
 
         android.widget.ImageView profileIcon = new android.widget.ImageView(this);

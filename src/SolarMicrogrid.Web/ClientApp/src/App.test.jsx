@@ -41,6 +41,23 @@ const response = (data, url) => ({
 });
 
 describe("React portal workflows", () => {
+  it("closes mobile navigation with Escape and restores focus to its button", async () => {
+    const user = userEvent.setup();
+    render(<App initialData={base} />);
+    const toggle = screen.getByRole("button", { name: "Open navigation" });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).not.toHaveClass("hidden");
+    await user.keyboard("{Escape}");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveFocus();
+    expect(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).toHaveClass("hidden");
+  });
+
   it("renders the operator dashboard and submits pending approval with antiforgery", async () => {
     const user = userEvent.setup();
     const booking = {

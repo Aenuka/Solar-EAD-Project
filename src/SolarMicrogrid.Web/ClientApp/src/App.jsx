@@ -68,7 +68,10 @@ export default function App({ initialData }) {
       requestAnimationFrame(() => {
         noticeRef.current?.focus();
         noticeRef.current?.scrollIntoView?.({
-          behavior: "smooth",
+          behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)")
+            ?.matches
+            ? "auto"
+            : "smooth",
           block: "start",
         });
       });
@@ -106,11 +109,7 @@ export default function App({ initialData }) {
       </a>
       {data.user ? (
         <Shell data={data}>
-          <main
-            id="main"
-            className="mx-auto max-w-[1440px] px-5 py-9 sm:px-9 lg:px-12 lg:py-12"
-            aria-busy={busy}
-          >
+          <main id="main" className="portal-main" aria-busy={busy}>
             {notices}
             <Page key={revision} data={data} />
           </main>
@@ -118,7 +117,7 @@ export default function App({ initialData }) {
       ) : (
         <main
           id="main"
-          className="mx-auto max-w-6xl px-5 py-8 sm:py-16"
+          className="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 sm:py-16"
           aria-busy={busy}
         >
           {notices}
@@ -134,6 +133,18 @@ export default function App({ initialData }) {
 
 function Shell({ data, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButton.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
   const pending = data.controller === "Prosumers" && data.meta?.Pending;
   const links = [
     ["Home", "/", "Overview", LayoutDashboard],
@@ -149,22 +160,48 @@ function Shell({ data, children }) {
   ];
   return (
     <>
-      <header className="border-b border-slate-200/80 bg-white">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-5 sm:px-9 lg:px-12">
+      <header className="portal-header">
+        <div className="global-bar">
           <Brand />
-          <div className="flex items-center gap-4">
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium">{data.user.name}</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {data.user.role === "GridOperator"
-                  ? "Grid Operator"
-                  : "Backoffice"}
+          <nav
+            id="main-navigation"
+            aria-label="Main navigation"
+            className={`portal-nav ${menuOpen ? "flex" : "hidden"} lg:flex`}
+          >
+            {links.map(([key, href, label, Icon]) => {
+              const active =
+                key === "Requests"
+                  ? pending
+                  : (key === data.controller ||
+                      (key === "Home" && data.controller === "Operator")) &&
+                    !pending;
+              return (
+                <a
+                  key={key}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className="portal-nav-link"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Icon className="lg:hidden" size={18} aria-hidden="true" />
+                  {label}
+                </a>
+              );
+            })}
+          </nav>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden max-w-36 items-center text-right xl:flex">
+              <p
+                className="truncate text-xs font-medium"
+                title={data.user.name}
+              >
+                {data.user.name}
               </p>
             </div>
             <Form action="/Account/Logout">
               <button
                 type="submit"
-                className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+                className="icon-button"
                 aria-label="Sign out"
                 title="Sign out"
               >
@@ -172,8 +209,9 @@ function Shell({ data, children }) {
               </button>
             </Form>
             <button
+              ref={menuButton}
               type="button"
-              className="rounded-full p-2 md:hidden"
+              className="icon-button lg:hidden"
               aria-label={menuOpen ? "Close navigation" : "Open navigation"}
               aria-expanded={menuOpen}
               aria-controls="main-navigation"
@@ -183,34 +221,9 @@ function Shell({ data, children }) {
             </button>
           </div>
         </div>
-        <nav
-          id="main-navigation"
-          aria-label="Main navigation"
-          className={`${menuOpen ? "flex" : "hidden"} mx-auto max-w-[1440px] flex-wrap gap-1 px-5 pb-3 sm:px-9 md:flex lg:px-12`}
-        >
-          {links.map(([key, href, label, Icon]) => {
-            const active =
-              key === "Requests"
-                ? pending
-                : (key === data.controller ||
-                    (key === "Home" && data.controller === "Operator")) &&
-                  !pending;
-            return (
-              <a
-                key={key}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition ${active ? "bg-sky-50 font-medium text-sky-700" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`}
-              >
-                <Icon size={16} aria-hidden="true" />
-                {label}
-              </a>
-            );
-          })}
-        </nav>
       </header>
       {children}
-      <footer className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-2 px-5 py-8 text-xs text-slate-400 sm:px-9 lg:px-12">
+      <footer className="portal-footer">
         <span>Solar Microgrid</span>
         <span className="flex items-center gap-1.5">
           <Leaf size={13} /> A connected energy community

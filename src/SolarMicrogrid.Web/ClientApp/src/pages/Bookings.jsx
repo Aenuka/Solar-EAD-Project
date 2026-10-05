@@ -67,7 +67,7 @@ export function Bookings() {
         </div>
       </Heading>
       {!pending && (
-        <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="metrics-grid">
           {[
             "Total bookings",
             "Pending",
@@ -92,11 +92,7 @@ export function Bookings() {
       )}
       <section className="card overflow-hidden !p-0">
         {!dashboard && !pending && (
-          <form
-            method="get"
-            action="/Bookings"
-            className="flex flex-wrap items-end gap-4 p-6"
-          >
+          <form method="get" action="/Bookings" className="filter-toolbar">
             <Field
               label="Reservation status"
               name="status"

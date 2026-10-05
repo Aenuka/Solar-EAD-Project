@@ -18,26 +18,24 @@ export function Brand() {
   return (
     <a
       href="/"
-      className="inline-flex items-center gap-2.5 font-semibold tracking-tight text-slate-800"
+      className="inline-flex shrink-0 items-center gap-2.5 font-semibold tracking-tight text-slate-800"
     >
-      <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500 text-white">
-        <Sun size={23} aria-hidden="true" />
+      <span className="flex size-8 items-center justify-center text-slate-800">
+        <Sun size={27} strokeWidth={1.7} aria-hidden="true" />
       </span>
-      <span className="text-lg">
-        Solar<span className="font-normal text-slate-500"> Microgrid</span>
-      </span>
+      <span className="text-base">Solar Microgrid</span>
     </a>
   );
 }
 
 export function Heading({ eyebrow, title, description, children }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
+    <div className="page-heading">
       <div>
         <p className="eyebrow">{eyebrow || "Solar Microgrid"}</p>
         <h1>{title}</h1>
         {description && (
-          <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-500">
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
             {description}
           </p>
         )}
@@ -183,22 +181,34 @@ export function Empty({ title = "Nothing here yet", children }) {
 }
 
 export function Table({ headings, children, empty }) {
+  const hintId = useId();
   return empty ? (
     <Empty title={empty} />
   ) : (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr>
-            {headings.map((h) => (
-              <th key={h} scope="col">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+    <div>
+      <p id={hintId} className="px-6 py-3 text-xs text-slate-500 sm:hidden">
+        Scroll horizontally to see all columns.
+      </p>
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label="Records"
+        aria-describedby={hintId}
+      >
+        <table className="w-full">
+          <thead>
+            <tr>
+              {headings.map((h) => (
+                <th key={h} scope="col">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -236,16 +246,20 @@ export function Pagination({ model }) {
 export function Stat({ label, value, note, href, icon: Icon = Sun }) {
   const Tag = href ? "a" : "div";
   return (
-    <Tag
-      href={href}
-      className="card group block transition hover:border-sky-200"
-    >
-      <div className="mb-6 flex items-center justify-between gap-4 text-sm text-slate-500">
+    <Tag href={href} className="stat-card group">
+      <div className="mb-5 flex items-center justify-between gap-4 text-sm font-medium text-slate-500">
         {label}
-        <Icon size={20} className="text-sky-600" aria-hidden="true" />
+        <Icon
+          size={19}
+          strokeWidth={1.5}
+          className="text-slate-400"
+          aria-hidden="true"
+        />
       </div>
-      <div className="text-4xl font-semibold tracking-tight">{value ?? 0}</div>
-      <p className="muted mt-3 text-xs">{note}</p>
+      <div className="text-5xl font-semibold tracking-[-0.04em]">
+        {value ?? 0}
+      </div>
+      <p className="muted mt-3">{note}</p>
     </Tag>
   );
 }

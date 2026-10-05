@@ -1,6 +1,6 @@
+import { SolarScene } from "../SolarScene";
 import {
   Form,
-  Heading,
   Save,
   Stat,
   Table,
@@ -14,16 +14,25 @@ export function Operator() {
   const meta = data.meta;
   return (
     <>
-      <Heading
-        eyebrow="Grid operator workspace"
-        title="Operator Dashboard"
-        description="Monitor pending reservations and recent completed energy transfers."
-      >
-        <a href="/Bookings/Pending" className="btn">
-          Review pending bookings
-        </a>
-      </Heading>
-      <div className="mb-7 grid gap-4 sm:grid-cols-3">
+      <section className="overview-hero operator-hero">
+        <div className="overview-copy">
+          <p className="eyebrow">Grid operator workspace</p>
+          <h1 className="display-title">Operator Dashboard</h1>
+          <p className="hero-description">
+            Monitor reservations. Keep energy moving.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-5">
+            <a href="/Bookings/Pending" className="btn">
+              Review pending bookings
+            </a>
+            <a href="/Bookings?status=COMPLETED" className="text-link">
+              Completed operations →
+            </a>
+          </div>
+        </div>
+        <SolarScene />
+      </section>
+      <div className="metrics-grid metrics-grid-three">
         <Stat
           label="Pending"
           value={meta.PendingCount}
@@ -49,7 +58,7 @@ export function Operator() {
 function OperationsTable({ bookings, pending = false }) {
   return (
     <section className="card mb-6 overflow-hidden !p-0">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6">
+      <div className="section-toolbar">
         <h2>
           {pending
             ? "Recent pending reservations"

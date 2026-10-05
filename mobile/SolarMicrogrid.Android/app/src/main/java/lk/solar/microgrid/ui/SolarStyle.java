@@ -15,20 +15,20 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import lk.solar.microgrid.R;
 
-/** Shared native styling, matching the web portal's sky-blue and energy-green palette. */
+/** Shared native styling: quiet neutral surfaces, generous type, and clear blue actions. */
 public final class SolarStyle {
-    public static final int BLUE = Color.rgb(0, 113, 197);
-    public static final int GREEN = Color.rgb(4, 120, 87);
-    public static final int INK = Color.rgb(23, 43, 56);
-    public static final int MUTED = Color.rgb(100, 116, 139);
-    public static final int BACKGROUND = Color.rgb(245, 247, 249);
-    public static final int BORDER = Color.rgb(226, 232, 240);
-    public static final int SKY = Color.rgb(235, 246, 255);
+    public static final int BLUE = Color.rgb(0, 113, 227);
+    public static final int GREEN = Color.rgb(36, 112, 62);
+    public static final int INK = Color.rgb(29, 29, 31);
+    public static final int MUTED = Color.rgb(110, 110, 115);
+    public static final int BACKGROUND = Color.rgb(245, 245, 247);
+    public static final int BORDER = Color.rgb(210, 210, 215);
+    public static final int SKY = Color.rgb(240, 247, 255);
     public static final int MINT = Color.rgb(236, 253, 245);
     public static final int RED = Color.rgb(185, 28, 28);
     public static final int ROSE = Color.rgb(254, 242, 242);
     public static final int AMBER = Color.rgb(146, 64, 14);
-    public static final int RIPPLE = Color.argb(30, 0, 113, 197);
+    public static final int RIPPLE = Color.argb(24, 0, 113, 227);
 
     private SolarStyle() { }
 
@@ -45,18 +45,18 @@ public final class SolarStyle {
     }
 
     public static void text(TextView view, int size, int color, boolean emphasis) {
-        view.setTextSize(Math.max(13, size));
+        view.setTextSize(Math.max(14, size));
         view.setTextColor(color);
         view.setTypeface(Typeface.create(emphasis ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL));
         view.setLineSpacing(dp(view.getContext(), 2), 1.05f);
         if (size >= 24) {
-            view.setLetterSpacing(-0.025f);
+            view.setLetterSpacing(-0.035f);
             if (Build.VERSION.SDK_INT >= 28) view.setAccessibilityHeading(true);
         }
     }
 
     public static void brand(TextView view) {
-        text(view, 14, INK, true);
+        text(view, 16, INK, true);
         view.setLetterSpacing(0);
         android.graphics.drawable.Drawable icon = view.getContext().getDrawable(R.drawable.ic_solar);
         if (icon != null) icon.setBounds(0, 0, dp(view.getContext(), 28), dp(view.getContext(), 28));
@@ -96,16 +96,16 @@ public final class SolarStyle {
         view.setHintTextColor(MUTED);
         view.setBackgroundTintList(null);
         StateListDrawable background = new StateListDrawable();
-        background.addState(new int[]{android.R.attr.state_focused}, shape(context, Color.WHITE, 14, BLUE));
-        background.addState(new int[]{-android.R.attr.state_enabled}, shape(context, BACKGROUND, 14, BORDER));
-        background.addState(new int[]{}, shape(context, Color.WHITE, 14, BORDER));
+        background.addState(new int[]{android.R.attr.state_focused}, shape(context, Color.WHITE, 12, BLUE));
+        background.addState(new int[]{-android.R.attr.state_enabled}, shape(context, BACKGROUND, 12, BORDER));
+        background.addState(new int[]{}, shape(context, Color.WHITE, 12, BORDER));
         view.setBackground(background);
         view.setMinimumHeight(dp(context, 54));
         view.setPadding(dp(context, 16), dp(context, 14), dp(context, 16), dp(context, 14));
     }
 
     public static void card(View view) {
-        view.setBackground(shape(view.getContext(), Color.WHITE, 24, BORDER));
+        view.setBackground(shape(view.getContext(), Color.WHITE, 28, 0));
         view.setElevation(0);
     }
 
@@ -113,7 +113,7 @@ public final class SolarStyle {
         Context context = view.getContext();
         view.setBackgroundTintList(null);
         view.setBackground(new RippleDrawable(ColorStateList.valueOf(RIPPLE),
-                shape(context, Color.WHITE, 24, BORDER), shape(context, Color.WHITE, 24, 0)));
+                shape(context, Color.WHITE, 28, 0), shape(context, Color.WHITE, 28, 0)));
         view.setElevation(0);
         view.setFocusable(true);
         view.setMinimumHeight(dp(context, 64));
@@ -139,11 +139,8 @@ public final class SolarStyle {
         Context context = parent.getContext();
         LinearLayout panel = new LinearLayout(context);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(context, 24), dp(context, 24), dp(context, 24), dp(context, 28));
-        GradientDrawable gradient = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{SKY, MINT});
-        gradient.setCornerRadius(dp(context, 28));
-        panel.setBackground(gradient);
+        panel.setPadding(dp(context, 28), dp(context, 32), dp(context, 28), dp(context, 36));
+        panel.setBackground(shape(context, Color.WHITE, 28, 0));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.bottomMargin = dp(context, 12);
         parent.addView(panel, params);
@@ -153,14 +150,14 @@ public final class SolarStyle {
         panel.addView(brand);
         TextView heading = new TextView(context);
         heading.setText(title);
-        text(heading, 32, INK, true);
+        text(heading, 36, INK, true);
         LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(-1, -2);
         headingParams.topMargin = dp(context, 26);
         headingParams.bottomMargin = dp(context, 12);
         panel.addView(heading, headingParams);
         TextView detail = new TextView(context);
         detail.setText(introduction);
-        text(detail, 15, MUTED, false);
+        text(detail, 17, MUTED, false);
         panel.addView(detail);
     }
 }
