@@ -1,7 +1,6 @@
 package lk.solar.microgrid.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -10,21 +9,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.RippleDrawable;
-import android.text.SpannableString;
-import android.text.Spanned;
-import android.text.style.StyleSpan;
-import android.text.style.RelativeSizeSpan;
-import android.view.Gravity;
 import android.view.View;
-import android.view.WindowInsets;
-import android.os.Build;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -57,7 +43,7 @@ public final class StationMapActivity extends SolarActivity {
     private LatLng currentLocation;
     private LinearLayout results;
     private TextView status, mapStatus;
-    private Button previous, next;
+    private Button previous, next, retry, reset;
     private LocationManager locations;
     private LocationListener listener;
     private int page = 1, generation = 0, detailGeneration = 0;
@@ -68,41 +54,37 @@ public final class StationMapActivity extends SolarActivity {
         super.onCreate(state);
         accounts = ((SolarApplication)getApplication()).accounts();
         if (!accounts.signedIn()) { finish(); return; }
+        ScrollView screen = new ScrollView(this);
+        screen.setFillViewport(true);
+        screen.setBackgroundColor(SolarStyle.BACKGROUND);
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(SolarStyle.BACKGROUND);
-        root.setPadding(dp(16), dp(12), dp(16), dp(12));
-        setContentView(root); root.requestApplyInsets();
-        LinearLayout header = new LinearLayout(this);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView heading = text(getString(R.string.nearby_stations), 24, INK);
-        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        header.addView(heading, new LinearLayout.LayoutParams(0, -2, 1));
-        ImageButton account = new ImageButton(this);
-        account.setImageResource(R.drawable.ic_account_avatar);
-        account.setContentDescription(getString(R.string.my_account));
-        account.setTooltipText(getString(R.string.my_account));
-        account.setPadding(dp(8), dp(8), dp(8), dp(8));
-        GradientDrawable avatarBackground = new GradientDrawable();
-        avatarBackground.setShape(GradientDrawable.OVAL);
-        avatarBackground.setColor(Color.TRANSPARENT);
-        account.setBackground(new RippleDrawable(ColorStateList.valueOf(SolarStyle.RIPPLE), avatarBackground, null));
-        account.setOnClickListener(v -> finish());
-        LinearLayout.LayoutParams avatarParams = new LinearLayout.LayoutParams(dp(48), dp(48));
-        avatarParams.leftMargin = dp(12);
-        header.addView(account, avatarParams);
-        root.addView(header);
-        status = text("", 13, MUTED); status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE); root.addView(status);
+        root.setPadding(dp(20), dp(16), dp(20), dp(28));
+        screen.addView(root, new ScrollView.LayoutParams(-1, -2));
+        setContentView(screen);
+        SolarStyle.hero(root, "Explore", "Find stations on the map and choose your next energy connection.");
         LinearLayout search = new LinearLayout(this);
         addButton(search, R.string.use_location, this::requestLocation);
+        reset = new Button(this); reset.setText("All stations"); SolarStyle.button(reset, false);
+        reset.setOnClickListener(v -> { filter = ""; page = 1; reset.setVisibility(View.GONE); load(); });
+        LinearLayout.LayoutParams resetParams = new LinearLayout.LayoutParams(0, -2, 1);
+        resetParams.setMarginStart(dp(8)); search.addView(reset, resetParams);
+        reset.setVisibility(View.GONE);
         root.addView(search);
-        mapStatus = text("", 12, MUTED); root.addView(mapStatus);
+        SolarStyle.section(root, getString(R.string.station_map));
+        mapStatus = text("", 14, MUTED); root.addView(mapStatus);
         try {
+            String mapsKey = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
+                    .metaData.getString("com.google.android.geo.API_KEY", "");
+            if (mapsKey.isEmpty() || "YOUR_GOOGLE_MAPS_API_KEY".equals(mapsKey)) throw new IllegalStateException("Maps not configured");
             mapView = new MapView(this);
             mapView.onCreate(state);
             mapView.getMapAsync(map -> {
                 if (!alive()) return;
                 googleMap = map;
-                googleMap.getUiSettings().setZoomControlsEnabled(true);
+                mapStatus.setText("Tap a pin to view station details.");
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(7.8731, 80.7718), 7f));
+                googleMap.getUiSettings().setZoomControlsEnabled(false);
+                googleMap.getUiSettings().setMapToolbarEnabled(false);
                 googleMap.setOnMarkerClickListener(marker -> {
                     Object stationId = marker.getTag();
                     if (stationId instanceof String) { detail((String) stationId); return true; }
@@ -110,15 +92,32 @@ public final class StationMapActivity extends SolarActivity {
                 });
                 renderMarkers();
             });
-            root.addView(mapView, new LinearLayout.LayoutParams(-1, 0, 1));
+            android.widget.FrameLayout mapCard = new android.widget.FrameLayout(this) {
+                @Override public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+                    getParent().requestDisallowInterceptTouchEvent(event.getActionMasked() != android.view.MotionEvent.ACTION_UP
+                            && event.getActionMasked() != android.view.MotionEvent.ACTION_CANCEL);
+                    return super.dispatchTouchEvent(event);
+                }
+            };
+            SolarStyle.card(mapCard); mapCard.setClipToOutline(true);
+            mapCard.addView(mapView, new android.widget.FrameLayout.LayoutParams(-1, dp(300)));
+            LinearLayout.LayoutParams mapParams = new LinearLayout.LayoutParams(-1, -2);
+            mapParams.topMargin = dp(12); mapParams.bottomMargin = dp(12);
+            root.addView(mapCard, mapParams);
             mapStatus.setText(R.string.map_loading);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | PackageManager.NameNotFoundException e) {
             if (mapView != null) { root.removeView(mapView); mapView.onDestroy(); }
             mapView = null; mapStatus.setText(R.string.map_unavailable);
         }
-        ScrollView scroll = new ScrollView(this);
-        results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL); scroll.addView(results);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        SolarStyle.section(root, "Stations");
+        status = text("", 14, MUTED);
+        status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        root.addView(status);
+        results = new LinearLayout(this); results.setOrientation(LinearLayout.VERTICAL);
+        root.addView(results, new LinearLayout.LayoutParams(-1, -2));
+        retry = new Button(this); retry.setText("Try again"); SolarStyle.button(retry, false);
+        retry.setOnClickListener(v -> load()); retry.setVisibility(View.GONE);
+        root.addView(retry, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout pages = new LinearLayout(this);
         previous = addButton(pages, R.string.previous_stations, () -> { page--; load(); });
         next = addButton(pages, R.string.next_stations, () -> { page++; load(); });
@@ -129,6 +128,7 @@ public final class StationMapActivity extends SolarActivity {
                 currentLocation = new LatLng(state.getDouble("locationLatitude"), state.getDouble("locationLongitude"));
             }
         }
+        reset.setVisibility(filter.isEmpty() ? View.GONE : View.VISIBLE);
         load();
     }
     private Button addButton(LinearLayout root, int label, Runnable action) {
@@ -145,32 +145,19 @@ public final class StationMapActivity extends SolarActivity {
         TextView view = new TextView(this); view.setText(value); view.setTextSize(size); view.setTextColor(color);
         view.setPadding(0, dp(4), 0, dp(4)); return view;
     }
-    private void styleButton(Button button) {
-        GradientDrawable shape = new GradientDrawable(); shape.setColor(Color.WHITE); shape.setCornerRadius(dp(12));
-        button.setBackground(new RippleDrawable(ColorStateList.valueOf(SolarStyle.RIPPLE), shape, null));
-        button.setBackgroundTintList(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {SolarStyle.BORDER, GREEN}));
-        button.setTextColor(new ColorStateList(new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}}, new int[] {MUTED, Color.WHITE}));
-        button.setMinHeight(dp(52)); button.setPadding(dp(16), dp(10), dp(16), dp(10));
-    }
+    private void styleButton(Button button) { SolarStyle.button(button, false); }
     private void addStationCard(Station station) {
-        Button card = new Button(this); card.setAllCaps(false); styleButton(card);
-        card.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE)); card.setTextColor(INK);
-        card.setGravity(Gravity.START | Gravity.CENTER_VERTICAL); card.setTextSize(14);
-        String content = station.name + "\n" + station.address + "\n" + getString(R.string.view_station_details);
-        SpannableString label = new SpannableString(content);
-        label.setSpan(new StyleSpan(Typeface.BOLD), 0, station.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        label.setSpan(new RelativeSizeSpan(1.25f), 0, station.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        label.setSpan(new android.text.style.ForegroundColorSpan(GREEN), content.lastIndexOf('\n') + 1, content.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        card.setText(label); card.setOnClickListener(v -> detail(station.id));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.setMargins(0, dp(6), 0, dp(6));
-        results.addView(card, params);
+        LinearLayout card = SolarStyle.group(results);
+        SolarStyle.row(card, R.drawable.ic_nav_bolt, station.name, station.address + "\n" + station.summary(), () -> detail(station.id));
+        SolarStyle.row(card, R.drawable.ic_nav_explore, getString(R.string.view_on_google_maps),
+                getString(R.string.station_map_action_hint), () -> StationMaps.open(this, station));
     }
     private void load() {
         final int requestGeneration = ++generation;
         detailGeneration++;
         stations.clear(); results.removeAllViews();
         if (googleMap != null) { googleMap.clear(); addCurrentLocationMarker(); }
-        previous.setEnabled(false); next.setEnabled(false); status.setText(R.string.working);
+        previous.setEnabled(false); next.setEnabled(false); retry.setVisibility(View.GONE); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
             @Override public void success(JSONObject response) {
                 if (!alive() || generation != requestGeneration) return;
@@ -238,8 +225,9 @@ public final class StationMapActivity extends SolarActivity {
     }
     private void error(int code, String message) {
         status.setText(message);
+        retry.setVisibility(View.VISIBLE);
         if (code == 401) new AlertDialog.Builder(this).setMessage(message).setCancelable(false).setPositiveButton(android.R.string.ok, (d, w) -> {
-            startActivity(new android.content.Intent(this, MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)); finish();
+            startActivity(new android.content.Intent(this, MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)); finish();
         }).show();
     }
     private void requestLocation() {
@@ -267,6 +255,7 @@ public final class StationMapActivity extends SolarActivity {
                 currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
                 if (googleMap != null) googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15f));
                 filter = "&latitude=" + location.getLatitude() + "&longitude=" + location.getLongitude() + "&radiusKm=25";
+                reset.setVisibility(View.VISIBLE);
                 page = 1; load();
             }
             @Override public void onStatusChanged(String provider, int status, Bundle extras) { }

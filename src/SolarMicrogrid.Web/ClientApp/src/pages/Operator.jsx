@@ -8,6 +8,7 @@ import {
   path,
   usePortal,
 } from "../components";
+import { BookingStation, BookingProsumer } from "../bookingPresentation";
 
 export function Operator() {
   const { data } = usePortal();
@@ -73,9 +74,8 @@ function OperationsTable({ bookings, pending = false }) {
       </div>
       <Table
         headings={[
-          "Reservation ID",
-          "Prosumer NIC",
-          "Station",
+          "Station & energy window (Sri Lanka)",
+          "Prosumer",
           pending ? "Date & time (Sri Lanka)" : "Completed (Sri Lanka)",
           "Energy (kWh)",
           ...(pending ? ["Action"] : []),
@@ -87,9 +87,12 @@ function OperationsTable({ bookings, pending = false }) {
       >
         {bookings.map((b) => (
           <tr key={b.id}>
-            <td className="font-medium">{b.reservationId}</td>
-            <td className="font-mono text-xs">{b.prosumerNic}</td>
-            <td className="max-w-56 break-all text-xs">{b.stationId}</td>
+            <td>
+              <BookingStation booking={b} />
+            </td>
+            <td>
+              <BookingProsumer booking={b} />
+            </td>
             <td className="whitespace-nowrap">
               {dateTime(
                 pending ? b.reservationDate : b.completedAt || b.updatedAt,

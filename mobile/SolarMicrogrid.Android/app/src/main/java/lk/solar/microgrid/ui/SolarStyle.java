@@ -69,6 +69,7 @@ public final class SolarStyle {
     }
 
     public static void danger(Button view) { buttonColors(view, ROSE, RED); }
+    public static void link(Button view) { buttonColors(view, Color.TRANSPARENT, BLUE); }
 
     private static void buttonColors(Button view, int fill, int foreground) {
         Context context = view.getContext();
@@ -76,10 +77,10 @@ public final class SolarStyle {
         text(view, 16, foreground, true);
         view.setBackgroundTintList(null);
         StateListDrawable backgrounds = new StateListDrawable();
-        backgrounds.addState(new int[]{-android.R.attr.state_enabled}, shape(context, BORDER, 28, 0));
-        backgrounds.addState(new int[]{}, shape(context, fill, 28, 0));
+        backgrounds.addState(new int[]{-android.R.attr.state_enabled}, shape(context, BORDER, 16, 0));
+        backgrounds.addState(new int[]{}, shape(context, fill, 16, 0));
         view.setBackground(new RippleDrawable(ColorStateList.valueOf(RIPPLE), backgrounds,
-                shape(context, Color.WHITE, 28, 0)));
+                shape(context, Color.WHITE, 16, 0)));
         view.setTextColor(new ColorStateList(new int[][]{{-android.R.attr.state_enabled}, {}},
                 new int[]{MUTED, foreground}));
         view.setStateListAnimator(null);
@@ -105,7 +106,7 @@ public final class SolarStyle {
     }
 
     public static void card(View view) {
-        view.setBackground(shape(view.getContext(), Color.WHITE, 28, 0));
+        view.setBackground(shape(view.getContext(), Color.WHITE, 20, 0));
         view.setElevation(0);
     }
 
@@ -113,7 +114,7 @@ public final class SolarStyle {
         Context context = view.getContext();
         view.setBackgroundTintList(null);
         view.setBackground(new RippleDrawable(ColorStateList.valueOf(RIPPLE),
-                shape(context, Color.WHITE, 28, 0), shape(context, Color.WHITE, 28, 0)));
+                shape(context, Color.WHITE, 20, 0), shape(context, Color.WHITE, 20, 0)));
         view.setElevation(0);
         view.setFocusable(true);
         view.setMinimumHeight(dp(context, 64));
@@ -139,25 +140,89 @@ public final class SolarStyle {
         Context context = parent.getContext();
         LinearLayout panel = new LinearLayout(context);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(context, 28), dp(context, 32), dp(context, 28), dp(context, 36));
-        panel.setBackground(shape(context, Color.WHITE, 28, 0));
+        panel.setPadding(0, dp(context, 12), 0, dp(context, 24));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.bottomMargin = dp(context, 12);
         parent.addView(panel, params);
-        TextView brand = new TextView(context);
-        brand.setText(R.string.brand);
-        brand(brand);
-        panel.addView(brand);
         TextView heading = new TextView(context);
         heading.setText(title);
         text(heading, 36, INK, true);
         LinearLayout.LayoutParams headingParams = new LinearLayout.LayoutParams(-1, -2);
-        headingParams.topMargin = dp(context, 26);
-        headingParams.bottomMargin = dp(context, 12);
+        headingParams.bottomMargin = dp(context, 8);
         panel.addView(heading, headingParams);
         TextView detail = new TextView(context);
         detail.setText(introduction);
         text(detail, 17, MUTED, false);
         panel.addView(detail);
+    }
+
+    public static LinearLayout group(LinearLayout parent) {
+        Context context = parent.getContext();
+        LinearLayout group = new LinearLayout(context);
+        group.setOrientation(LinearLayout.VERTICAL);
+        card(group);
+        group.setClipToOutline(true);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.bottomMargin = dp(context, 16);
+        parent.addView(group, params);
+        return group;
+    }
+
+    public static void section(LinearLayout parent, String title) {
+        TextView label = new TextView(parent.getContext());
+        label.setText(title);
+        text(label, 20, INK, true);
+        if (Build.VERSION.SDK_INT >= 28) label.setAccessibilityHeading(true);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+        params.topMargin = dp(parent.getContext(), 20);
+        params.bottomMargin = dp(parent.getContext(), 12);
+        parent.addView(label, params);
+    }
+
+    public static View row(LinearLayout parent, int iconResource, String title, String subtitle, Runnable action) {
+        Context context = parent.getContext();
+        if (parent.getChildCount() > 0) {
+            View divider = new View(context);
+            divider.setBackgroundColor(BORDER);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, 1);
+            params.setMarginStart(dp(context, 60));
+            parent.addView(divider, params);
+        }
+        LinearLayout row = new LinearLayout(context);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(context, 16), dp(context, 16), dp(context, 16), dp(context, 16));
+        row.setMinimumHeight(dp(context, 64));
+        android.widget.ImageView icon = new android.widget.ImageView(context);
+        icon.setImageResource(iconResource);
+        icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.addView(icon, new LinearLayout.LayoutParams(dp(context, 24), dp(context, 24)));
+        LinearLayout labels = new LinearLayout(context);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
+        params.setMarginStart(dp(context, 16));
+        params.setMarginEnd(dp(context, 12));
+        row.addView(labels, params);
+        TextView name = new TextView(context);
+        name.setText(title); text(name, 17, INK, false);
+        labels.addView(name);
+        if (subtitle != null && !subtitle.isEmpty()) {
+            TextView detail = new TextView(context);
+            detail.setText(subtitle); text(detail, 14, MUTED, false);
+            labels.addView(detail);
+        }
+        if (action != null) {
+            android.widget.ImageView chevron = new android.widget.ImageView(context);
+            chevron.setImageResource(R.drawable.ic_nav_chevron);
+            chevron.setImageTintList(ColorStateList.valueOf(MUTED));
+            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            row.addView(chevron, new LinearLayout.LayoutParams(dp(context, 16), dp(context, 20)));
+            row.setBackground(new RippleDrawable(ColorStateList.valueOf(RIPPLE), null, null));
+            row.setFocusable(true);
+            row.setOnClickListener(v -> action.run());
+            row.setContentDescription(title + (subtitle == null ? "" : ", " + subtitle));
+            labels.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        }
+        parent.addView(row, new LinearLayout.LayoutParams(-1, -2));
+        return row;
     }
 }

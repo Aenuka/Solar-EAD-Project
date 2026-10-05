@@ -1,16 +1,14 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
+import lk.solar.microgrid.data.BookingText;
+
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 import lk.solar.microgrid.data.Reservation;
@@ -35,7 +33,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
 
@@ -54,14 +52,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     private void loadOperations() {
         content.removeAllViews();
 
-        // Top Navigation / Back button
-        TextView backBtn = new TextView(this);
-        backBtn.setText("← Back to Dashboard");
-        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        backBtn.setPadding(0, dp(10), 0, dp(20));
-        backBtn.setClickable(true);
-        backBtn.setOnClickListener(v -> finish());
-        content.addView(backBtn);
+
 
         TextView eyebrow = new TextView(this);
         eyebrow.setText("HISTORY");
@@ -123,7 +114,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
 
-        SolarStyle.card(card);
+        SolarStyle.interactiveCard(card);
         card.setElevation(0);
         card.setPadding(dp(18), dp(18), dp(18), dp(18));
         card.setClickable(true);
@@ -133,17 +124,6 @@ public class CompletedOperationsActivity extends SolarActivity {
         params.topMargin = dp(12);
         params.bottomMargin = dp(6);
         content.addView(card, params);
-
-        android.view.animation.TranslateAnimation anim = new android.view.animation.TranslateAnimation(
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
-            android.view.animation.Animation.RELATIVE_TO_SELF, 0f
-        );
-        anim.setDuration(400);
-        anim.setStartOffset(index * 50L);
-        anim.setInterpolator(new android.view.animation.DecelerateInterpolator());
-        card.startAnimation(anim);
 
         // Header Row: Energy amount and Status
         LinearLayout headerRow = new LinearLayout(this);
@@ -177,11 +157,8 @@ public class CompletedOperationsActivity extends SolarActivity {
 
         // Subtitle: Station
         TextView stationView = new TextView(this);
-        String displayStation = (r.stationName != null && !r.stationName.isEmpty()) ? r.stationName : r.stationId;
-        if (displayStation != null && displayStation.length() > 25) {
-            displayStation = displayStation.substring(0, 25) + "...";
-        }
-        stationView.setText("Station: " + (displayStation != null ? displayStation : "Unknown"));
+        String shortStation = r.stationLabel();
+        stationView.setText("Station: " + shortStation);
         stationView.setTextSize(14); stationView.setTextColor(MUTED);
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
         sp.topMargin = dp(4);
@@ -201,21 +178,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
 
-        try {
-            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            String cleanDate = completedDate.split("\\.")[0]; // Remove milliseconds
-            java.util.Date d = in.parse(cleanDate);
-            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a");
-            completedDate = out.format(d);
-        } catch (Exception e) {
-            completedDate = completedDate.replace("T", " ").replace("Z", "");
-            if (completedDate.length() > 19) {
-                completedDate = completedDate.substring(0, 19);
-            }
-        }
-
-        detailsView.setText("Completed " + completedDate);
+        detailsView.setText(r.windowLabel() + "\nCompleted " + BookingText.date(completedDate) + " (Sri Lanka)");
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
         LinearLayout.LayoutParams dpL = new LinearLayout.LayoutParams(-1, -2);
         dpL.topMargin = dp(16);
@@ -251,7 +214,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         layout.addView(row1, new LinearLayout.LayoutParams(-1, -2));
 
         row1.addView(detailCell("Energy", r.energyAmountKwh + " kWh", true));
-        row1.addView(detailCell("Type", r.tradingType, false));
+        row1.addView(detailCell("Type", BookingText.trading(r.tradingType), false));
 
         // Row 2: Status & Prosumer
         LinearLayout row2 = new LinearLayout(this);
@@ -261,11 +224,10 @@ public class CompletedOperationsActivity extends SolarActivity {
 
         String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName : r.prosumerNic;
         row2.addView(detailCell("Status", r.status, true));
-        row2.addView(detailCell("Prosumer", displayUser, false));
+        row2.addView(detailCell("Prosumer", r.prosumerLabel(), false));
 
         // Station
-        String displayStation = (r.stationName != null && !r.stationName.isEmpty()) ? r.stationName : r.stationId;
-        if (displayStation != null && displayStation.length() > 25) displayStation = displayStation.substring(0, 25) + "...";
+        String shortStation = r.stationLabel();
         LinearLayout rowStation = new LinearLayout(this);
         rowStation.setOrientation(LinearLayout.HORIZONTAL);
         rowStation.setPadding(0, dp(16), 0, 0);
@@ -315,21 +277,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         return cell;
     }
 
-    private String formatDate(String iso) {
-        if (iso == null || iso.isEmpty() || iso.equals("Unknown")) return "N/A";
-        try {
-            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            String cleanDate = iso.split("\\.")[0];
-            java.util.Date d = in.parse(cleanDate);
-            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy\nhh:mm a");
-            return out.format(d);
-        } catch (Exception e) {
-            String fallback = iso.replace("T", " ").replace("Z", "");
-            if (fallback.length() > 19) fallback = fallback.substring(0, 19);
-            return fallback;
-        }
-    }
+    private String formatDate(String iso) { return BookingText.date(iso); }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();

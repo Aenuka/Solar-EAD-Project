@@ -32,6 +32,14 @@ public class BookingsController : PortalController
             var bookings = await _api.SearchReservationsAsync(status, stationId, null, ct);
             PageMeta["FilterStatus"] = status;
             PageMeta["FilterStation"] = stationId;
+            var stations = new List<StationResponse>();
+            for (var page = 1; ; page++)
+            {
+                var response = await _api.GetAsync<PageResponse<StationResponse>>($"stations?page={page}&pageSize=100", ct);
+                stations.AddRange(response.Items);
+                if (stations.Count >= response.Total || response.Items.Count == 0) break;
+            }
+            PageMeta["Stations"] = stations.Select(s => new { s.Id, s.Name, s.Address, s.Active });
             return ReactPage(bookings);
         }
         catch (Exception ex)

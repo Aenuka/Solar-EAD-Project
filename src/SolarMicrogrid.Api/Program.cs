@@ -49,6 +49,7 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<StationService>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<ReservationService>();
+builder.Services.AddScoped<ReservationPresentation>();
 builder.Services.AddScoped<MongoInitializer>();
 
 // Authorization

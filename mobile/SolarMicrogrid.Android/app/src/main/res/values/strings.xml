@@ -88,7 +88,7 @@
     <string name="clear_button">Clear Filters</string>
     <string name="no_search_results">No matching reservations found.</string>
     <string name="confirm_update">Save changes to this reservation?</string>
-    <string name="search_criteria">Search by status and station ID.</string>
+    <string name="search_criteria">Choose a station and booking status to find your reservations.</string>
     <string name="booking_details">Booking Details</string>
     <string name="status_label">Status</string>
     <string name="close_button">Close</string>

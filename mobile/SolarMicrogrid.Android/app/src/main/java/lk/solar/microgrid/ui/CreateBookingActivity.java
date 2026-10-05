@@ -1,12 +1,7 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.InputFilter;
@@ -20,13 +15,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import android.content.Intent;
 import org.json.JSONArray;
@@ -35,6 +27,9 @@ import lk.solar.microgrid.data.AccountRepository;
 import lk.solar.microgrid.data.Station;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
+import lk.solar.microgrid.data.BookingWindow;
+import lk.solar.microgrid.data.StationChoices;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
@@ -70,23 +65,35 @@ public final class CreateBookingActivity extends SolarActivity {
         buildUi();
 
         Intent intent = getIntent();
-        if (intent.hasExtra("stationId") && intent.hasExtra("slotId")) {
+        if (state == null && intent.hasExtra("stationId") && intent.hasExtra("slotId")) {
             selectedStationId = intent.getStringExtra("stationId");
             selectedSlotId = intent.getStringExtra("slotId");
             selectedSlotStartsAt = intent.getStringExtra("startsAt");
             availableEnergyKwh = intent.getDoubleExtra("availableEnergyKwh", 0);
 
-            stationLabel.setText(intent.getStringExtra("stationName") + "\n(Pre-selected)");
+            stationLabel.setText(intent.getStringExtra("stationName"));
             stationLabel.setTextColor(INK);
 
-            OffsetDateTime start = OffsetDateTime.parse(selectedSlotStartsAt).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
-            OffsetDateTime end = OffsetDateTime.parse(intent.getStringExtra("endsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
-            DateTimeFormatter date = DateTimeFormatter.ofPattern("dd MMM yyyy");
-            DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
-            slotLabel.setText(start.format(date) + "\n" + start.format(time) + " - " + end.format(time) + "\n" + availableEnergyKwh + " kWh available");
+            slotLabel.setText(BookingText.window(selectedSlotStartsAt, intent.getStringExtra("endsAt")) + "\n" + availableEnergyKwh + " kWh available");
             slotLabel.setTextColor(INK);
             energyHint.setText("Available: " + availableEnergyKwh + " kWh");
+            loadStationDetail(selectedStationId);
         }
+        if (state != null && state.getString("stationId") != null) {
+            selectedStationId = state.getString("stationId"); selectedSlotId = state.getString("slotId");
+            selectedSlotStartsAt = state.getString("startsAt"); availableEnergyKwh = state.getDouble("availableEnergy");
+            stationLabel.setText(state.getString("stationLabel")); slotLabel.setText(state.getString("slotLabel"));
+            energy.setText(state.getString("energy", ""));
+            loadStationDetail(selectedStationId);
+        }
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("stationId", selectedStationId); state.putString("slotId", selectedSlotId);
+        state.putString("startsAt", selectedSlotStartsAt); state.putDouble("availableEnergy", availableEnergyKwh);
+        state.putString("stationLabel", stationLabel.getText().toString()); state.putString("slotLabel", slotLabel.getText().toString());
+        state.putString("energy", energy.getText().toString());
     }
 
     private void buildUi() {
@@ -95,16 +102,14 @@ public final class CreateBookingActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.create_booking), 32, INK, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(12);
-        text("Pick a station, a slot, and a time within the next 7 days.", 14, MUTED, false);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(12);
+        text("Choose a station and an energy window in the next 7 days. Times are in Sri Lanka time.", 14, MUTED, false);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
@@ -118,10 +123,10 @@ public final class CreateBookingActivity extends SolarActivity {
         stationLabel = text("No station selected", 14, MUTED, false);
         button("Select Station", false, this::pickStation);
 
-        TextView slotCaption = text("Available Slot", 12, INK, true);
+        TextView slotCaption = text("Energy window", 12, INK, true);
         ((LinearLayout.LayoutParams) slotCaption.getLayoutParams()).topMargin = dp(18);
-        slotLabel = text("No slot selected", 14, MUTED, false);
-        button("Select Available Slot", false, this::pickSlot);
+        slotLabel = text("No energy window selected", 14, MUTED, false);
+        button("Choose energy window", false, this::pickSlot);
 
         energy = field("Energy Amount (kWh)", "", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL, 12);
         energy.setHint("e.g. 25");
@@ -133,14 +138,11 @@ public final class CreateBookingActivity extends SolarActivity {
 
     private void pickStation() {
         setBusy(true);
-        ((SolarApplication) getApplication()).accounts().stations("activeOnly=true&pageSize=50", new AccountRepository.Callback<JSONObject>() {
-            @Override public void success(JSONObject response) {
+        StationChoices.load(((SolarApplication) getApplication()).accounts(), new AccountRepository.Callback<List<Station>>() {
+            @Override public void success(List<Station> list) {
                 if (isFinishing() || isDestroyed()) return;
                 setBusy(false);
                 try {
-                    JSONArray items = response.getJSONArray("items");
-                    List<Station> list = new ArrayList<>();
-                    for (int i = 0; i < items.length(); i++) list.add(new Station(items.getJSONObject(i)));
                     if (list.isEmpty()) { showMessage("No stations found.", true); return; }
 
                     String[] names = new String[list.size()];
@@ -163,6 +165,7 @@ public final class CreateBookingActivity extends SolarActivity {
     }
 
     private void onStationSelected(Station station) {
+        currentStationDetail = null;
         selectedStationId = station.id;
         stationLabel.setText(station.name + "\n" + station.address);
         stationLabel.setTextColor(INK);
@@ -170,17 +173,35 @@ public final class CreateBookingActivity extends SolarActivity {
         selectedSlotId = null;
         selectedSlotStartsAt = null;
         availableEnergyKwh = 0;
-        slotLabel.setText("No slot selected");
+        slotLabel.setText("No energy window selected");
         slotLabel.setTextColor(MUTED);
         energyHint.setText("Available: -");
 
+        loadStationDetail(station.id);
+    }
+
+    private void loadStationDetail(String id) {
         setBusy(true);
-        ((SolarApplication) getApplication()).accounts().station(station.id, new AccountRepository.Callback<JSONObject>() {
+        ((SolarApplication) getApplication()).accounts().station(id, new AccountRepository.Callback<JSONObject>() {
             @Override public void success(JSONObject response) {
                 if (isFinishing() || isDestroyed()) return;
                 setBusy(false);
                 try {
+                    if (!id.equals(selectedStationId)) return;
                     currentStationDetail = new Station(response);
+                    stationLabel.setText(currentStationDetail.name + "\n" + currentStationDetail.address);
+                    if (selectedSlotId != null) {
+                        BookingWindow selected = null;
+                        for (BookingWindow window : BookingWindow.available(response.getJSONArray("slots"), null, 0, java.time.Instant.now()))
+                            if (window.id.equals(selectedSlotId)) selected = window;
+                        if (selected != null) {
+                            selectedSlotStartsAt = selected.startsAt; availableEnergyKwh = selected.availableEnergy;
+                            slotLabel.setText(selected.label()); energyHint.setText("Available: " + availableEnergyKwh + " kWh");
+                        } else {
+                            selectedSlotId = null; selectedSlotStartsAt = null; availableEnergyKwh = 0;
+                            slotLabel.setText("Choose an available energy window"); energyHint.setText("Available: -");
+                        }
+                    }
                 } catch (Exception e) {
                     showMessage("Error parsing station details", true);
                 }
@@ -199,39 +220,23 @@ public final class CreateBookingActivity extends SolarActivity {
             return;
         }
         try {
-            JSONArray slots = currentStationDetail.source.getJSONArray("slots");
-            List<JSONObject> availableSlots = new ArrayList<>();
-            for (int i = 0; i < slots.length(); i++) {
-                JSONObject s = slots.getJSONObject(i);
-                if (s.getInt("availableSlots") > 0 && s.getDouble("availableEnergyKwh") > 0) {
-                    availableSlots.add(s);
-                }
-            }
+            List<BookingWindow> availableSlots = BookingWindow.available(currentStationDetail.source.getJSONArray("slots"), null, 0, java.time.Instant.now());
             if (availableSlots.isEmpty()) {
                 showMessage("No available slots found for this station.", true);
                 return;
             }
 
             String[] display = new String[availableSlots.size()];
-            DateTimeFormatter date = DateTimeFormatter.ofPattern("dd MMM yyyy");
-            DateTimeFormatter time = DateTimeFormatter.ofPattern("HH:mm");
-            for (int i = 0; i < availableSlots.size(); i++) {
-                JSONObject s = availableSlots.get(i);
-                OffsetDateTime start = OffsetDateTime.parse(s.getString("startsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
-                OffsetDateTime end = OffsetDateTime.parse(s.getString("endsAt")).withOffsetSameInstant(ZoneOffset.ofHoursMinutes(5, 30));
-                display[i] = start.format(date) + "\n" + start.format(time) + " - " + end.format(time) +
-                    "\n" + s.getInt("availableSlots") + " battery slots available\n" +
-                    s.getDouble("availableEnergyKwh") + " kWh available";
-            }
+            for (int i = 0; i < availableSlots.size(); i++) display[i] = availableSlots.get(i).label();
 
             new AlertDialog.Builder(CreateBookingActivity.this)
-                .setTitle("Select Available Slot")
+                .setTitle("Choose energy window")
                 .setItems(display, (dialog, which) -> {
                     try {
-                        JSONObject s = availableSlots.get(which);
-                        selectedSlotId = s.getString("id");
-                        selectedSlotStartsAt = s.getString("startsAt");
-                        availableEnergyKwh = s.getDouble("availableEnergyKwh");
+                        BookingWindow window = availableSlots.get(which);
+                        selectedSlotId = window.id;
+                        selectedSlotStartsAt = window.startsAt;
+                        availableEnergyKwh = window.availableEnergy;
                         slotLabel.setText(display[which]);
                         slotLabel.setTextColor(INK);
                         energyHint.setText("Available: " + availableEnergyKwh + " kWh");
@@ -244,13 +249,13 @@ public final class CreateBookingActivity extends SolarActivity {
 
     private void submit() {
         if (selectedStationId == null) { showMessage("Please select a station", true); return; }
-        if (selectedSlotId == null || selectedSlotStartsAt == null) { showMessage("Please select a slot", true); return; }
+        if (selectedSlotId == null || selectedSlotStartsAt == null) { showMessage("Choose an energy window", true); return; }
         String enStr = energy.getText().toString().trim();
 
         double en;
         try {
             en = Double.parseDouble(enStr);
-            if (en <= 0) throw new NumberFormatException();
+            if (!Double.isFinite(en) || en <= 0) throw new NumberFormatException();
             if (en > availableEnergyKwh) {
                 energy.setError("Amount exceeds available energy (" + availableEnergyKwh + " kWh)");
                 return;
@@ -273,11 +278,12 @@ public final class CreateBookingActivity extends SolarActivity {
                     setBusy(false);
                     new AlertDialog.Builder(CreateBookingActivity.this)
                         .setTitle("Booking Created")
-                        .setMessage("Reservation: " + r.reservationId +
-                                    "\nStation: " + r.stationId +
+                        .setMessage(r.stationLabel() +
+                                    "\n" + r.windowLabel() +
                                     "\nEnergy: " + r.energyAmountKwh + " kWh" +
-                                    "\nStatus: " + r.status)
-                        .setPositiveButton("OK", (d, w) -> finish())
+                                    "\nStatus: " + r.status.substring(0, 1) + r.status.substring(1).toLowerCase(java.util.Locale.ROOT) +
+                                    "\n\nBooking reference: " + r.reservationId)
+                        .setPositiveButton("View bookings", (d, w) -> SolarNavigation.open(CreateBookingActivity.this, SolarNavigation.Tab.BOOKINGS))
                         .setCancelable(false).show();
                 }
                 @Override public void failure(int status, String text) {
@@ -294,6 +300,7 @@ public final class CreateBookingActivity extends SolarActivity {
     }
 
     // ---- Helper views (same as MainActivity) ----
+
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);

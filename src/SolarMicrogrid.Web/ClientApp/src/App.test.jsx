@@ -103,8 +103,8 @@ describe("React portal workflows", () => {
     expect(
       screen.getByRole("heading", { name: "Operator Dashboard" }),
     ).toBeVisible();
-    expect(screen.getByText("RES-001")).toBeVisible();
-    expect(screen.getByText("RES-002")).toBeVisible();
+    expect(screen.getByText(/Reference · RES-001/)).toBeVisible();
+    expect(screen.getByText(/Reference · RES-002/)).toBeVisible();
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -284,6 +284,11 @@ describe("React portal workflows", () => {
           prosumerNic: "199012301234",
           stationId: "s1",
           slotId: "w1",
+          stationName: "Coastal Solar",
+          stationAddress: "10 Coast Road",
+          prosumerName: "Nimal Perera",
+          slotStartsAt: "2026-10-01T08:00:00Z",
+          slotEndsAt: "2026-10-01T09:00:00Z",
           reservationDate: "2026-10-01T08:00:00Z",
           energyAmountKwh: 5,
           status: "PENDING",
@@ -299,9 +304,92 @@ describe("React portal workflows", () => {
         ),
       );
     render(<App initialData={initial} />);
+    expect(screen.getByRole("link", { name: "Coastal Solar" })).toHaveAttribute(
+      "href",
+      "/Stations/Details/s1",
+    );
+    expect(screen.getByText("Nimal Perera")).toBeVisible();
+    expect(screen.getByText("10 Coast Road")).toBeVisible();
+    expect(screen.getByText(/1 Oct 2026 · 13:30–14:30/)).toBeVisible();
+    expect(screen.queryByText("s1")).not.toBeInTheDocument();
+    expect(screen.queryByText("w1")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Approve" }));
     await screen.findByText("All caught up. No pending reservations.");
     expect(fetch.mock.calls[0][0]).toBe("/Bookings/Approve/b1");
+  });
+
+  it("filters bookings using station names while submitting stable IDs", async () => {
+    const user = userEvent.setup();
+    render(
+      <App
+        initialData={{
+          ...base,
+          controller: "Bookings",
+          page: "Index",
+          model: [],
+          meta: {
+            Stations: [
+              {
+                id: "station-1",
+                name: "Coastal Solar",
+                address: "10 Coast Road",
+                active: true,
+              },
+              {
+                id: "station-2",
+                name: "Hill Solar",
+                address: "20 Hill Road",
+                active: false,
+              },
+            ],
+          },
+        }}
+      />,
+    );
+    const choice = screen.getByRole("combobox", { name: "Station" });
+    expect(
+      screen.getByRole("option", { name: "Coastal Solar · 10 Coast Road" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("option", {
+        name: "Hill Solar · 20 Hill Road (inactive)",
+      }),
+    ).toBeVisible();
+    await user.selectOptions(choice, "station-1");
+    expect(new FormData(choice.closest("form")).get("stationId")).toBe(
+      "station-1",
+    );
+    expect(
+      screen.queryByRole("textbox", { name: "Station ID" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows clear unavailable labels for historical bookings without related records", () => {
+    render(
+      <App
+        initialData={{
+          ...base,
+          controller: "Bookings",
+          page: "Pending",
+          model: [
+            {
+              id: "legacy",
+              stationId: "opaque-station-id",
+              slotId: "opaque-slot-id",
+              prosumerNic: "199012345678",
+              reservationId: "RES-LEGACY",
+              reservationDate: "2026-10-01T08:00:00Z",
+              energyAmountKwh: 5,
+              status: "PENDING",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("Station unavailable")).toBeVisible();
+    expect(screen.getByText("Energy window unavailable")).toBeVisible();
+    expect(screen.queryByText("opaque-station-id")).not.toBeInTheDocument();
+    expect(screen.queryByText("opaque-slot-id")).not.toBeInTheDocument();
   });
 
   it("keeps entered values when a network request fails and allows retry", async () => {

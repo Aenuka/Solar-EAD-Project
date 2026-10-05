@@ -1,18 +1,15 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import org.json.JSONObject;
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.data.Reservation;
 
 public class TransactionVerificationActivity extends SolarActivity {
@@ -42,7 +39,7 @@ public class TransactionVerificationActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
 
@@ -51,7 +48,7 @@ public class TransactionVerificationActivity extends SolarActivity {
 
         TextView heading = text(getString(R.string.transaction_verified_title), 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(20);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -61,11 +58,12 @@ public class TransactionVerificationActivity extends SolarActivity {
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
         detail(card, "Booking:", reservation.reservationId);
-        detail(card, "Prosumer:", reservation.prosumerNic);
-        detail(card, "Station:", reservation.stationId);
-        detail(card, "Booking Time:", reservation.reservationDate);
+        detail(card, "Prosumer:", reservation.prosumerLabel());
+        detail(card, "Station:", reservation.stationLabel());
+        detail(card, "Booking Time:", BookingText.date(reservation.reservationDate));
+        detail(card, "Energy window (Sri Lanka):", reservation.windowLabel());
         detail(card, "Energy:", reservation.energyAmountKwh + " kWh");
-        detail(card, "Trading Type:", reservation.tradingType);
+        detail(card, "Trading Type:", BookingText.trading(reservation.tradingType));
         detail(card, "Status:", reservation.status);
 
         Button button = new Button(this);
@@ -131,7 +129,7 @@ public class TransactionVerificationActivity extends SolarActivity {
 
         TextView heading = text("✓ Energy Transfer Completed", 24, GREEN, true);
         LinearLayout.LayoutParams headingLayout = (LinearLayout.LayoutParams) heading.getLayoutParams();
-        headingLayout.topMargin = dp(30); headingLayout.bottomMargin = dp(20);
+        headingLayout.topMargin = dp(8); headingLayout.bottomMargin = dp(20);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -141,12 +139,12 @@ public class TransactionVerificationActivity extends SolarActivity {
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
         detail(card, "Booking:", result.reservationId);
-        detail(card, "Station:", result.stationId);
+        detail(card, "Station:", result.stationLabel());
         detail(card, "Energy:", result.energyAmountKwh + " kWh");
         detail(card, "Status:", result.status);
 
         String completedDate = result.source.optString("completedAt", result.source.optString("updatedAt", "Now"));
-        detail(card, "Completed:", completedDate);
+        detail(card, "Completed (Sri Lanka):", BookingText.date(completedDate));
 
         Button backButton = new Button(this);
         backButton.setText("Back to Operator Dashboard");

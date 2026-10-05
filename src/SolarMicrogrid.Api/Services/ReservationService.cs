@@ -24,6 +24,7 @@ public class ReservationService
     // ===== CREATE — 7-day rule + double booking + Chamithu allocation =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> CreateAsync(ReservationInput dto)
     {
+        dto.ReservationDate = dto.ReservationDate.ToUniversalTime();
         // Rule 1: Within 7 days
         if (dto.ReservationDate > DateTime.UtcNow.AddDays(7))
             return (false, "Reservation must be within 7 days.", null);
@@ -82,6 +83,7 @@ public class ReservationService
     // ===== UPDATE — 12-hour rule + 7-day rule =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> UpdateAsync(string id, UpdateReservationInput dto)
     {
+        dto.ReservationDate = dto.ReservationDate.ToUniversalTime();
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
@@ -103,6 +105,24 @@ public class ReservationService
             existing.StationId, dto.SlotId, dto.ReservationDate, id);
         if (conflict != null)
             return (false, "This slot is already booked for that time.", null);
+
+        try
+        {
+            var version = await GetStationVersionAsync(existing.StationId);
+            var station = await _stationService.ModifyAllocationAsync(existing.StationId, existing.SlotId,
+                dto.SlotId, new AllocationInput
+                {
+                    Version = version,
+                    BookingId = existing.ReservationId,
+                    Slots = existing.AllocationSlots,
+                    EnergyKwh = dto.EnergyAmountKwh
+                }, dto.ReservationDate, CancellationToken.None);
+            existing.StationVersion = station.Version;
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Could not update the energy window: {ex.Message}", null);
+        }
 
         existing.SlotId = dto.SlotId;
         existing.ReservationDate = dto.ReservationDate;
