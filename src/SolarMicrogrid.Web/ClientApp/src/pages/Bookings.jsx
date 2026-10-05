@@ -10,6 +10,7 @@ import {
   path,
   usePortal,
 } from "../components";
+import { BookingStation, BookingProsumer } from "../bookingPresentation";
 
 export function Bookings() {
   const { data } = usePortal();
@@ -107,10 +108,22 @@ export function Bookings() {
             />
             <div className="min-w-48 flex-1">
               <Field
-                label="Station ID"
+                label="Station"
                 name="stationId"
                 value={data.meta.FilterStation}
-                placeholder="Filter by station…"
+                options={[
+                  ["", "All stations"],
+                  ...(data.meta.Stations || []).map((s) => [
+                    s.id,
+                    `${s.name} · ${s.address}${s.active ? "" : " (inactive)"}`,
+                  ]),
+                  ...(data.meta.FilterStation &&
+                  !(data.meta.Stations || []).some(
+                    (s) => s.id === data.meta.FilterStation,
+                  )
+                    ? [[data.meta.FilterStation, "Station unavailable"]]
+                    : []),
+                ]}
               />
             </div>
             <button type="submit" className="btn btn-secondary">
@@ -133,10 +146,9 @@ export function Bookings() {
         )}
         <Table
           headings={[
-            "Reservation ID",
-            "Prosumer NIC",
-            "Station / Slot",
-            "Date & time (Sri Lanka)",
+            "Station & energy window (Sri Lanka)",
+            "Prosumer",
+            "Booked for (Sri Lanka)",
             "Energy (kWh)",
             "Status",
             ...(pending ? ["Action"] : []),
@@ -150,11 +162,11 @@ export function Bookings() {
         >
           {bookings.map((b) => (
             <tr key={b.id}>
-              <td className="font-medium">{b.reservationId}</td>
-              <td className="font-mono text-xs">{b.prosumerNic}</td>
-              <td className="max-w-56 break-all text-xs">
-                {b.stationId}
-                <span className="muted mt-1 block text-xs">{b.slotId}</span>
+              <td>
+                <BookingStation booking={b} />
+              </td>
+              <td>
+                <BookingProsumer booking={b} />
               </td>
               <td className="whitespace-nowrap">
                 {dateTime(b.reservationDate)}

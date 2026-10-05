@@ -1,7 +1,5 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -17,6 +15,7 @@ import android.widget.Toast;
 import java.util.List;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
@@ -53,14 +52,12 @@ public final class PendingBookingsActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.pending_bookings), 28, INK, true);
-        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
+        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(8);
         text("Reservations awaiting operator review.", 14, MUTED, false);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -115,13 +112,13 @@ public final class PendingBookingsActivity extends SolarActivity {
         card.setLayoutParams(lp);
 
         TextView rid = new TextView(this);
-        rid.setText(r.reservationId.isEmpty() ? r.id : r.reservationId);
+        rid.setText(r.stationLabel());
         rid.setTextSize(15); rid.setTextColor(INK);
         rid.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         card.addView(rid);
 
         TextView meta = new TextView(this);
-        meta.setText(r.stationId + " · " + r.energyAmountKwh + " kWh · " + r.tradingType);
+        meta.setText(r.stationAddress + "\n" + r.energyAmountKwh + " kWh · " + BookingText.trading(r.tradingType));
         meta.setTextSize(13); meta.setTextColor(MUTED);
         meta.setPadding(0, dp(4), 0, dp(4));
         card.addView(meta);
@@ -132,7 +129,7 @@ public final class PendingBookingsActivity extends SolarActivity {
         card.addView(nic);
 
         TextView date = new TextView(this);
-        date.setText("When: " + r.reservationDate);
+        date.setText(r.windowLabel() + "\nBooked for " + BookingText.date(r.reservationDate) + " (Sri Lanka)");
         date.setTextSize(13); date.setTextColor(INK);
         date.setPadding(0, dp(6), 0, 0);
         card.addView(date);

@@ -1,13 +1,9 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.view.Gravity;
@@ -16,6 +12,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 
@@ -24,6 +21,16 @@ public class OperatorDashboardActivity extends SolarActivity {
     private OperatorRepository operators;
     private LinearLayout content;
     private SwipeRefreshLayout swipeRefresh;
+    private int dashboardGeneration;
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String destination = intent.getStringExtra(SolarNavigation.DESTINATION);
+        intent.removeExtra(SolarNavigation.DESTINATION);
+        if ("COMPLETED".equals(destination)) SolarNavigation.open(this, SolarNavigation.Tab.COMPLETED);
+        else if ("OPERATOR_ACCOUNT".equals(destination)) SolarNavigation.open(this, SolarNavigation.Tab.OPERATOR_ACCOUNT);
+    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -45,22 +52,11 @@ public class OperatorDashboardActivity extends SolarActivity {
         scroll.setFillViewport(true);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(26), dp(28), dp(26), dp(80)); // Extra padding for FAB
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         swipeRefresh.addView(scroll, new SwipeRefreshLayout.LayoutParams(-1, -1));
 
         root.addView(swipeRefresh, new FrameLayout.LayoutParams(-1, -1));
-
-        Button fab = new Button(this);
-        fab.setText("Scan QR");
-        SolarStyle.button(fab, true);
-        fab.setOnClickListener(v -> startActivity(new Intent(this, QrScannerActivity.class)));
-
-        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(-2, dp(56));
-        fabParams.gravity = Gravity.BOTTOM | Gravity.END;
-        fabParams.setMargins(0, 0, dp(24), dp(24));
-        root.addView(fab, fabParams);
-
 
         setContentView(root);
         root.requestApplyInsets();
@@ -75,6 +71,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void loadDashboardData() {
+        final int generation = ++dashboardGeneration;
         if (!swipeRefresh.isRefreshing()) {
             swipeRefresh.setRefreshing(true);
         }
@@ -85,17 +82,19 @@ public class OperatorDashboardActivity extends SolarActivity {
         operators.loadDashboard(new OperatorRepository.Callback<lk.solar.microgrid.data.OperatorDashboard>() {
             @Override
             public void success(lk.solar.microgrid.data.OperatorDashboard result) {
-                if (isDestroyed() || isFinishing()) return;
+                if (isDestroyed() || isFinishing() || generation != dashboardGeneration) return;
                 swipeRefresh.setRefreshing(false);
                 renderDashboard(result);
             }
 
             @Override
             public void failure(int status, String message) {
-                if (isDestroyed() || isFinishing()) return;
+                if (isDestroyed() || isFinishing() || generation != dashboardGeneration) return;
                 swipeRefresh.setRefreshing(false);
                 content.removeViewAt(content.getChildCount() - 1); // Remove loading text
-                text(message != null ? message : "Unable to load dashboard. Please try again.", 16, SolarStyle.RED, false);
+                TextView error = text(message != null ? message : "Unable to load dashboard. Please try again.", 16, SolarStyle.RED, false);
+                SolarStyle.notice(error, true);
+                button(R.string.refresh, false, OperatorDashboardActivity.this::loadDashboardData);
             }
         });
     }
@@ -128,9 +127,6 @@ public class OperatorDashboardActivity extends SolarActivity {
             }
         }
 
-        button(R.string.view_completed_operations, false, () -> {
-            startActivity(new Intent(this, CompletedOperationsActivity.class));
-        });
     }
 
     private LinearLayout statCard(String title, String count, String label, int color) {
@@ -204,7 +200,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
         // Subtitle: ID
         TextView idView = new TextView(this);
-        idView.setText("Ref: " + r.reservationId);
+        idView.setText(r.stationLabel() + " · " + r.prosumerLabel());
         idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
         idParams.topMargin = dp(16);
@@ -215,7 +211,7 @@ public class OperatorDashboardActivity extends SolarActivity {
             "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now"))
             : "Reserved: " + r.reservationDate;
 
-        detailsView.setText(dateStr);
+        detailsView.setText(r.windowLabel() + "\nReference · " + r.reservationId);
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
         detailsParams.topMargin = dp(8);
@@ -223,36 +219,9 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void renderHeader() {
-        LinearLayout headerRow = new LinearLayout(this);
-        headerRow.setOrientation(LinearLayout.HORIZONTAL);
-        headerRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(-1, -2);
-        headerParams.topMargin = dp(12); headerParams.bottomMargin = dp(12);
-        content.addView(headerRow, headerParams);
-
-        LinearLayout titleCol = new LinearLayout(this);
-        titleCol.setOrientation(LinearLayout.VERTICAL);
-        titleCol.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
-        headerRow.addView(titleCol);
-
-        TextView heading = new TextView(this);
-        heading.setText(getString(R.string.operator_dashboard_title));
-        heading.setTextSize(32); heading.setTextColor(INK); heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        titleCol.addView(heading);
-
-        TextView name = new TextView(this);
-        name.setText(operators.getFullName() != null ? operators.getFullName() : "Operator");
-        SolarStyle.text(name, 16, MUTED, false);
-        titleCol.addView(name);
-
-        android.widget.ImageView profileIcon = new android.widget.ImageView(this);
-        profileIcon.setImageResource(R.drawable.ic_account_avatar);
-        profileIcon.setContentDescription("Operator Profile");
-        profileIcon.setPadding(dp(8), dp(8), dp(8), dp(8));
-        profileIcon.setOnClickListener(v -> startActivity(new Intent(this, OperatorProfileActivity.class)));
-
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(48), dp(48));
-        headerRow.addView(profileIcon, iconParams);
+        SolarStyle.hero(content, "Overview", "Welcome back, " + (operators.getFullName() != null ? operators.getFullName() : "Operator") + ".");
+        Button scan = button(R.string.scan_transaction_qr, true, () -> startActivity(new Intent(this, QrScannerActivity.class)));
+        ((LinearLayout.LayoutParams) scan.getLayoutParams()).topMargin = 0;
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {

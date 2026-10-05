@@ -71,6 +71,14 @@ All station date/time inputs and displays use Sri Lanka time. Protected staff
 access controls, Backoffice-only actions, and server authorization remain intact.
 The old `.cshtml`, Bootstrap grid, and imperative station DOM scripts are removed.
 
+Booking lists and operator tables lead with station names, addresses, energy
+windows, and prosumer names. Booking references and NICs are secondary details.
+The Station filter loads named choices across all pages, including inactive
+stations for historical bookings. Reservation responses include `stationName`,
+`stationAddress`, `prosumerName`, `slotStartsAt`, and `slotEndsAt`; IDs remain the
+values used for API requests and navigation. Labels resolve current names, and
+missing related records display an unavailable label.
+
 ## Verify
 
 ```sh

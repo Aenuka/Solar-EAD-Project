@@ -1,15 +1,7 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.text.InputFilter;
 import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
@@ -18,244 +10,156 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-
 import lk.solar.microgrid.R;
 import lk.solar.microgrid.SolarApplication;
+import lk.solar.microgrid.data.AccountRepository;
+import lk.solar.microgrid.data.BookingText;
+import lk.solar.microgrid.data.BookingWindow;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
+import org.json.JSONObject;
 
-/**
- * Modify an existing reservation via the API (PUT /reservations/{id}).
- * Author: Sajith
- */
+/** Edit with named station details and live selectable energy windows. */
 public final class ModifyBookingActivity extends SolarActivity {
-    private static final int GREEN = SolarStyle.GREEN,
-            INK = SolarStyle.INK,
-            MUTED = SolarStyle.MUTED,
-            RED = SolarStyle.RED;
-
-    private ReservationRepository reservations;
     private LinearLayout content;
+    private TextView stationLabel, windowLabel, message;
+    private EditText energy;
     private ProgressBar progress;
-    private TextView message, pickedDateText;
     private final List<Button> actions = new ArrayList<>();
-    private final List<EditText> fields = new ArrayList<>();
-
-    private String reservationId, stationId;
-    private EditText slotIdField, energyField;
-    private LocalDateTime pickedDateTime;
-    private boolean busy;
-
-    private static final DateTimeFormatter DISPLAY =
-            DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
+    private List<BookingWindow> windows = new ArrayList<>();
+    private String reservationId, stationId, originalSlotId, selectedSlotId, reservationDate, tradingType;
+    private double originalEnergy;
+    private BookingWindow selectedWindow;
+    private boolean busy, loaded;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        reservations = ((SolarApplication) getApplication()).reservations();
-
-        // Read data passed from history list
         reservationId = getIntent().getStringExtra("reservationId");
         stationId = getIntent().getStringExtra("stationId");
-        String originalSlotId = getIntent().getStringExtra("slotId");
-        String originalDate = getIntent().getStringExtra("reservationDate");
-        double originalEnergy = getIntent().getDoubleExtra("energyAmountKwh", 0);
-        String originalTradingType = getIntent().getStringExtra("tradingType");
+        originalSlotId = getIntent().getStringExtra("slotId");
+        originalEnergy = getIntent().getDoubleExtra("energyAmountKwh", 0);
+        tradingType = getIntent().getStringExtra("tradingType");
+        selectedSlotId = state == null ? originalSlotId : state.getString("selectedSlotId", originalSlotId);
+        reservationDate = state == null ? getIntent().getStringExtra("reservationDate") : state.getString("reservationDate");
 
-        buildUi(originalSlotId, originalDate, originalEnergy, originalTradingType);
-    }
-
-    private void buildUi(String originalSlotId, String originalDate, double originalEnergy, String originalTrading) {
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
-        content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
-        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
-        setContentView(scroll);
-
-        TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        SolarStyle.brand(brand);
-        TextView heading = text(getString(R.string.modify_booking), 28, INK, true);
-        ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
-        text("Update your reservation details.", 14, MUTED, false);
-
+        ScrollView scroll = new ScrollView(this); scroll.setFillViewport(true);
+        content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
+        scroll.addView(content, new ScrollView.LayoutParams(-1, -2)); setContentView(scroll);
+        SolarStyle.hero(content, "Edit booking", "Choose an energy window and the amount to transfer. Times are in Sri Lanka time.");
+        stationLabel = text(getIntent().getStringExtra("stationName"), 22, true);
+        if (stationLabel.getText().length() == 0) stationLabel.setText("Loading station…");
+        text(getIntent().getStringExtra("stationAddress"), 16, false);
+        text("Energy window", 16, true);
+        windowLabel = text(BookingText.window(getIntent().getStringExtra("slotStartsAt"), getIntent().getStringExtra("slotEndsAt")), 16, false);
+        button("Choose energy window", false, this::pickWindow);
+        text("Energy amount (kWh)", 16, true);
+        energy = new EditText(this);
+        energy.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        energy.setText(state == null ? String.valueOf(originalEnergy) : state.getString("energy", String.valueOf(originalEnergy)));
+        SolarStyle.field(energy); content.addView(energy, new LinearLayout.LayoutParams(-1, -2));
+        text("Changes require at least 12 hours before your current window starts.", 14, false);
+        message = text("", 14, false); message.setVisibility(View.GONE);
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
         content.addView(progress, new LinearLayout.LayoutParams(-1, dp(4)));
-
-        message = text("", 13, INK, false);
-        message.setVisibility(View.GONE);
-
-        // Station (read-only display)
-        text("Station: " + (stationId == null ? "" : stationId), 14, INK, true);
-        text("Trading type: " + (originalTrading == null ? "DROP_OFF" : originalTrading), 13, MUTED, false);
-
-        // Slot ID
-        slotIdField = field(getString(R.string.slot_id_label),
-                originalSlotId == null ? "" : originalSlotId,
-                InputType.TYPE_CLASS_TEXT, 60);
-
-        // Date
-        TextView dateCaption = text(getString(R.string.reservation_date_label), 12, INK, true);
-        ((LinearLayout.LayoutParams) dateCaption.getLayoutParams()).topMargin = dp(18);
-        pickedDateText = text(originalDate == null || originalDate.isEmpty()
-                ? getString(R.string.no_date_picked) : originalDate, 13, MUTED, false);
-
-        // Parse original date if possible
-        try {
-            if (originalDate != null && !originalDate.isEmpty()) {
-                pickedDateTime = LocalDateTime.parse(
-                        originalDate.replace("Z", "").substring(0, 19),
-                        DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
-        } catch (Exception ignored) { }
-
-        button(getString(R.string.pick_date_time), false, this::showDateTimePicker);
-
-        // Energy
-        energyField = field(getString(R.string.energy_amount_label),
-                originalEnergy > 0 ? String.valueOf(originalEnergy) : "",
-                InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL, 12);
-
-        // Submit
-        button(getString(R.string.update_booking), true, this::confirmUpdate);
+        button("Reload availability", false, this::loadWindows);
+        button("Save changes", true, this::confirmUpdate);
+        loadWindows();
     }
 
-    private void showDateTimePicker() {
-        Calendar now = Calendar.getInstance();
-        new DatePickerDialog(this, (dateView, y, m, d) ->
-                new TimePickerDialog(this, (timeView, hour, minute) -> {
-                    pickedDateTime = LocalDateTime.of(y, m + 1, d, hour, minute);
-                    pickedDateText.setText(pickedDateTime.format(DISPLAY));
-                    pickedDateText.setTextColor(INK);
-                }, 12, 0, true).show(),
-                now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
-        ).show();
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("selectedSlotId", selectedSlotId); state.putString("reservationDate", reservationDate);
+        state.putString("energy", energy.getText().toString());
+    }
+
+    private void loadWindows() {
+        if (stationId == null || reservationId == null) { showMessage("Booking unavailable. Return to Bookings and try again."); return; }
+        loaded = false; setBusy(true);
+        ((SolarApplication) getApplication()).accounts().station(stationId, new AccountRepository.Callback<JSONObject>() {
+            @Override public void success(JSONObject response) {
+                if (!alive()) return;
+                try {
+                    stationLabel.setText(response.getString("name"));
+                    windows = BookingWindow.available(response.getJSONArray("slots"), originalSlotId, originalEnergy, Instant.now());
+                    selectedWindow = null;
+                    for (BookingWindow window : windows) if (window.id.equals(selectedSlotId)) selectedWindow = window;
+                    loaded = true;
+                    if (selectedWindow != null) windowLabel.setText(selectedWindow.label());
+                    else { windowLabel.setText("Choose an available energy window"); showMessage("The selected window is unavailable. Choose another window or reload availability."); }
+                } catch (Exception e) { showMessage(getString(R.string.contract_error)); }
+                setBusy(false);
+            }
+            @Override public void failure(int status, String error) {
+                if (!alive()) return; setBusy(false); showMessage(error);
+                if (status == 401) returnToSignIn();
+            }
+        });
+    }
+
+    private void pickWindow() {
+        if (!loaded) { showMessage("Reload availability to choose an energy window."); return; }
+        if (windows.isEmpty()) { showMessage("No available energy windows in the next seven days."); return; }
+        String[] labels = new String[windows.size()];
+        for (int i = 0; i < labels.length; i++) labels[i] = windows.get(i).label();
+        new AlertDialog.Builder(this).setTitle("Choose energy window").setItems(labels, (dialog, which) -> {
+            BookingWindow window = windows.get(which);
+            if (!window.id.equals(selectedSlotId)) reservationDate = window.startsAt;
+            selectedSlotId = window.id; selectedWindow = window; windowLabel.setText(window.label());
+        }).setNegativeButton(R.string.cancel, null).show();
     }
 
     private void confirmUpdate() {
-        new AlertDialog.Builder(this)
-                .setMessage(R.string.confirm_update)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.update_booking, (d, w) -> submit())
-                .show();
-    }
-
-    private void submit() {
-        String newSlotId = value(slotIdField).trim();
-        String energyStr = value(energyField).trim();
-
-        if (newSlotId.isEmpty()) { slotIdField.setError(getString(R.string.required_fields)); return; }
-
-        double energyValue;
+        if (!loaded || selectedWindow == null) { showMessage("Choose an available energy window first."); return; }
+        double amount;
         try {
-            energyValue = Double.parseDouble(energyStr);
-            if (energyValue <= 0) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            energyField.setError(getString(R.string.energy_amount_label));
-            return;
-        }
+            amount = Double.parseDouble(energy.getText().toString().trim());
+            if (!Double.isFinite(amount) || amount <= 0 || amount > selectedWindow.availableEnergy) throw new NumberFormatException();
+        } catch (NumberFormatException e) { energy.setError("Enter an amount up to " + selectedWindow.availableEnergy + " kWh"); return; }
+        new AlertDialog.Builder(this).setTitle("Save booking changes?")
+                .setMessage(stationLabel.getText() + "\n" + BookingText.window(selectedWindow.startsAt, selectedWindow.endsAt) + "\n" + amount + " kWh")
+                .setNegativeButton(R.string.cancel, null).setPositiveButton("Save changes", (d, w) -> submit(amount)).show();
+    }
 
-        if (pickedDateTime == null) { showMessage(getString(R.string.validation_date), true); return; }
-
-        String isoUtc = pickedDateTime
-                .atZone(ZoneId.systemDefault())
-                .withZoneSameInstant(ZoneOffset.UTC)
-                .format(DateTimeFormatter.ISO_INSTANT);
-
+    private void submit(double amount) {
         setBusy(true);
-        reservations.update(reservationId, newSlotId, isoUtc, energyValue, "DROP_OFF",
-                new ReservationRepository.Callback<Reservation>() {
-                    @Override public void success(Reservation r) {
-                        if (isFinishing() || isDestroyed()) return;
-                        setBusy(false);
-                        new AlertDialog.Builder(ModifyBookingActivity.this)
-                                .setTitle(R.string.booking_updated_title)
-                                .setMessage(getString(R.string.booking_updated_message)
-                                        + "\n\nReservation: " + r.reservationId
-                                        + "\nSlot: " + r.slotId
-                                        + "\nDate: " + r.reservationDate)
-                                .setPositiveButton(R.string.ok_button, (d, w) -> finish())
-                                .setCancelable(false)
-                                .show();
-                    }
-                    @Override public void failure(int status, String text) {
-                        if (isFinishing() || isDestroyed()) return;
-                        setBusy(false);
-                        if (status == 401) {
-                            Toast.makeText(ModifyBookingActivity.this, text, Toast.LENGTH_LONG).show();
-                            finish();
-                        } else {
-                            showMessage(text, true);
-                        }
-                    }
-                });
+        ((SolarApplication) getApplication()).reservations().update(reservationId, selectedSlotId, reservationDate,
+                amount, tradingType == null ? "DROP_OFF" : tradingType, new ReservationRepository.Callback<Reservation>() {
+            @Override public void success(Reservation booking) {
+                if (!alive()) return; setBusy(false);
+                new AlertDialog.Builder(ModifyBookingActivity.this).setTitle("Booking updated")
+                        .setMessage(booking.stationLabel() + "\n" + booking.windowLabel() + "\n" + booking.energyAmountKwh + " kWh")
+                        .setPositiveButton("View bookings", (d, w) -> SolarNavigation.open(ModifyBookingActivity.this, SolarNavigation.Tab.BOOKINGS))
+                        .setCancelable(false).show();
+            }
+            @Override public void failure(int status, String error) {
+                if (!alive()) return; setBusy(false); showMessage(error);
+                if (status == 401) returnToSignIn();
+            }
+        });
     }
 
-    private TextView text(String value, int size, int color, boolean bold) {
-        TextView v = new TextView(this);
-        v.setText(value); SolarStyle.text(v, size, color, bold);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = dp(6);
-        content.addView(v, lp);
-        return v;
+    private TextView text(String value, int size, boolean bold) {
+        TextView view = new TextView(this); view.setText(value);
+        SolarStyle.text(view, size, bold ? SolarStyle.INK : SolarStyle.MUTED, bold);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.bottomMargin = dp(12);
+        content.addView(view, params); return view;
     }
-
-    private EditText field(String caption, String initial, int inputType, int maxLength) {
-        TextView cap = text(caption, 12, INK, true);
-        ((LinearLayout.LayoutParams) cap.getLayoutParams()).topMargin = dp(18);
-        EditText editor = new EditText(this);
-        editor.setTextSize(15); editor.setTextColor(INK); editor.setHintTextColor(MUTED);
-        editor.setInputType(inputType); editor.setText(initial);
-        editor.setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.WHITE); bg.setCornerRadius(dp(8));
-        bg.setStroke(dp(1), SolarStyle.BORDER);
-        editor.setBackground(bg);
-        editor.setPadding(dp(13), dp(12), dp(13), dp(12));
-        SolarStyle.field(editor);
-        content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
-        fields.add(editor);
-        return editor;
+    private void button(String label, boolean primary, Runnable action) {
+        Button button = new Button(this); button.setText(label); SolarStyle.button(button, primary);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(12);
+        content.addView(button, params); actions.add(button);
+        button.setOnClickListener(v -> { if (!busy) action.run(); });
     }
-
-    private Button button(String label, boolean primary, Runnable action) {
-        Button b = new Button(this);
-        b.setText(label); b.setTextSize(13); b.setAllCaps(false);
-        b.setTextColor(primary ? Color.WHITE : GREEN);
-        SolarStyle.button(b, primary);
-        b.setMinHeight(dp(52));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.topMargin = dp(12);
-        content.addView(b, lp);
-        actions.add(b);
-        b.setOnClickListener(v -> { if (!busy) action.run(); });
-        return b;
-    }
-
     private void setBusy(boolean value) {
-        busy = value;
-        progress.setVisibility(value ? View.VISIBLE : View.GONE);
-        for (Button b : actions) b.setEnabled(!value);
-        for (EditText f : fields) f.setEnabled(!value);
+        busy = value; progress.setVisibility(value ? View.VISIBLE : View.GONE); energy.setEnabled(!value);
+        for (Button action : actions) action.setEnabled(!value);
     }
-
-    private void showMessage(String value, boolean error) {
-        message.setText(value);
-        message.setTextColor(error ? RED : GREEN);
-        message.setVisibility(View.VISIBLE);
-    }
-
-    private static String value(EditText input) { return input.getText().toString(); }
-    private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
+    private void showMessage(String value) { message.setText(value); SolarStyle.notice(message, true); message.setVisibility(View.VISIBLE); }
+    private boolean alive() { return !isFinishing() && !isDestroyed(); }
+    private int dp(int value) { return SolarStyle.dp(this, value); }
 }

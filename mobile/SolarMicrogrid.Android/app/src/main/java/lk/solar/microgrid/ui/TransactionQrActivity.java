@@ -1,6 +1,5 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -20,6 +19,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
@@ -63,7 +63,7 @@ public final class TransactionQrActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
@@ -89,8 +89,10 @@ public final class TransactionQrActivity extends SolarActivity {
         detailsCard.setPadding(dp(16), dp(16), dp(16), dp(16));
         content.addView(detailsCard, new LinearLayout.LayoutParams(-1, -2));
 
-        addRow(detailsCard, "Booking ID", reservationCode);
-        addRow(detailsCard, "Date/Time", reservationDate);
+        addRow(detailsCard, "Station", getIntent().getStringExtra("stationName"));
+        addRow(detailsCard, "Energy window (Sri Lanka)", BookingText.window(getIntent().getStringExtra("slotStartsAt"), getIntent().getStringExtra("slotEndsAt")));
+        addRow(detailsCard, "Booking reference", reservationCode);
+        addRow(detailsCard, "Booked for (Sri Lanka)", BookingText.date(reservationDate));
         addRow(detailsCard, "Energy", energyAmountKwh + " kWh");
         addRow(detailsCard, "Status", "APPROVED");
 

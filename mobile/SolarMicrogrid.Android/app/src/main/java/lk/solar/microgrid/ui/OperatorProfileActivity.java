@@ -1,14 +1,10 @@
 package lk.solar.microgrid.ui;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.WindowInsets;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -36,21 +32,16 @@ public class OperatorProfileActivity extends SolarActivity {
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(24), dp(24), dp(24), dp(36));
+        content.setPadding(dp(20), dp(16), dp(20), dp(28));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
 
 
         setContentView(scroll);
         scroll.requestApplyInsets();
 
-        // Top Navigation / Back button
-        TextView backBtn = new TextView(this);
-        backBtn.setText("← Back");
-        backBtn.setTextSize(14); backBtn.setTextColor(GREEN); backBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        backBtn.setPadding(0, dp(10), 0, dp(20));
-        backBtn.setClickable(true);
-        backBtn.setOnClickListener(v -> finish());
-        content.addView(backBtn);
+
+
+        SolarStyle.hero(content, "Account", "Your operator profile.");
 
         // Profile Header Section (Avatar + Name + Role Badge)
         LinearLayout header = new LinearLayout(this);
@@ -107,6 +98,7 @@ public class OperatorProfileActivity extends SolarActivity {
         android.graphics.drawable.GradientDrawable btnBg = shape(SolarStyle.RED, 0);
         btnBg.setCornerRadius(dp(25));
         signoutButton.setBackground(btnBg);
+        SolarStyle.danger(signoutButton);
         signoutButton.setElevation(0);
         signoutButton.setMinHeight(dp(52));
         LinearLayout.LayoutParams btnLayout = new LinearLayout.LayoutParams(-1, -2);

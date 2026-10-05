@@ -13,6 +13,9 @@ public sealed class ProsumerRepository(IMongoDatabase database)
     public async Task<Prosumer?> FindAsync(string nic, CancellationToken ct) =>
         await users.Find(user => user.Id == nic).FirstOrDefaultAsync(ct);
 
+    public Task<List<Prosumer>> FindManyAsync(IEnumerable<string> nics, CancellationToken ct) =>
+        users.Find(Builders<Prosumer>.Filter.In(user => user.Id, nics)).ToListAsync(ct);
+
     private static FilterDefinition<Prosumer> CreateFilter(AccountStatus? status, RequestStatus? requestStatus, string? search = null)
     {
         var builder = Builders<Prosumer>.Filter;

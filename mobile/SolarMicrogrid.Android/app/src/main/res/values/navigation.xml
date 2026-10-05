@@ -1,0 +1,10 @@
+<resources>
+    <string name="nav_home">Home</string>
+    <string name="nav_explore">Explore</string>
+    <string name="nav_bookings">Bookings</string>
+    <string name="nav_account">Account</string>
+    <string name="nav_overview">Overview</string>
+    <string name="nav_completed">Completed</string>
+    <string name="nav_back">Back</string>
+    <string name="nav_selected">, selected</string>
+</resources>

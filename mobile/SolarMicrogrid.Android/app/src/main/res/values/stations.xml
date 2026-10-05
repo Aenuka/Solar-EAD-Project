@@ -10,7 +10,11 @@
     <string name="previous_stations">Previous</string>
     <string name="next_stations">Next</string>
     <string name="map_loading">Tap a map pin or a station card to see details.</string>
-    <string name="map_unavailable">Map unavailable. Choose a station from the list below.</string>
+    <string name="station_map">Station map</string>
+    <string name="view_on_google_maps">View on Google Maps</string>
+    <string name="station_map_action_hint">See the station location and get directions</string>
+    <string name="map_open_unavailable">Install Google Maps or a browser to view this station on the map.</string>
+    <string name="map_unavailable">The in-app map is unavailable. Tap View on Google Maps below a station to see its location.</string>
     <string name="view_station_details">View station details →</string>
     <string name="no_stations">No stations found here. Try your location again or return later.</string>
     <string name="invalid_coordinates">Enter latitude from -90 to 90 and longitude from -180 to 180.</string>
