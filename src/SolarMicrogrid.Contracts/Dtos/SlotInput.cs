@@ -1,3 +1,7 @@
+// File: SlotInput.cs
+// Purpose: Validates a new station energy window and its capacity.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

@@ -1,3 +1,7 @@
+// File: EnergySlot.cs
+// Purpose: Stores a station energy window and its booking allocations.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 namespace SolarMicrogrid.Api.Models;
 
 public sealed class EnergySlot

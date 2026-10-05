@@ -1,3 +1,7 @@
+// File: StationInput.cs
+// Purpose: Validates physical station details submitted for registration.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

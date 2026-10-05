@@ -50,6 +50,7 @@ public final class StationMapActivity extends SolarActivity {
     private String filter = "";
     private final Runnable locationTimeout = () -> { stopLocation(); status.setText(R.string.location_unavailable); };
 
+    // Builds the map screen and starts online station discovery for signed-in users. *****
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         accounts = ((SolarApplication)getApplication()).accounts();
@@ -131,6 +132,7 @@ public final class StationMapActivity extends SolarActivity {
         reset.setVisibility(filter.isEmpty() ? View.GONE : View.VISIBLE);
         load();
     }
+    // Adds a labeled action button to the map screen. *****
     private Button addButton(LinearLayout root, int label, Runnable action) {
         Button button = new Button(this); button.setText(label); button.setAllCaps(false);
         styleButton(button);
@@ -140,18 +142,23 @@ public final class StationMapActivity extends SolarActivity {
         root.addView(button, params);
         return button;
     }
+    // Converts density-independent units to screen pixels. *****
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    // Creates styled text for the station map interface. *****
     private TextView text(String value, int size, int color) {
         TextView view = new TextView(this); view.setText(value); view.setTextSize(size); view.setTextColor(color);
         view.setPadding(0, dp(4), 0, dp(4)); return view;
     }
+    // Applies the shared visual style to a map action button. *****
     private void styleButton(Button button) { SolarStyle.button(button, false); }
+    // Adds a station summary card that opens current server details when selected. *****
     private void addStationCard(Station station) {
         LinearLayout card = SolarStyle.group(results);
         SolarStyle.row(card, R.drawable.ic_nav_bolt, station.name, station.address + "\n" + station.summary(), () -> detail(station.id));
         SolarStyle.row(card, R.drawable.ic_nav_explore, getString(R.string.view_on_google_maps),
                 getString(R.string.station_map_action_hint), () -> StationMaps.open(this, station));
     }
+    // Fetches the current station page and ignores responses from older requests. *****
     private void load() {
         final int requestGeneration = ++generation;
         detailGeneration++;
@@ -159,6 +166,7 @@ public final class StationMapActivity extends SolarActivity {
         if (googleMap != null) { googleMap.clear(); addCurrentLocationMarker(); }
         previous.setEnabled(false); next.setEnabled(false); retry.setVisibility(View.GONE); status.setText(R.string.working);
         accounts.stations("activeOnly=true&pageSize=20&page=" + page + filter, new AccountRepository.Callback<>() {
+            // Renders the latest successful station search response. *****
             @Override public void success(JSONObject response) {
                 if (!alive() || generation != requestGeneration) return;
                 try {
@@ -174,9 +182,11 @@ public final class StationMapActivity extends SolarActivity {
                     renderMarkers();
                 } catch (Exception e) { stations.clear(); results.removeAllViews(); status.setText(R.string.contract_error); }
             }
+            // Shows a search error only if this request is still current. *****
             @Override public void failure(int code, String message) { if (alive() && generation == requestGeneration) error(code, message); }
         });
     }
+    // Places active station markers on the Google map and frames visible results. *****
     private void renderMarkers() {
         if (googleMap == null) return;
         googleMap.clear();
@@ -201,6 +211,7 @@ public final class StationMapActivity extends SolarActivity {
             }
         });
     }
+    // Marks the user's current location when permission and coordinates are available. *****
     private void addCurrentLocationMarker() {
         if (googleMap == null || currentLocation == null) return;
         googleMap.addMarker(new MarkerOptions().position(currentLocation)
@@ -208,10 +219,12 @@ public final class StationMapActivity extends SolarActivity {
             .title(getString(R.string.your_location)));
         mapStatus.setText(R.string.location_map_hint);
     }
+    // Requests fresh details for the selected station before showing its dialog. *****
     private void detail(String id) {
         int requestGeneration = ++detailGeneration;
         status.setText(R.string.working);
         accounts.station(id, new AccountRepository.Callback<>() {
+            // Opens station details only for the latest selection. *****
             @Override public void success(JSONObject result) {
                 if (!alive() || requestGeneration != detailGeneration) return;
                 try {
@@ -220,9 +233,11 @@ public final class StationMapActivity extends SolarActivity {
                     status.setText(R.string.station_detail_loaded);
                 } catch (Exception e) { status.setText(R.string.contract_error); }
             }
+            // Reports a detail request error only for the latest selection. *****
             @Override public void failure(int code, String message) { if (alive() && requestGeneration == detailGeneration) error(code, message); }
         });
     }
+    // Presents an API or network failure in the map status area. *****
     private void error(int code, String message) {
         status.setText(message);
         retry.setVisibility(View.VISIBLE);
@@ -230,12 +245,14 @@ public final class StationMapActivity extends SolarActivity {
             startActivity(new android.content.Intent(this, MainActivity.class).addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)); finish();
         }).show();
     }
+    // Requests location permission before enabling nearby station filtering. *****
     private void requestLocation() {
         if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); return;
         }
         locate();
     }
+    // Starts location lookup when the user grants foreground location permission. *****
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(code, permissions, grants);
         if (code == 42) {
@@ -244,11 +261,13 @@ public final class StationMapActivity extends SolarActivity {
         }
     }
     @SuppressWarnings("MissingPermission")
+    // Gets the current location and refreshes stations within the nearby radius. *****
     private void locate() {
         stopLocation(); locations = (LocationManager)getSystemService(LOCATION_SERVICE);
         if (locations == null) { status.setText(R.string.location_unavailable); return; }
         status.setText(R.string.location_loading);
         listener = new LocationListener() {
+            // Applies a new device location to the nearby station search. *****
             @Override public void onLocationChanged(Location location) {
                 if (!alive()) return;
                 stopLocation();
@@ -258,8 +277,11 @@ public final class StationMapActivity extends SolarActivity {
                 reset.setVisibility(View.VISIBLE);
                 page = 1; load();
             }
+            // Retains the listener contract; provider status changes need no action. *****
             @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+            // Retains the listener contract when a provider becomes available. *****
             @Override public void onProviderEnabled(String provider) { }
+            // Retains the listener contract when a provider becomes unavailable. *****
             @Override public void onProviderDisabled(String provider) { }
         };
         try {
@@ -273,6 +295,7 @@ public final class StationMapActivity extends SolarActivity {
             else { stopLocation(); status.setText(R.string.location_unavailable); }
         } catch (SecurityException | IllegalArgumentException e) { stopLocation(); status.setText(R.string.location_unavailable); }
     }
+    // Stops location updates and clears pending location timeouts. *****
     private void stopLocation() {
         handler.removeCallbacks(locationTimeout);
         if (locations != null && listener != null) {
@@ -280,13 +303,21 @@ public final class StationMapActivity extends SolarActivity {
         }
         listener = null;
     }
+    // Checks whether this activity can safely receive an asynchronous result. *****
     private boolean alive() { return !isFinishing() && !isDestroyed(); }
+    // Starts the map view with the activity lifecycle. *****
     @Override protected void onStart() { super.onStart(); if (mapView != null) mapView.onStart(); }
+    // Resumes map rendering when the activity returns to the foreground. *****
     @Override protected void onResume() { super.onResume(); if (mapView != null) mapView.onResume(); }
+    // Pauses map rendering when the activity leaves the foreground. *****
     @Override protected void onPause() { if (mapView != null) mapView.onPause(); super.onPause(); }
+    // Stops device location updates and the map view when the activity stops. *****
     @Override protected void onStop() { stopLocation(); if (mapView != null) mapView.onStop(); super.onStop(); }
+    // Releases callbacks and map resources when the activity is destroyed. *****
     @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); googleMap = null; if (mapView != null) mapView.onDestroy(); super.onDestroy(); }
+    // Forwards low-memory warnings so the map view can release resources. *****
     @Override public void onLowMemory() { super.onLowMemory(); if (mapView != null) mapView.onLowMemory(); }
+    // Preserves map state across activity recreation. *****
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
         if (mapView != null) mapView.onSaveInstanceState(state);

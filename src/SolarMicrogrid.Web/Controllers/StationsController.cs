@@ -1,3 +1,7 @@
+// File: StationsController.cs
+// Purpose: Provides staff pages and form actions for station and energy window management.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.Web.Presentation;
@@ -11,6 +15,7 @@ namespace SolarMicrogrid.Web.Controllers;
 public sealed class StationsController(MicrogridApiClient api) : PortalController
 {
     [HttpGet]
+    // Shows a paginated station list to authorized staff. *****
     public async Task<IActionResult> Index(int page = 1, CancellationToken ct = default)
     {
         var stations = await api.GetAsync<PageResponse<StationResponse>>($"stations?page={page}", ct);
@@ -18,6 +23,7 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
     }
 
     [HttpGet]
+    // Loads a station's details, schedule, and energy windows for staff. *****
     public async Task<IActionResult> Details(string id, CancellationToken ct)
     {
         var station = await api.GetAsync<StationResponse>(StationPath(id), ct);
@@ -25,9 +31,11 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
     }
 
     [HttpGet, Authorize(Roles = Roles.Backoffice)]
+    // Opens the station registration form for Backoffice staff. *****
     public IActionResult Create() => ReactPage(new StationInput());
 
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
+    // Validates and submits a new station, then opens its detail page. *****
     public async Task<IActionResult> Create(StationInput model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
@@ -49,6 +57,7 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
     }
 
     [HttpGet, Authorize(Roles = Roles.Backoffice)]
+    // Prepares the station edit form with the current version and physical details. *****
     public async Task<IActionResult> Edit(string id, CancellationToken ct)
     {
         var station = await api.GetAsync<StationResponse>(StationPath(id), ct);
@@ -67,6 +76,7 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
     }
 
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
+    // Validates and submits station changes while displaying API conflicts to staff. *****
     public async Task<IActionResult> Edit(string id, StationUpdate model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
@@ -88,27 +98,33 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
     }
 
     [HttpPost, Authorize(Roles = Roles.Backoffice)]
+    // Requests station activation or deactivation through the API. *****
     public Task<IActionResult> Status(string id, StationStatusInput model, CancellationToken ct) =>
         SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(StationPath(id) + "/status", model, ct));
 
     [HttpPost]
+    // Submits changes to the station's operating days and hours. *****
     public Task<IActionResult> Schedule(string id, ScheduleInput model, CancellationToken ct) =>
         SaveStationChangeAsync(id, () => api.PutAsync<StationResponse>(StationPath(id) + "/schedule", model, ct));
 
     [HttpPost]
+    // Converts and submits a new energy window from the staff form. *****
     public Task<IActionResult> AddSlot(string id, StationSlotForm model, CancellationToken ct) =>
         SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(StationPath(id) + "/slots", model.ToRequest(), ct));
 
     [HttpPost]
+    // Submits an energy window's usable slots and energy to the API. *****
     public Task<IActionResult> Availability(string id, string slotId, AvailabilityInput model, CancellationToken ct) =>
         SaveStationChangeAsync(id, () => api.PutAsync<StationResponse>(
             StationPath(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/availability", model, ct));
 
     [HttpPost]
+    // Requests removal of an unused or completed energy window. *****
     public Task<IActionResult> Archive(string id, string slotId, StationVersion model, CancellationToken ct) =>
         SaveStationChangeAsync(id, () => api.PostAsync<StationResponse>(
             StationPath(id) + "/slots/" + Uri.EscapeDataString(slotId) + "/archive", model, ct));
 
+    // Validates a staff change, runs its API request, and reports any conflict. *****
     private async Task<IActionResult> SaveStationChangeAsync(string id, Func<Task<StationResponse>> save)
     {
         if (!ModelState.IsValid)
@@ -133,6 +149,7 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    // Adds API validation errors to the form's model state. *****
     private void AddErrors(ApiFailureException exception)
     {
         ModelState.AddModelError("", exception.Message);
@@ -145,5 +162,6 @@ public sealed class StationsController(MicrogridApiClient api) : PortalControlle
         }
     }
 
+    // Escapes a station identifier when building its API path. *****
     private static string StationPath(string id) => "stations/" + Uri.EscapeDataString(id);
 }
