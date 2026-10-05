@@ -19,6 +19,9 @@ public abstract class SolarActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // Create the decor before accessing the window's insets controller. Some
+        // devices dereference an uninitialized decor inside getInsetsController().
+        View decor = getWindow().getDecorView();
         if (Build.VERSION.SDK_INT >= 30) {
             getWindow().setDecorFitsSystemWindows(false);
             WindowInsetsController controller = getWindow().getInsetsController();
@@ -29,7 +32,7 @@ public abstract class SolarActivity extends Activity {
             int appearance = View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             if (Build.VERSION.SDK_INT >= 27) appearance |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-            getWindow().getDecorView().setSystemUiVisibility(appearance);
+            decor.setSystemUiVisibility(appearance);
         }
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(SolarStyle.BACKGROUND);
