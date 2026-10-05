@@ -1,3 +1,7 @@
+// File: AllocationInput.cs
+// Purpose: Validates booking capacity allocated from a station window.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Contracts;

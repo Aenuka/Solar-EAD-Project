@@ -1,3 +1,7 @@
+// File: StationsEndpoints.cs
+// Purpose: Maps station HTTP routes and applies staff permissions.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using SolarMicrogrid.Api.Services;
@@ -9,6 +13,7 @@ public static class StationsEndpoints
 {
     private const string GetStationEndpointName = "GetStation";
 
+    // Registers station discovery, management, and allocation endpoints.
     public static void MapStationsEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/v1/stations").WithTags("Stations");
@@ -91,6 +96,7 @@ public static class StationsEndpoints
             .WithJsonBody<StationVersion>();
     }
 
+    // Checks whether the signed-in user can access staff station details.
     private static bool IsStaff(ClaimsPrincipal user) =>
         user.IsInRole(Roles.Backoffice) || user.IsInRole(Roles.GridOperator);
 }
