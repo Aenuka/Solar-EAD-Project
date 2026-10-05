@@ -8,7 +8,7 @@ Tab changes return through the role's root activity using `CLEAR_TOP` and `SINGL
 
 Bookings supports All, Upcoming, Pending, and Completed filters, pull-to-refresh, inline network errors, and retry. Approved bookings expose the transaction QR action; editing and cancellation are grouped under Manage booking. Booking dates display in Sri Lanka time. A successful new booking opens Bookings.
 
-Explore is one scrollable page containing location controls, a map preview, station rows, and pagination. Map gestures consume touches within the map while the rest of the page scrolls normally. Without a configured Google Maps key, users can still browse live station data. All stations clears the nearby filter. Account cache notices and restrictions on offline profile changes remain in place.
+Explore is one scrollable page containing location controls, a station map, station rows, and pagination. Open it from the **Explore** tab or **Home → Explore stations**. Map gestures consume touches within the map while the rest of the page scrolls normally. Each station row and its details include **View on Google Maps**, which opens the server-provided coordinates in the Google Maps app, or a browser if Maps is unavailable. These links work without an SDK API key. The embedded map requires `mapsApiKey` in the ignored `development.properties` file, Maps SDK for Android enabled, and the key restricted to the application's package and signing certificate. All stations clears the nearby filter. Account cache notices and restrictions on offline profile changes remain in place.
 
 Build checks:
 

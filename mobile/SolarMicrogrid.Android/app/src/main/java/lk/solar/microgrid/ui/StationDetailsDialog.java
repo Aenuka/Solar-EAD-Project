@@ -18,6 +18,7 @@ import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import lk.solar.microgrid.R;
 import lk.solar.microgrid.data.Station;
 
 /** Read-only station overview with scrollable availability and a persistent close action. */
@@ -42,6 +43,15 @@ final class StationDetailsDialog {
         root.addView(eyebrow);
         root.addView(text(station.name, 24, INK, true));
         root.addView(text(station.address, 14, MUTED, false));
+
+        Button map = new Button(activity);
+        map.setText(R.string.view_on_google_maps);
+        SolarStyle.button(map, false);
+        map.setOnClickListener(v -> StationMaps.open(activity, station));
+        LinearLayout.LayoutParams mapParams = new LinearLayout.LayoutParams(-1, -2);
+        mapParams.topMargin = dp(8);
+        mapParams.bottomMargin = dp(12);
+        root.addView(map, mapParams);
 
         ScrollView scroll = new ScrollView(activity);
         scroll.setFillViewport(false);

@@ -61,7 +61,7 @@ public final class StationMapActivity extends SolarActivity {
         root.setPadding(dp(20), dp(16), dp(20), dp(28));
         screen.addView(root, new ScrollView.LayoutParams(-1, -2));
         setContentView(screen);
-        SolarStyle.hero(root, "Explore", "Find your next energy connection.");
+        SolarStyle.hero(root, "Explore", "Find stations on the map and choose your next energy connection.");
         LinearLayout search = new LinearLayout(this);
         addButton(search, R.string.use_location, this::requestLocation);
         reset = new Button(this); reset.setText("All stations"); SolarStyle.button(reset, false);
@@ -70,6 +70,7 @@ public final class StationMapActivity extends SolarActivity {
         resetParams.setMarginStart(dp(8)); search.addView(reset, resetParams);
         reset.setVisibility(View.GONE);
         root.addView(search);
+        SolarStyle.section(root, getString(R.string.station_map));
         mapStatus = text("", 14, MUTED); root.addView(mapStatus);
         try {
             String mapsKey = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA)
@@ -81,6 +82,7 @@ public final class StationMapActivity extends SolarActivity {
                 if (!alive()) return;
                 googleMap = map;
                 mapStatus.setText("Tap a pin to view station details.");
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(7.8731, 80.7718), 7f));
                 googleMap.getUiSettings().setZoomControlsEnabled(false);
                 googleMap.getUiSettings().setMapToolbarEnabled(false);
                 googleMap.setOnMarkerClickListener(marker -> {
@@ -98,7 +100,7 @@ public final class StationMapActivity extends SolarActivity {
                 }
             };
             SolarStyle.card(mapCard); mapCard.setClipToOutline(true);
-            mapCard.addView(mapView, new android.widget.FrameLayout.LayoutParams(-1, dp(240)));
+            mapCard.addView(mapView, new android.widget.FrameLayout.LayoutParams(-1, dp(300)));
             LinearLayout.LayoutParams mapParams = new LinearLayout.LayoutParams(-1, -2);
             mapParams.topMargin = dp(12); mapParams.bottomMargin = dp(12);
             root.addView(mapCard, mapParams);
@@ -147,6 +149,8 @@ public final class StationMapActivity extends SolarActivity {
     private void addStationCard(Station station) {
         LinearLayout card = SolarStyle.group(results);
         SolarStyle.row(card, R.drawable.ic_nav_bolt, station.name, station.address + "\n" + station.summary(), () -> detail(station.id));
+        SolarStyle.row(card, R.drawable.ic_nav_explore, getString(R.string.view_on_google_maps),
+                getString(R.string.station_map_action_hint), () -> StationMaps.open(this, station));
     }
     private void load() {
         final int requestGeneration = ++generation;
