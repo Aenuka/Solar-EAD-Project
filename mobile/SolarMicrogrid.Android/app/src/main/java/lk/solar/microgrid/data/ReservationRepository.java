@@ -87,6 +87,7 @@ public final class ReservationRepository {
     public void search(String status, String stationId, Callback<List<Reservation>> callback) {
         run(() -> {
             StringBuilder path = new StringBuilder("reservations/search?");
+            path.append("nic=").append(java.net.URLEncoder.encode(requireNic(), "UTF-8")).append("&");
             if (status != null && !status.isEmpty()) path.append("status=").append(status).append("&");
             if (stationId != null && !stationId.isEmpty()) path.append("stationId=").append(stationId);
             return parseList(api.requestArray("GET", path.toString(), null, requireToken()));

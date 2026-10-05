@@ -235,6 +235,33 @@ public sealed class StationService(StationRepository repository)
         return await SaveAsync(station, ct);
     }
 
+    public async Task<StationResponse> ModifyAllocationAsync(string id, string previousSlotId, string slotId,
+        AllocationInput request, DateTime reservationDate, CancellationToken ct)
+    {
+        Validate(request);
+        var station = await FindAsync(id, ct);
+        ResponseMapping.CheckVersion(station.Version, request.Version);
+        var previous = station.Slots.Find(s => s.Id == previousSlotId) ?? throw NotFound();
+        var target = station.Slots.Find(s => s.Id == slotId) ?? throw NotFound();
+        var allocation = previous.Allocations.Find(a => a.BookingId == request.BookingId) ?? throw NotFound();
+        if (!IsReserved(allocation)) throw ApiException.Conflict("Allocation has already ended.");
+        if (!station.Active) throw ApiException.Conflict("Station is inactive.");
+        if (previous.StartsAt < DateTime.UtcNow.AddHours(12))
+            throw ApiException.Conflict("Updates require at least twelve hours' notice.");
+        if (target.StartsAt <= DateTime.UtcNow || target.StartsAt > DateTime.UtcNow.AddDays(7) ||
+            reservationDate < target.StartsAt || reservationDate >= target.EndsAt)
+            throw ApiException.Conflict("Choose a time within an energy window in the next seven days.");
+        if (previous != target && target.Allocations.Count >= 100)
+            throw ApiException.Conflict("This window's allocation limit has been reached.");
+
+        // Move the allocation in one version-checked station write. A rejected
+        // change leaves both windows' inventory untouched.
+        previous.Allocations.Remove(allocation);
+        target.Allocations.Add(allocation with { Slots = request.Slots, EnergyKwh = request.EnergyKwh });
+        CheckLimits(station, target);
+        return await SaveAsync(station, ct);
+    }
+
     public async Task<StationResponse> EndAllocationAsync(string id, string slotId, string bookingId,
         StationVersion request, bool complete, CancellationToken ct)
     {

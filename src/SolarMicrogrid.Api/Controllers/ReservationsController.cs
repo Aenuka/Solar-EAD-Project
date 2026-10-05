@@ -17,31 +17,13 @@ namespace SolarMicrogrid.Api.Controllers;
 public class ReservationsController : ControllerBase
 {
     private readonly ReservationService _service;
+    private readonly ReservationPresentation _presentation;
 
-    public ReservationsController(ReservationService service)
+    public ReservationsController(ReservationService service, ReservationPresentation presentation)
     {
         _service = service;
+        _presentation = presentation;
     }
-
-    private static ReservationResponse Map(EnergyReservation r) => new()
-    {
-        Id = r.Id ?? string.Empty,
-        ReservationId = r.ReservationId,
-        ProsumerNic = r.ProsumerNic,
-        StationId = r.StationId,
-        SlotId = r.SlotId,
-        ReservationDate = r.ReservationDate,
-        EnergyAmountKwh = r.EnergyAmountKwh,
-        TradingType = r.TradingType,
-        Status = r.Status,
-        CreatedAt = r.CreatedAt,
-        UpdatedAt = r.UpdatedAt,
-        TransactionToken = r.TransactionToken,
-        CancellationReason = r.CancellationReason,
-        CompletedAt = r.CompletedAt,
-        StationVersion = r.StationVersion,
-        AllocationSlots = r.AllocationSlots
-    };
 
     // ===== CREATE =====
     [HttpPost]
@@ -50,7 +32,7 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.CreateAsync(dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== UPDATE =====
@@ -60,7 +42,7 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.UpdateAsync(id, dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== CANCEL =====
@@ -70,7 +52,7 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.CancelAsync(id, dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== HISTORY =====
@@ -80,7 +62,7 @@ public class ReservationsController : ControllerBase
         if (string.IsNullOrEmpty(nic))
             return Problem(detail: "NIC is required.", statusCode: 400);
         var list = await _service.GetHistoryAsync(nic);
-        return Ok(list.Select(Map));
+        return Ok(await _presentation.MapAsync(list, HttpContext.RequestAborted));
     }
 
     // ===== PENDING =====
@@ -88,7 +70,7 @@ public class ReservationsController : ControllerBase
     public async Task<IActionResult> GetPending()
     {
         var list = await _service.GetPendingAsync();
-        return Ok(list.Select(Map));
+        return Ok(await _presentation.MapAsync(list, HttpContext.RequestAborted));
     }
 
     // ===== SEARCH =====
@@ -101,7 +83,7 @@ public class ReservationsController : ControllerBase
         [FromQuery] DateTime? to)
     {
         var list = await _service.SearchAsync(status, stationId, nic, from, to);
-        return Ok(list.Select(Map));
+        return Ok(await _presentation.MapAsync(list, HttpContext.RequestAborted));
     }
 
     // ===== APPROVED FUTURE COUNT =====
@@ -122,13 +104,15 @@ public class ReservationsController : ControllerBase
     {
         var (pending, approvedFutureCount, completed) = await _service.GetDashboardDataAsync();
         
+        var recent = completed.OrderByDescending(c => c.CompletedAt).Take(5).ToList();
+        var labels = await _presentation.MapAsync(pending.Concat(recent), HttpContext.RequestAborted);
         var response = new OperatorDashboardResponse
         {
             PendingCount = pending.Count,
             ApprovedFutureCount = approvedFutureCount,
             CompletedCount = completed.Count,
-            PendingReservations = pending.Select(Map).ToList(),
-            RecentCompletedReservations = completed.OrderByDescending(c => c.CompletedAt).Take(5).Select(Map).ToList()
+            PendingReservations = labels.Take(pending.Count).ToList(),
+            RecentCompletedReservations = labels.Skip(pending.Count).ToList()
         };
         
         return Ok(response);
@@ -150,7 +134,7 @@ public class ReservationsController : ControllerBase
                 return Forbid();
             return Problem(detail: message, statusCode: 400);
         }
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== APPROVE (Operator only) =====
@@ -164,7 +148,7 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.ApproveAsync(id);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== VERIFY TOKEN (Operator only) =====
@@ -178,7 +162,7 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.VerifyTokenAsync(token);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 
     // ===== COMPLETE (Operator only) =====
@@ -192,6 +176,6 @@ public class ReservationsController : ControllerBase
         var (success, message, reservation) = await _service.CompleteAsync(id);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
-        return Ok(Map(reservation));
+        return Ok(await _presentation.MapAsync(reservation, HttpContext.RequestAborted));
     }
 }

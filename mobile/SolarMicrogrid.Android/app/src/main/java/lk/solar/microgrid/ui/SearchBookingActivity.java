@@ -15,11 +15,14 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
@@ -38,7 +41,9 @@ public final class SearchBookingActivity extends SolarActivity {
     private ReservationRepository reservations;
     private LinearLayout content, listContainer;
     private ProgressBar progress;
-    private EditText statusField, stationField;
+    private Spinner statusField, stationField;
+    private final List<String> stationIds = new ArrayList<>();
+    private final String[] statuses = {"", "PENDING", "APPROVED", "CANCELLED", "COMPLETED"};
     private Button searchBtn;
     private final List<Button> actions = new ArrayList<>();
 
@@ -48,6 +53,7 @@ public final class SearchBookingActivity extends SolarActivity {
         super.onCreate(state);
         reservations = ((SolarApplication) getApplication()).reservations();
         buildUi();
+        loadStations();
     }
 
     private void buildUi() {
@@ -68,38 +74,16 @@ public final class SearchBookingActivity extends SolarActivity {
         progress.setIndeterminate(true); progress.setVisibility(View.GONE);
         content.addView(progress, new LinearLayout.LayoutParams(-1, dp(4)));
 
-        // Status field
-        TextView cap1 = text(getString(R.string.status_label), 12, INK, true);
-        ((LinearLayout.LayoutParams) cap1.getLayoutParams()).topMargin = dp(18);
-        statusField = new EditText(this);
-        statusField.setTextSize(15); statusField.setTextColor(INK); statusField.setHintTextColor(MUTED);
-        statusField.setHint(R.string.search_hint_status);
-        statusField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
-        statusField.setFilters(new InputFilter[]{new InputFilter.LengthFilter(20)});
-        GradientDrawable bg1 = new GradientDrawable();
-        bg1.setColor(Color.WHITE); bg1.setCornerRadius(dp(8));
-        bg1.setStroke(dp(1), SolarStyle.BORDER);
-        statusField.setBackground(bg1);
-        statusField.setPadding(dp(13), dp(12), dp(13), dp(12));
-        SolarStyle.field(statusField);
-        statusField.setMinimumHeight(dp(50));
-        content.addView(statusField, new LinearLayout.LayoutParams(-1, -2));
-
-        // Station field
-        TextView cap2 = text(getString(R.string.station_id_label), 12, INK, true);
-        ((LinearLayout.LayoutParams) cap2.getLayoutParams()).topMargin = dp(18);
-        stationField = new EditText(this);
-        stationField.setTextSize(15); stationField.setTextColor(INK); stationField.setHintTextColor(MUTED);
-        stationField.setHint(R.string.search_hint_station);
-        stationField.setInputType(InputType.TYPE_CLASS_TEXT);
-        stationField.setFilters(new InputFilter[]{new InputFilter.LengthFilter(60)});
-        GradientDrawable bg2 = new GradientDrawable();
-        bg2.setColor(Color.WHITE); bg2.setCornerRadius(dp(8));
-        bg2.setStroke(dp(1), SolarStyle.BORDER);
-        stationField.setBackground(bg2);
-        stationField.setPadding(dp(13), dp(12), dp(13), dp(12));
-        SolarStyle.field(stationField);
-        stationField.setMinimumHeight(dp(50));
+        text("Booking status", 16, INK, true);
+        statusField = new Spinner(this);
+        statusField.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"All statuses", "Pending", "Approved", "Cancelled", "Completed"}));
+        statusField.setMinimumHeight(dp(54)); content.addView(statusField, new LinearLayout.LayoutParams(-1, -2));
+        text("Station", 16, INK, true);
+        stationField = new Spinner(this);
+        stationField.setMinimumHeight(dp(54));
+        stationIds.add("");
+        stationField.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, new String[]{"All stations"}));
         content.addView(stationField, new LinearLayout.LayoutParams(-1, -2));
 
         // Search button
@@ -107,8 +91,8 @@ public final class SearchBookingActivity extends SolarActivity {
 
         // Clear button
         button(getString(R.string.clear_button), false, () -> {
-            statusField.setText("");
-            stationField.setText("");
+            statusField.setSelection(0);
+            stationField.setSelection(0);
             listContainer.removeAllViews();
         });
 
@@ -118,11 +102,32 @@ public final class SearchBookingActivity extends SolarActivity {
         content.addView(listContainer, new LinearLayout.LayoutParams(-1, -2));
     }
 
+    private void loadStations() {
+        setBusy(true);
+        reservations.history(new ReservationRepository.Callback<List<Reservation>>() {
+            @Override public void success(List<Reservation> bookings) {
+                if (isFinishing() || isDestroyed()) return;
+                java.util.Map<String, Reservation> stations = new java.util.LinkedHashMap<>();
+                for (Reservation booking : bookings) stations.putIfAbsent(booking.stationId, booking);
+                stationIds.clear(); stationIds.add("");
+                List<String> labels = new ArrayList<>(); labels.add("All stations");
+                for (Reservation booking : stations.values()) {
+                    stationIds.add(booking.stationId);
+                    labels.add(booking.stationLabel() + (booking.stationAddress.isEmpty() ? "" : " · " + booking.stationAddress));
+                }
+                stationField.setAdapter(new ArrayAdapter<>(SearchBookingActivity.this, android.R.layout.simple_spinner_dropdown_item, labels));
+                setBusy(false); renderResults(bookings);
+            }
+            @Override public void failure(int status, String error) {
+                if (isFinishing() || isDestroyed()) return;
+                setBusy(false); Toast.makeText(SearchBookingActivity.this, error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
     private void doSearch() {
-        String status = value(statusField).trim().toUpperCase();
-        String station = value(stationField).trim();
-        if (status.isEmpty()) status = null;
-        if (station.isEmpty()) station = null;
+        String status = statuses[statusField.getSelectedItemPosition()];
+        String station = stationIds.get(stationField.getSelectedItemPosition());
 
         setBusy(true);
         reservations.search(status, station, new ReservationRepository.Callback<List<Reservation>>() {
@@ -167,19 +172,19 @@ public final class SearchBookingActivity extends SolarActivity {
         card.setLayoutParams(lp);
 
         TextView rid = new TextView(this);
-        rid.setText(r.reservationId.isEmpty() ? r.id : r.reservationId);
+        rid.setText(r.stationLabel());
         rid.setTextSize(15); rid.setTextColor(INK);
         rid.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         card.addView(rid);
 
         TextView meta = new TextView(this);
-        meta.setText(r.stationId + " · " + r.energyAmountKwh + " kWh · " + r.tradingType);
+        meta.setText(r.stationAddress + "\n" + r.energyAmountKwh + " kWh · " + BookingText.trading(r.tradingType));
         meta.setTextSize(13); meta.setTextColor(MUTED);
         meta.setPadding(0, dp(4), 0, dp(4));
         card.addView(meta);
 
         TextView date = new TextView(this);
-        date.setText("When: " + r.reservationDate);
+        date.setText(r.windowLabel() + "\nBooked for " + BookingText.date(r.reservationDate) + " (Sri Lanka)");
         date.setTextSize(13); date.setTextColor(INK);
         card.addView(date);
 
@@ -204,6 +209,7 @@ public final class SearchBookingActivity extends SolarActivity {
             modify.setOnClickListener(v -> {
                 Intent i = new Intent(this, ModifyBookingActivity.class);
                 i.putExtra("reservationId", r.id);
+                BookingIntents.addDetails(i, r);
                 i.putExtra("stationId", r.stationId);
                 i.putExtra("slotId", r.slotId);
                 i.putExtra("reservationDate", r.reservationDate);

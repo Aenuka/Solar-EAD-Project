@@ -12,6 +12,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.OperatorRepository;
 
@@ -199,7 +200,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
         // Subtitle: ID
         TextView idView = new TextView(this);
-        idView.setText("Ref: " + r.reservationId);
+        idView.setText(r.stationLabel() + " · " + r.prosumerLabel());
         idView.setTextSize(14); idView.setTextColor(INK); idView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         LinearLayout.LayoutParams idParams = new LinearLayout.LayoutParams(-1, -2);
         idParams.topMargin = dp(16);
@@ -210,7 +211,7 @@ public class OperatorDashboardActivity extends SolarActivity {
             "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now"))
             : "Reserved: " + r.reservationDate;
 
-        detailsView.setText(dateStr);
+        detailsView.setText(r.windowLabel() + "\nReference · " + r.reservationId);
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
         LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
         detailsParams.topMargin = dp(8);

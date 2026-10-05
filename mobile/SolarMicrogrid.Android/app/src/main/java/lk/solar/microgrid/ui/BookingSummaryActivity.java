@@ -10,6 +10,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 
 /**
  * Read-only summary of a single reservation.
@@ -44,8 +45,8 @@ public final class BookingSummaryActivity extends SolarActivity {
         text("Reservation details:", 14, MUTED, false);
 
         String reservationCode = getIntent().getStringExtra("reservationCode");
-        String stationId = getIntent().getStringExtra("stationId");
-        String slotId = getStringExtraSafe("slotId");
+        String stationName = getStringExtraSafe("stationName");
+        String window = BookingText.window(getStringExtraSafe("slotStartsAt"), getStringExtraSafe("slotEndsAt"));
         String reservationDate = getStringExtraSafe("reservationDate");
         double energy = getIntent().getDoubleExtra("energyAmountKwh", 0);
         String tradingType = getStringExtraSafe("tradingType");
@@ -66,17 +67,15 @@ public final class BookingSummaryActivity extends SolarActivity {
         content.addView(card, lp);
 
         //addRow(card, getString(R.string.reservation_id_label_or_default()), reservationCode == null ? "" : reservationCode);
-        addRow(card, "Reservation ID", reservationCode == null ? "" : reservationCode);
-        addRow(card, getString(R.string.station_id_label), stationId == null ? "" : stationId);
-        addRow(card, getString(R.string.slot_id_label), slotId == null ? "" : slotId);
-        addRow(card, getString(R.string.reservation_date_label), reservationDate == null ? "" : reservationDate);
+        addRow(card, "Booking reference", reservationCode == null ? "" : reservationCode);
+        addRow(card, "Station", stationName.isEmpty() ? "Station unavailable" : stationName);
+        addRow(card, "Address", getStringExtraSafe("stationAddress"));
+        addRow(card, "Energy window (Sri Lanka)", window);
+        addRow(card, getString(R.string.reservation_date_label), BookingText.date(reservationDate));
         addRow(card, getString(R.string.energy_amount_label), energy + " kWh");
-        addRow(card, getString(R.string.trading_type_label), tradingType == null ? "" : tradingType);
+        addRow(card, getString(R.string.trading_type_label), BookingText.trading(tradingType));
         addRow(card, getString(R.string.status_label), status == null ? "" : status);
 
-        if (token != null && !token.isEmpty()) {
-            addRow(card, "Transaction Token", token);
-        }
         if (reason != null && !reason.isEmpty()) {
             addRow(card, "Cancellation Reason", reason);
         }

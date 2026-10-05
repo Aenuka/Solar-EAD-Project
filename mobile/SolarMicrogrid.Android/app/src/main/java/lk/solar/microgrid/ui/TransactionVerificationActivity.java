@@ -9,6 +9,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import org.json.JSONObject;
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.data.Reservation;
 
 public class TransactionVerificationActivity extends SolarActivity {
@@ -57,11 +58,12 @@ public class TransactionVerificationActivity extends SolarActivity {
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
         detail(card, "Booking:", reservation.reservationId);
-        detail(card, "Prosumer:", reservation.prosumerNic);
-        detail(card, "Station:", reservation.stationId);
-        detail(card, "Booking Time:", reservation.reservationDate);
+        detail(card, "Prosumer:", reservation.prosumerLabel());
+        detail(card, "Station:", reservation.stationLabel());
+        detail(card, "Booking Time:", BookingText.date(reservation.reservationDate));
+        detail(card, "Energy window (Sri Lanka):", reservation.windowLabel());
         detail(card, "Energy:", reservation.energyAmountKwh + " kWh");
-        detail(card, "Trading Type:", reservation.tradingType);
+        detail(card, "Trading Type:", BookingText.trading(reservation.tradingType));
         detail(card, "Status:", reservation.status);
 
         Button button = new Button(this);
@@ -137,12 +139,12 @@ public class TransactionVerificationActivity extends SolarActivity {
         content.addView(card, new LinearLayout.LayoutParams(-1, -2));
 
         detail(card, "Booking:", result.reservationId);
-        detail(card, "Station:", result.stationId);
+        detail(card, "Station:", result.stationLabel());
         detail(card, "Energy:", result.energyAmountKwh + " kWh");
         detail(card, "Status:", result.status);
 
         String completedDate = result.source.optString("completedAt", result.source.optString("updatedAt", "Now"));
-        detail(card, "Completed:", completedDate);
+        detail(card, "Completed (Sri Lanka):", BookingText.date(completedDate));
 
         Button backButton = new Button(this);
         backButton.setText("Back to Operator Dashboard");

@@ -1,5 +1,7 @@
 package lk.solar.microgrid.ui;
 
+import lk.solar.microgrid.data.BookingText;
+
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -155,10 +157,7 @@ public class CompletedOperationsActivity extends SolarActivity {
 
         // Subtitle: Station ID
         TextView stationView = new TextView(this);
-        String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 8) {
-            shortStation = shortStation.substring(0, 8) + "...";
-        }
+        String shortStation = r.stationLabel();
         stationView.setText("Station: " + shortStation);
         stationView.setTextSize(14); stationView.setTextColor(MUTED);
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
@@ -170,21 +169,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         String completedDate = r.source.optString("completedAt", "");
         if (completedDate.isEmpty()) completedDate = r.source.optString("updatedAt", "");
 
-        try {
-            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            String cleanDate = completedDate.split("\\.")[0]; // Remove milliseconds
-            java.util.Date d = in.parse(cleanDate);
-            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a");
-            completedDate = out.format(d);
-        } catch (Exception e) {
-            completedDate = completedDate.replace("T", " ").replace("Z", "");
-            if (completedDate.length() > 19) {
-                completedDate = completedDate.substring(0, 19);
-            }
-        }
-
-        detailsView.setText("Completed " + completedDate);
+        detailsView.setText(r.windowLabel() + "\nCompleted " + BookingText.date(completedDate) + " (Sri Lanka)");
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
         LinearLayout.LayoutParams dpL = new LinearLayout.LayoutParams(-1, -2);
         dpL.topMargin = dp(16);
@@ -220,7 +205,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         layout.addView(row1, new LinearLayout.LayoutParams(-1, -2));
 
         row1.addView(detailCell("Energy", r.energyAmountKwh + " kWh", true));
-        row1.addView(detailCell("Type", r.tradingType, false));
+        row1.addView(detailCell("Type", BookingText.trading(r.tradingType), false));
 
         // Row 2: Status & Prosumer
         LinearLayout row2 = new LinearLayout(this);
@@ -229,11 +214,10 @@ public class CompletedOperationsActivity extends SolarActivity {
         layout.addView(row2, new LinearLayout.LayoutParams(-1, -2));
 
         row2.addView(detailCell("Status", r.status, true));
-        row2.addView(detailCell("Prosumer", r.prosumerNic, false));
+        row2.addView(detailCell("Prosumer", r.prosumerLabel(), false));
 
         // Station
-        String shortStation = r.stationId;
-        if (shortStation != null && shortStation.length() > 12) shortStation = shortStation.substring(0, 12) + "...";
+        String shortStation = r.stationLabel();
         LinearLayout rowStation = new LinearLayout(this);
         rowStation.setOrientation(LinearLayout.HORIZONTAL);
         rowStation.setPadding(0, dp(16), 0, 0);
@@ -283,21 +267,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         return cell;
     }
 
-    private String formatDate(String iso) {
-        if (iso == null || iso.isEmpty() || iso.equals("Unknown")) return "N/A";
-        try {
-            java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-            in.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-            String cleanDate = iso.split("\\.")[0];
-            java.util.Date d = in.parse(cleanDate);
-            java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM dd, yyyy\nhh:mm a");
-            return out.format(d);
-        } catch (Exception e) {
-            String fallback = iso.replace("T", " ").replace("Z", "");
-            if (fallback.length() > 19) fallback = fallback.substring(0, 19);
-            return fallback;
-        }
-    }
+    private String formatDate(String iso) { return BookingText.date(iso); }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();

@@ -58,6 +58,11 @@ public class ReservationResponse
     public string ProsumerNic { get; set; } = string.Empty;
     public string StationId { get; set; } = string.Empty;
     public string SlotId { get; set; } = string.Empty;
+    public string? StationName { get; set; }
+    public string? StationAddress { get; set; }
+    public string? ProsumerName { get; set; }
+    public DateTime? SlotStartsAt { get; set; }
+    public DateTime? SlotEndsAt { get; set; }
     public DateTime ReservationDate { get; set; }
     public double EnergyAmountKwh { get; set; }
     public string TradingType { get; set; } = string.Empty;

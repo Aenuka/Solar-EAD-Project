@@ -10,6 +10,9 @@ public sealed class StationRepository(IMongoDatabase database)
     public async Task<SolarStation?> FindAsync(string id, CancellationToken ct) =>
         await stations.Find(station => station.Id == id).FirstOrDefaultAsync(ct);
 
+    public Task<List<SolarStation>> FindManyAsync(IEnumerable<string> ids, CancellationToken ct) =>
+        stations.Find(Builders<SolarStation>.Filter.In(station => station.Id, ids)).ToListAsync(ct);
+
     public Task<List<SolarStation>> ListAsync(bool activeOnly, CancellationToken ct)
     {
         var filter = Builders<SolarStation>.Filter.Empty;

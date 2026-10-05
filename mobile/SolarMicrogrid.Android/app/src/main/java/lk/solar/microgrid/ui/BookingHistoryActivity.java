@@ -18,6 +18,7 @@ import android.widget.Toast;
 import java.util.List;
 
 import lk.solar.microgrid.R;
+import lk.solar.microgrid.data.BookingText;
 import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
@@ -188,13 +189,13 @@ public final class BookingHistoryActivity extends SolarActivity {
         card.setLayoutParams(lp);
 
         TextView rid = new TextView(this);
-        rid.setText(r.energyAmountKwh + " kWh");
+        rid.setText(r.stationLabel());
         SolarStyle.text(rid, 24, INK, true);
         rid.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         card.addView(rid);
 
         TextView meta = new TextView(this);
-        meta.setText(r.stationId + " · " + ("DROP_OFF".equals(r.tradingType) ? "Drop off" : r.tradingType));
+        meta.setText(r.stationAddress + "\n" + r.energyAmountKwh + " kWh · " + BookingText.trading(r.tradingType));
         meta.setTextSize(13); meta.setTextColor(MUTED);
         meta.setPadding(0, dp(4), 0, dp(4));
         card.addView(meta);
@@ -206,7 +207,7 @@ public final class BookingHistoryActivity extends SolarActivity {
                     .atZoneSameInstant(java.time.ZoneId.of("Asia/Colombo"))
                     .format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM · h:mm a", java.util.Locale.getDefault()));
         } catch (java.time.format.DateTimeParseException ignored) { /* Show the server value if a legacy date cannot be formatted. */ }
-        date.setText(dateText);
+        date.setText(r.windowLabel() + "\nBooked for " + dateText + " (Sri Lanka)");
         date.setTextSize(13); date.setTextColor(INK);
         card.addView(date);
 
@@ -219,7 +220,7 @@ public final class BookingHistoryActivity extends SolarActivity {
         statusParams.topMargin = dp(12); statusParams.bottomMargin = dp(8);
         card.addView(status, statusParams);
         TextView reference = new TextView(this);
-        reference.setText("Reference · " + (r.reservationId.isEmpty() ? r.id : r.reservationId));
+        reference.setText("Reference · " + (r.reservationId.isEmpty() ? "Booking" : r.reservationId));
         SolarStyle.text(reference, 14, MUTED, false); card.addView(reference);
 
         // QR button for APPROVED bookings
@@ -236,7 +237,8 @@ public final class BookingHistoryActivity extends SolarActivity {
             qrBtn.setOnClickListener(v -> {
                 android.content.Intent i = new android.content.Intent(this, TransactionQrActivity.class);
                 i.putExtra("id", r.id);
-                i.putExtra("reservationCode", r.reservationId.isEmpty() ? r.id : r.reservationId);
+                BookingIntents.addDetails(i, r);
+                i.putExtra("reservationCode", r.reservationId.isEmpty() ? "Booking" : r.reservationId);
                 i.putExtra("stationId", r.stationId);
                 i.putExtra("reservationDate", r.reservationDate);
                 i.putExtra("energyAmountKwh", r.energyAmountKwh);
@@ -256,12 +258,18 @@ public final class BookingHistoryActivity extends SolarActivity {
                         }).setNegativeButton(R.string.cancel, null).show();
             });
         }
+        card.setOnClickListener(v -> {
+            android.content.Intent detail = new android.content.Intent(this, BookingSummaryActivity.class);
+            BookingIntents.addDetails(detail, r);
+            startActivity(detail);
+        });
         return card;
     }
 
     private void editBooking(Reservation r) {
         android.content.Intent intent = new android.content.Intent(this, ModifyBookingActivity.class);
         intent.putExtra("reservationId", r.id);
+        BookingIntents.addDetails(intent, r);
         intent.putExtra("stationId", r.stationId);
         intent.putExtra("slotId", r.slotId);
         intent.putExtra("reservationDate", r.reservationDate);
@@ -277,6 +285,7 @@ public final class BookingHistoryActivity extends SolarActivity {
         reason.setInputType(InputType.TYPE_CLASS_TEXT);
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.confirm_cancel))
+                .setMessage(r.stationLabel() + "\n" + r.windowLabel() + "\n" + r.energyAmountKwh + " kWh")
                 .setView(reason)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.cancel_booking, (d, w) -> {
