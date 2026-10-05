@@ -83,6 +83,7 @@ def main():
             with urllib.request.urlopen(f"http://127.0.0.1:{api_port}/openapi/v1.json") as response:
                 schema = json.load(response)
             (ROOT / "docs" / "openapi.json").write_text(json.dumps(schema, indent=2) + "\n")
+            # Runs the station suite alone when --test names it, or all integration suites otherwise. *****
             command = [sys.executable, "-m", "unittest"]
             command += [args.test, "-v"] if args.test else ["discover", "-s", "tests", "-v"]
             result = subprocess.run(command, cwd=ROOT / "tests" if args.test else ROOT, env=env)

@@ -19,6 +19,7 @@ COLOMBO = timezone(timedelta(hours=5, minutes=30))
 @unittest.skipUnless(account_tests.API, "Run scripts/verify.py for isolated MongoDB/API/web tests")
 class StationTests(unittest.TestCase):
     @classmethod
+    # Signs in test roles and creates a prosumer for station permission checks. *****
     def setUpClass(cls):
         code, auth, _ = request("POST", "auth/staff/login", {"username": os.environ["Bootstrap__Username"], "password": os.environ["Bootstrap__Password"]})
         assert code == 200, auth
@@ -36,21 +37,26 @@ class StationTests(unittest.TestCase):
         assert code == 200, result
         cls.prosumer = result["accessToken"]
 
+    # Sends an API request and checks its expected HTTP status. *****
     def call(self, method, path, body=None, token=None, expected=200):
         code, data, _ = request(method, path, body, token or self.admin)
         self.assertEqual(expected, code, data)
         return data
 
+    # Creates a station fixture with realistic Colombo coordinates and capacity. *****
     def station(self):
         return self.call("POST", "stations", {"name": "Test Solar " + secrets.token_hex(4), "address": "10 Station Road, Colombo", "latitude": 6.9271, "longitude": 79.8612, "capacityKw": 50, "storageKwh": 100, "batterySlots": 4}, expected=201)
 
+    # Adds a future energy window to a station fixture. *****
     def window(self, s, start=None, slots=2):
         start = start or (datetime.now(COLOMBO) + timedelta(days=2)).replace(hour=10, minute=0, second=0, microsecond=0)
         return self.call("POST", f"stations/{s['id']}/slots", {"version": s["version"], "startsAt": start.isoformat(), "endsAt": (start + timedelta(hours=1)).isoformat(), "usableSlots": slots, "usableEnergyKwh": 40}, self.operator)
 
+    # Reserves capacity in the fixture's first energy window. *****
     def reserve(self, s, booking="booking-1", expected=200, slots=1):
         return self.call("POST", f"stations/{s['id']}/slots/{s['slots'][0]['id']}/allocations", {"version": s["version"], "bookingId": booking, "slots": slots, "energyKwh": 10}, self.operator, expected)
 
+    # Checks role permissions and rejects invalid station input. *****
     def test_permissions_and_validation(self):
         self.assertEqual(401, request("GET", "stations")[0])
         s = self.station()
@@ -64,6 +70,7 @@ class StationTests(unittest.TestCase):
         self.call("GET", "stations?latitude=6", token=self.prosumer, expected=400)
         self.call("GET", "stations?latitude=99&longitude=79", token=self.prosumer, expected=400)
 
+    # Ensures stale station versions cannot overwrite newer edits. *****
     def test_update_and_stale_version(self):
         s = self.station()
         update = {k: s[k] for k in ("name", "address", "latitude", "longitude", "capacityKw", "storageKwh", "batterySlots", "version")}
@@ -71,6 +78,7 @@ class StationTests(unittest.TestCase):
         self.assertEqual(s["id"], updated["id"])
         self.call("PATCH", f"stations/{s['id']}", update, expected=409)
 
+    # Blocks deactivation with reservations and makes repeated cancellation safe. *****
     def test_deactivation_reservations_and_idempotent_cancel(self):
         s = self.window(self.station())
         original = s
@@ -91,6 +99,7 @@ class StationTests(unittest.TestCase):
         active = self.call("POST", f"stations/{s['id']}/status", {"active": True, "version": inactive["version"]})
         self.assertTrue(active["active"])
 
+    # Ensures concurrent writes cannot overbook or deactivate a reserved station. *****
     def test_concurrent_allocations_and_deactivation(self):
         s = self.window(self.station(), slots=1)
         path = f"stations/{s['id']}/slots/{s['slots'][0]['id']}/allocations"
@@ -107,6 +116,7 @@ class StationTests(unittest.TestCase):
         fresh = self.call("GET", f"stations/{s['id']}")
         self.assertFalse(not fresh["active"] and fresh["activeReservations"] > 0)
 
+    # Rejects invalid schedules, overlapping windows, and excess capacity. *****
     def test_schedule_overlap_capacity_and_archive(self):
         s = self.station()
         path = f"stations/{s['id']}/schedule"
@@ -122,6 +132,7 @@ class StationTests(unittest.TestCase):
         archived = self.call("POST", f"stations/{s['id']}/slots/{slot['id']}/archive", {"version": s["version"]}, self.operator)
         self.assertEqual([], archived["slots"])
 
+    # Filters nearby stations and hides staff allocation details from prosumers. *****
     def test_nearby_visibility_and_private_allocation_data(self):
         s = self.reserve(self.window(self.station()))
         result = self.call("GET", "stations?latitude=6.9271&longitude=79.8612&radiusKm=1&pageSize=100", token=self.prosumer)
@@ -132,11 +143,13 @@ class StationTests(unittest.TestCase):
         far = self.call("GET", "stations?latitude=0&longitude=0&radiusKm=1", token=self.prosumer)
         self.assertEqual(0, far["total"])
 
+    # Rejects reservations starting outside the next seven days. *****
     def test_seven_day_limit(self):
         start = (datetime.now(COLOMBO) + timedelta(days=8)).replace(hour=10, minute=0, second=0, microsecond=0)
         s = self.window(self.station(), start)
         self.reserve(s, expected=409)
 
+    # Enforces transfer completion timing and 12-hour cancellation notice. *****
     def test_completion_and_twelve_hour_cancellation(self):
         s = self.station()
         s = self.call("PUT", f"stations/{s['id']}/schedule", {"version": s["version"], "days": list(range(7)), "opensAt": "00:00", "closesAt": "23:59"}, self.operator)
@@ -152,10 +165,13 @@ class StationTests(unittest.TestCase):
         self.assertEqual(1, completed["slots"][0]["availableSlots"])
         self.call("POST", f"stations/{s['id']}/status", {"active": False, "version": completed["version"]})
 
+    # Checks station web forms and Grid Operator access to staff actions. *****
     def test_web_forms_and_operator_access(self):
         browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        # Fetches a staff portal page with the current authenticated session. *****
         def get(path):
             with browser.open(account_tests.WEB + path) as response: return response.read().decode()
+        # Posts a station form while preserving the portal's antiforgery data. *****
         def post(path, data, html):
             token = page_data(html)["csrfToken"]
             with browser.open(account_tests.WEB + path, urllib.parse.urlencode({**data, "__RequestVerificationToken": token}, doseq=True).encode()) as response:

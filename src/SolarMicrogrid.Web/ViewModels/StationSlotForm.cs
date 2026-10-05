@@ -1,3 +1,7 @@
+// File: StationSlotForm.cs
+// Purpose: Validates station window form values and converts local times for the API.
+// Group member responsible: Chamithu Edirimanna (IT23202054).
+
 using System.ComponentModel.DataAnnotations;
 using SolarMicrogrid.Contracts;
 
@@ -17,6 +21,7 @@ public sealed class StationSlotForm : StationVersion
     [Required, Range(0, 1000000)]
     public double? UsableEnergyKwh { get; set; }
 
+    // Converts Sri Lanka local form times to offset-aware API timestamps. *****
     public SlotInput ToRequest()
     {
         // The form contains Sri Lanka local times; the API needs timestamps with an offset.

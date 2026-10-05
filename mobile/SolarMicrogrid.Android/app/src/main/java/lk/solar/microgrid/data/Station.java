@@ -14,6 +14,7 @@ public final class Station {
     public final double latitude, longitude, capacityKw, storageKwh;
     public final int batterySlots;
     public final JSONObject source;
+    // Parses station data and rejects coordinates outside valid GPS ranges. *****
     public Station(JSONObject json) throws JSONException {
         source = json;
         id = json.getString("id"); name = json.getString("name"); address = json.getString("address");
@@ -23,9 +24,11 @@ public final class Station {
         if (!Double.isFinite(latitude) || !Double.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
             throw new JSONException("Invalid station coordinates");
     }
+    // Summarizes the station's power, storage, and battery slot capacity. *****
     public String summary() {
         return String.format(Locale.getDefault(), "%.2f kW · %.2f kWh · %d battery slots", capacityKw, storageKwh, batterySlots);
     }
+    // Formats operating hours and future availability in Sri Lanka time. *****
     public String details() throws JSONException {
         JSONObject schedule = source.getJSONObject("schedule");
         String[] names = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
