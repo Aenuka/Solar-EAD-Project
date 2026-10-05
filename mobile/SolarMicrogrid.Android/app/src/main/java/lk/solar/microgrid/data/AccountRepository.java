@@ -57,9 +57,11 @@ public final class AccountRepository {
     public void refresh(Callback<ProfileCache.Snapshot> callback) { run(this::load, callback); }
 
     /** Station reads always use the server; stale inventory must not look bookable. */
+    // Fetches a station list online so cached inventory is never shown as current. *****
     public void stations(String query, Callback<JSONObject> callback) {
         run(() -> { requireSession(); return api.request("GET", "stations?" + query, null, token); }, callback);
     }
+    // Fetches current details for one station using an escaped identifier. *****
     public void station(String id, Callback<JSONObject> callback) {
         run(() -> { requireSession(); return api.request("GET", "stations/" + java.net.URLEncoder.encode(id, "UTF-8"), null, token); }, callback);
     }
