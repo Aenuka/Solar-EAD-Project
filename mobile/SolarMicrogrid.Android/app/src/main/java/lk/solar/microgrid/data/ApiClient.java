@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Sends Android JSON requests with JWT bearer authorization and converts API errors into client failures.
+ */
+
 package lk.solar.microgrid.data;
 
 import org.json.JSONArray;

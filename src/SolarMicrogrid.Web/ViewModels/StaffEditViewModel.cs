@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Validates staff profile, role, status, and version fields used by the account-editing form.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using SolarMicrogrid.Contracts;

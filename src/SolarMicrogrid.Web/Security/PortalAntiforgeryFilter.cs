@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Validates antiforgery tokens on web form submissions, including login and account-management actions.
+ */
+
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Serves Backoffice prosumer-management pages for account searches, profile edits, deactivation decisions, and reactivation.
+ */
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.Web.Presentation;

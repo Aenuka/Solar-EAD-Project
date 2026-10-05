@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Clears unauthorized web sessions, redirects users to login, and renders API failure pages.
+ */
+
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;

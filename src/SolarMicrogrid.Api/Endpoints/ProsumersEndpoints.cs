@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines prosumer registration and self-service routes alongside Backoffice account-management routes.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using SolarMicrogrid.Api.Services;

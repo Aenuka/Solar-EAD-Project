@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates the reason and account version submitted when requesting deactivation.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 

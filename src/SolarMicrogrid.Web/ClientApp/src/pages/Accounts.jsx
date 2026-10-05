@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Renders staff login, account overview, staff-management forms, and prosumer profile and account-status management.
+ */
+
 import { ArrowRight, Leaf, ShieldCheck, Sun, Users } from "lucide-react";
 import { SolarScene } from "../SolarScene";
 import {

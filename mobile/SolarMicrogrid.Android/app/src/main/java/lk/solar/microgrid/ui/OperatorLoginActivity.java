@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Builds the Grid Operator login screen and opens the operator dashboard after successful role-checked authentication.
+ */
+
 package lk.solar.microgrid.ui;
 
 import android.content.Intent;

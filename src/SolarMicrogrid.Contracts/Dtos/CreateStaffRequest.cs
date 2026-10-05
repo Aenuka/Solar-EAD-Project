@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates the identity, password, and role required to create a staff account.
+ */
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Contracts;

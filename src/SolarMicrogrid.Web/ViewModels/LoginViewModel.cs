@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Validates staff login form credentials and excludes the password from serialized page data.
+ */
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Web.ViewModels;

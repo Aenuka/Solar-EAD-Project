@@ -1,8 +1,70 @@
 # Smart Solar Microgrid Trading System
 
-Component 1: user authentication, staff access and prosumer account management.
+An ASP.NET Core and MongoDB system with a React staff portal and native Java Android app for prosumer accounts, solar station discovery, energy reservations, and QR-based transaction verification.
 
-Component 4 (Chamithu): station management, operating schedules, energy window inventory and native Android OpenStreetMap discovery. See [station setup, Visual Studio/Android Studio checks and integration contracts](docs/stations.md). Staff can open **Microgrid stations** in the web portal; signed-in prosumers can open **Explore microgrid stations** in Android.
+## Demo video
+
+[Watch the demo video](https://drive.google.com/drive/folders/1qrNtn7FlmQ5FGW_gtYuaU1vRp3dqkKAy?usp=sharing)
+
+## Work done
+
+- **User and account management:** Staff and prosumer authentication, JWT authorization, Backoffice/Grid Operator/Prosumer roles, profile management, account deactivation requests, administrator decisions, and account reactivation.
+- **Solar station management:** Station registration and editing, activation/deactivation, operating schedules, dated energy windows, capacity validation, versioned inventory updates, and allocation tracking in MongoDB.
+- **Station discovery:** Android Google Maps station display, station details, nearby distance filtering, pagination, and live availability retrieved through the API.
+- **Energy reservation management:** Reservation creation, editing, cancellation, approval, history, search, and dashboard counts, with a seven-day advance booking limit and at least twelve hours' notice for changes or cancellations.
+- **QR transaction workflow:** Prosumer QR display for approved reservations, Grid Operator scanning, server-side token/window/allocation verification, energy transfer completion, and completed-operation history.
+- **Web and mobile integration:** React staff screens, native Android role-specific navigation, live station/window booking pickers, a SQLite profile cache, shared API contracts, development scripts, API integration tests, Android unit tests, and setup documentation.
+
+See [station setup and integration contracts](docs/stations.md), the [React staff portal guide](src/SolarMicrogrid.Web/README.md), and the [Android navigation guide](mobile/SolarMicrogrid.Android/README.md). Staff manage stations through **Microgrid stations**; signed-in prosumers discover them through **Explore** in Android.
+
+## Individual contributions
+
+The following responsibilities are summarized from the project's individual contribution report.
+
+| Group member | IT number | Main responsibility |
+|---|---|---|
+| N A Buddhakorala (Aenuka) | IT23214934 | Project setup, user management, authentication, authorization, and account deactivation |
+| Edirimanna C.S (Chamithu) | IT23400290 | Solar stations, schedules, energy windows, inventory, and station discovery |
+| Lakshman K A P C (Pasindu) | IT23291164 | Grid Operator workflows, QR verification, transaction completion, and mobile UI improvements |
+| Tharaka W.A.S (Sajith) | IT23400290 (confirmation needed) | Reservation lifecycle, booking rules, and integration with station allocations and QR transactions |
+
+The contribution report lists `IT23400290` for both Edirimanna C.S and Tharaka W.A.S; Tharaka's IT number needs confirmation.
+
+### N A Buddhakorala (Aenuka) - User management
+
+- Initialized and configured the project structure.
+- Implemented user management, authentication, authorization, and role-based access control.
+- Developed the functionality for users to submit account deactivation requests.
+- Built the administrator interface to review and approve deactivation requests.
+- Added validation and access restrictions so only authorized administrators can decide those requests.
+- Integrated user management and account deactivation with the backend API and database.
+
+### Edirimanna C.S (Chamithu) - Solar station management
+
+- Developed station data models and API contracts for station details, operating schedules, energy windows, availability, and allocations.
+- Implemented MongoDB station storage with version checks to prevent conflicting updates.
+- Built API operations for station registration, editing, activation, schedules, and energy windows.
+- Added capacity and schedule validation to reject overlapping windows, excess availability, and overbooking.
+- Implemented paginated station discovery with location-based distance filtering.
+- Developed staff web screens and Android map/detail screens with nearby search and live availability, and integrated their API requests.
+- Wrote station API integration tests and Android unit tests for validation, permissions, and availability, and documented station code and methods.
+
+### Lakshman K A P C (Pasindu) - Grid Operator and QR transactions
+
+- Developed the dedicated Grid Operator web dashboard and reservation approval workflows.
+- Added operator dashboard API support, strengthened transaction verification rules, and implemented the energy transfer completion flow.
+- Built the mobile Grid Operator workflow, including login/session handling, profile management, sign-out, and completed-operation history.
+- Integrated QR scanning dependencies and the operator screens for server-verified on-site transactions.
+- Improved prosumer booking forms with live station and time-window pickers in place of manual ID inputs.
+- Developed the prosumer transaction QR display for approved energy reservations.
+- Improved styling, navigation, and workflows across the Operator and Prosumer mobile interfaces.
+
+### Tharaka W.A.S (Sajith) - Reservation and booking management
+
+- Developed core reservation REST endpoints covering creation, updates, cancellation, approval, history, search, and dashboard statistics, with integration into transaction operations.
+- Implemented the seven-day booking window, twelve-hour modification/cancellation notice, and station/slot/time conflict checks.
+- Designed the `PENDING`, `APPROVED`, `COMPLETED`, and `CANCELLED` reservation status lifecycle.
+- Integrated reservations with Chamithu's versioned station allocations, Aenuka's JWT authentication, and Pasindu's QR transaction token generation and verification.
 
 ## Projects
 

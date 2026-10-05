@@ -1,6 +1,12 @@
-// File: MicrogridApiClient.cs
-// Purpose: Sends authenticated portal requests to the microgrid API.
-// Contributors: Shared web API client used by station and reservation features.
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File: MicrogridApiClient.cs
+ * Purpose: Sends authenticated portal requests to the microgrid API.
+ * File functionality:
+ * - Sends portal requests to the API with the session's JWT bearer token and supports account operations and logout.
+ * Contributors: Shared web API client used by station and reservation features.
+ */
 
 using System.Net;
 using System.Net.Http.Headers;

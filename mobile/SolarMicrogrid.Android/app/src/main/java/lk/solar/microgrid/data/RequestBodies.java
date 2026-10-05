@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Builds JSON request bodies for prosumer login, registration, profile updates, and deactivation.
+ */
+
 package lk.solar.microgrid.data;
 
 import org.json.JSONException;

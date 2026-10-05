@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Provides shared mobile screen behavior, system insets, and back navigation, including prosumer logout when leaving the root screen.
+ */
+
 package lk.solar.microgrid.ui;
 
 import android.app.Activity;

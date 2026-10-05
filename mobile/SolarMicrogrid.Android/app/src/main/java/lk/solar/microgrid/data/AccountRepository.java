@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Handles prosumer login, registration, in-memory JWT sessions, profile updates, deactivation requests, caching, and logout.
+ */
+
 package lk.solar.microgrid.data;
 
 import android.content.Context;

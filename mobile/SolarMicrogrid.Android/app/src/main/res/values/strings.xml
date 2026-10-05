@@ -1,3 +1,9 @@
+<!--
+    @author Aenuka Buddhakorala
+    IT number: IT23214934
+    File functionality:
+    - Defines mobile UI text, including login, registration, profile-management, deactivation, and session-error messages.
+-->
 <resources>
     <string name="my_account">My account</string>
     <string name="app_name">Solar Microgrid</string>

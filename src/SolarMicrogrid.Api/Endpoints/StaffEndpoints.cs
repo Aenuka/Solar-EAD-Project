@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines Backoffice-only endpoints for listing, creating, viewing, and updating staff accounts.
+ */
+
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using SolarMicrogrid.Api.Services;

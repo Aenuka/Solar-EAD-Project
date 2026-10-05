@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Defines and validates the JWT issuer, audience, signing key, and access-token lifetime.
+ */
+
 using System.ComponentModel.DataAnnotations;
 
 namespace SolarMicrogrid.Api.Configuration;

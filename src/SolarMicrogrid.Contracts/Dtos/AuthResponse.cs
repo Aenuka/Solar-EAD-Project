@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Returns the JWT access token, expiry, token type, account identity, and role after login.
+ */
+
 namespace SolarMicrogrid.Contracts;
 
 public sealed record AuthResponse(

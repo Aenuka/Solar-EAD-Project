@@ -1,3 +1,10 @@
+/**
+ * @author Aenuka Buddhakorala
+ * IT number: IT23214934
+ * File functionality:
+ * - Initializes shared Android repositories, including prosumer and Grid Operator account-session services.
+ */
+
 package lk.solar.microgrid;
 
 import android.app.Application;
