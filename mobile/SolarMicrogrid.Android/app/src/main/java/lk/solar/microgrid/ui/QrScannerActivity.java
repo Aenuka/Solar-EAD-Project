@@ -1,3 +1,8 @@
+/*
+ * File: QrScannerActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity for scanning prosumer transaction QR codes.
+ */
 package lk.solar.microgrid.ui;
 
 import android.Manifest;
@@ -30,6 +35,7 @@ public class QrScannerActivity extends SolarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize the scanner UI and request camera permissions
         super.onCreate(savedInstanceState);
         operators = ((SolarApplication) getApplication()).operators();
 
@@ -78,6 +84,7 @@ public class QrScannerActivity extends SolarActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        // Handle the result of the camera permission request
         if (requestCode == 1 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             startScanning();
         } else {
@@ -87,6 +94,7 @@ public class QrScannerActivity extends SolarActivity {
     }
 
     private void startScanning() {
+        // Initialize and start the QR barcode scanner
         barcodeView.decodeContinuous(new BarcodeCallback() {
             @Override
             public void barcodeResult(BarcodeResult result) {
@@ -105,6 +113,7 @@ public class QrScannerActivity extends SolarActivity {
     }
 
     private void verifyToken(String token) {
+        // Verify the scanned token with the central API
         operators.verifyTransaction(token, new OperatorRepository.Callback<Reservation>() {
             @Override
             public void success(Reservation reservation) {
@@ -142,15 +151,20 @@ public class QrScannerActivity extends SolarActivity {
 
     @Override
     protected void onResume() {
+        // Resume scanning when the activity returns to the foreground
         super.onResume();
         if (!isVerifying && barcodeView != null) barcodeView.resume();
     }
 
     @Override
     protected void onPause() {
+        // Pause scanning when the activity goes to the background
         super.onPause();
         if (barcodeView != null) barcodeView.pause();
     }
 
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private int dp(int value) { 
+        // Convert dp units to pixels
+        return Math.round(value * getResources().getDisplayMetrics().density); 
+    }
 }

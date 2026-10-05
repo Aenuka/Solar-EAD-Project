@@ -1,6 +1,6 @@
 /*
  * File: ReservationsController.cs
- * Author: Sajith
+ * Author: Sajith & Lakshman K A P C
  * Description: REST API endpoints for reservation management.
  */
 
@@ -21,6 +21,7 @@ public class ReservationsController : ControllerBase
 
     public ReservationsController(ReservationService service, ReservationPresentation presentation)
     {
+        // Initialize controller with services
         _service = service;
         _presentation = presentation;
     }
@@ -29,6 +30,7 @@ public class ReservationsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ReservationInput dto)
     {
+        // Create a new reservation
         var (success, message, reservation) = await _service.CreateAsync(dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
@@ -39,6 +41,7 @@ public class ReservationsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateReservationInput dto)
     {
+        // Update an existing reservation
         var (success, message, reservation) = await _service.UpdateAsync(id, dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
@@ -49,6 +52,7 @@ public class ReservationsController : ControllerBase
     [HttpPatch("{id}/cancel")]
     public async Task<IActionResult> Cancel(string id, [FromBody] CancelReservationInput dto)
     {
+        // Cancel a reservation
         var (success, message, reservation) = await _service.CancelAsync(id, dto);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
@@ -59,6 +63,7 @@ public class ReservationsController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory([FromQuery] string nic)
     {
+        // Get reservation history for a prosumer
         if (string.IsNullOrEmpty(nic))
             return Problem(detail: "NIC is required.", statusCode: 400);
         var list = await _service.GetHistoryAsync(nic);
@@ -69,6 +74,7 @@ public class ReservationsController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
+        // Get all pending reservations
         var list = await _service.GetPendingAsync();
         return Ok(await _presentation.MapAsync(list, HttpContext.RequestAborted));
     }
@@ -80,8 +86,10 @@ public class ReservationsController : ControllerBase
         [FromQuery] string? stationId,
         [FromQuery] string? nic,
         [FromQuery] DateTime? from,
-        [FromQuery] DateTime? to)
+        [FromQuery] DateTime? to,
+        CancellationToken ct)
     {
+        // Search reservations with filters
         var list = await _service.SearchAsync(status, stationId, nic, from, to);
         return Ok(await _presentation.MapAsync(list, HttpContext.RequestAborted));
     }
@@ -90,6 +98,7 @@ public class ReservationsController : ControllerBase
     [HttpGet("approved-future/count")]
     public async Task<IActionResult> GetApprovedFutureCount()
     {
+        // Get the count of approved future reservations
         var count = await _service.GetApprovedFutureCountAsync();
         return Ok(new { count });
     }
@@ -100,8 +109,9 @@ public class ReservationsController : ControllerBase
     /// </summary>
     [Authorize(Roles = "GridOperator")]
     [HttpGet("dashboard")]
-    public async Task<IActionResult> GetDashboard()
+    public async Task<IActionResult> GetDashboard(CancellationToken ct)
     {
+        // Retrieves live dashboard data for Grid Operators.
         var (pending, approvedFutureCount, completed) = await _service.GetDashboardDataAsync();
         
         var recent = completed.OrderByDescending(c => c.CompletedAt).Take(5).ToList();
@@ -123,6 +133,7 @@ public class ReservationsController : ControllerBase
     [HttpGet("{id}/transaction")]
     public async Task<IActionResult> GetTransaction(string id)
     {
+        // Retrieves transaction details for QR generation.
         var nic = User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
         if (string.IsNullOrEmpty(nic))
             return Unauthorized();
@@ -145,6 +156,7 @@ public class ReservationsController : ControllerBase
     [HttpPatch("{id}/approve")]
     public async Task<IActionResult> Approve(string id)
     {
+        // Approves a pending reservation.
         var (success, message, reservation) = await _service.ApproveAsync(id);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
@@ -159,6 +171,7 @@ public class ReservationsController : ControllerBase
     [HttpGet("verify")]
     public async Task<IActionResult> VerifyToken([FromQuery] string token)
     {
+        // Verifies a scanned transaction token.
         var (success, message, reservation) = await _service.VerifyTokenAsync(token);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);
@@ -173,6 +186,7 @@ public class ReservationsController : ControllerBase
     [HttpPatch("{id}/complete")]
     public async Task<IActionResult> Complete(string id)
     {
+        // Finalizes the energy transfer for an approved reservation.
         var (success, message, reservation) = await _service.CompleteAsync(id);
         if (!success || reservation is null)
             return Problem(detail: message, statusCode: 400);

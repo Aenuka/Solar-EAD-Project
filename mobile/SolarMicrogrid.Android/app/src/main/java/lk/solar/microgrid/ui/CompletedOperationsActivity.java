@@ -1,3 +1,8 @@
+/*
+ * File: CompletedOperationsActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity displaying a history of completed energy transfers.
+ */
 package lk.solar.microgrid.ui;
 
 import lk.solar.microgrid.data.BookingText;
@@ -21,6 +26,7 @@ public class CompletedOperationsActivity extends SolarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize the activity, layout, and verify operator authentication
         super.onCreate(savedInstanceState);
         operators = ((SolarApplication) getApplication()).operators();
         if (!operators.signedIn()) {
@@ -43,6 +49,7 @@ public class CompletedOperationsActivity extends SolarActivity {
 
     @Override
     protected void onResume() {
+        // Reload completed operations list when the activity comes to the foreground
         super.onResume();
         if (operators != null && operators.signedIn()) {
             loadOperations();
@@ -50,6 +57,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     }
 
     private void loadOperations() {
+        // Fetch completed operations from the server and render the UI
         content.removeAllViews();
 
 
@@ -111,6 +119,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     }
 
     private void renderCard(Reservation r, int index) {
+        // Render a summary card for a completed operation
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
 
@@ -155,7 +164,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         idParams.topMargin = dp(16);
         card.addView(idView, idParams);
 
-        // Subtitle: Station ID
+        // Subtitle: Station
         TextView stationView = new TextView(this);
         String shortStation = r.stationLabel();
         stationView.setText("Station: " + shortStation);
@@ -163,6 +172,15 @@ public class CompletedOperationsActivity extends SolarActivity {
         LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
         sp.topMargin = dp(4);
         card.addView(stationView, sp);
+
+        // Subtitle: User
+        TextView userView = new TextView(this);
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName + " (" + r.prosumerNic + ")" : r.prosumerNic;
+        userView.setText("User: " + (displayUser != null ? displayUser : "Unknown"));
+        userView.setTextSize(14); userView.setTextColor(MUTED);
+        LinearLayout.LayoutParams up = new LinearLayout.LayoutParams(-1, -2);
+        up.topMargin = dp(4);
+        card.addView(userView, up);
 
         // Date row
         TextView detailsView = new TextView(this);
@@ -177,6 +195,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     }
 
     private void showDetailsDialog(Reservation r) {
+        // Show a dialog with detailed information about the selected operation
         ScrollView scroll = new ScrollView(this);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -213,6 +232,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         row2.setPadding(0, dp(16), 0, 0);
         layout.addView(row2, new LinearLayout.LayoutParams(-1, -2));
 
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName : r.prosumerNic;
         row2.addView(detailCell("Status", r.status, true));
         row2.addView(detailCell("Prosumer", r.prosumerLabel(), false));
 
@@ -222,7 +242,7 @@ public class CompletedOperationsActivity extends SolarActivity {
         rowStation.setOrientation(LinearLayout.HORIZONTAL);
         rowStation.setPadding(0, dp(16), 0, 0);
         layout.addView(rowStation, new LinearLayout.LayoutParams(-1, -2));
-        rowStation.addView(detailCell("Station", shortStation, false));
+        rowStation.addView(detailCell("Station", displayStation, false));
 
         // Divider
         android.view.View div = new android.view.View(this);
@@ -247,6 +267,7 @@ public class CompletedOperationsActivity extends SolarActivity {
     }
 
     private LinearLayout detailCell(String label, String value, boolean isPrimary) {
+        // Create a layout cell for displaying a label and its value
         LinearLayout cell = new LinearLayout(this);
         cell.setOrientation(LinearLayout.VERTICAL);
         cell.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1.0f));
@@ -267,14 +288,21 @@ public class CompletedOperationsActivity extends SolarActivity {
         return cell;
     }
 
-    private String formatDate(String iso) { return BookingText.date(iso); }
+    private String formatDate(String iso) { 
+        // Format an ISO date string for display
+        return BookingText.date(iso); 
+    }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
+        // Create a drawable shape with specified fill and stroke
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;
     }
 
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private int dp(int value) { 
+        // Convert dp units to pixels
+        return Math.round(value * getResources().getDisplayMetrics().density); 
+    }
 }

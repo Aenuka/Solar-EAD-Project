@@ -1,3 +1,8 @@
+/*
+ * File: OperatorProfileActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity displaying the grid operator profile.
+ */
 package lk.solar.microgrid.ui;
 
 import android.app.AlertDialog;
@@ -20,6 +25,7 @@ public class OperatorProfileActivity extends SolarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize the activity, layout, and verify operator authentication
         super.onCreate(savedInstanceState);
         operators = ((SolarApplication) getApplication()).operators();
         if (!operators.signedIn()) {
@@ -122,6 +128,7 @@ public class OperatorProfileActivity extends SolarActivity {
     }
 
     private void detail(LinearLayout parent, String label, String value) {
+        // Add a detail row to the profile card
         TextView viewLabel = new TextView(this);
         viewLabel.setText(label);
         viewLabel.setTextSize(13);
@@ -139,11 +146,15 @@ public class OperatorProfileActivity extends SolarActivity {
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
+        // Create a background shape drawable
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;
     }
 
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private int dp(int value) { 
+        // Convert dp units to pixels
+        return Math.round(value * getResources().getDisplayMetrics().density); 
+    }
 }

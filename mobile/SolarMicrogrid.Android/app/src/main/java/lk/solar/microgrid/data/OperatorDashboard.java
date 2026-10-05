@@ -1,3 +1,8 @@
+/*
+ * File: OperatorDashboard.java
+ * Author: Lakshman K A P C
+ * Description: Data model for the operator dashboard.
+ */
 package lk.solar.microgrid.data;
 
 import org.json.JSONArray;
@@ -13,6 +18,7 @@ public class OperatorDashboard {
     public final List<Reservation> recentCompletedReservations;
 
     public OperatorDashboard(JSONObject source) throws org.json.JSONException {
+        // Parse JSON response into the dashboard model
         this.pendingCount = source.optInt("pendingCount");
         this.approvedFutureCount = source.optInt("approvedFutureCount");
         this.completedCount = source.optInt("completedCount");

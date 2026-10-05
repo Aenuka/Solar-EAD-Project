@@ -1,3 +1,8 @@
+/*
+ * File: OperatorLoginActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity for grid operator login.
+ */
 package lk.solar.microgrid.ui;
 
 import android.content.Intent;
@@ -30,6 +35,7 @@ public class OperatorLoginActivity extends SolarActivity {
     private boolean busy;
 
     @Override public void onCreate(Bundle state) {
+        // Initialize the activity and check for existing operator session
         super.onCreate(state);
         operators = ((SolarApplication) getApplication()).operators();
         if (operators.signedIn()) {
@@ -41,6 +47,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private void showLogin() {
+        // Display the operator login screen
         screen(R.string.operator_login_title, R.string.operator_login_intro);
         EditText username = field(R.string.operator_username, "", InputType.TYPE_CLASS_TEXT, 50);
         EditText password = passwordField();
@@ -68,10 +75,14 @@ public class OperatorLoginActivity extends SolarActivity {
         });
     }
 
-    private boolean alive() { return !isFinishing() && !isDestroyed(); }
+    private boolean alive() { 
+        // Check if the activity is still valid
+        return !isFinishing() && !isDestroyed(); 
+    }
 
     @SuppressWarnings("deprecation")
     private void screen(int title, int introduction) {
+        // Setup the base screen layout
         busy = false; actions.clear(); fields.clear();
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
@@ -92,6 +103,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private TextView text(String value, int size, int color, boolean bold) {
+        // Create a text view with specified formatting
         TextView view = new TextView(this);
         view.setText(value); SolarStyle.text(view, size, color, bold);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
@@ -101,6 +113,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private EditText field(int label, String initial, int inputType, int maxLength) {
+        // Create a text input field
         TextView caption = text(getString(label), 12, INK, true);
         ((LinearLayout.LayoutParams) caption.getLayoutParams()).topMargin = dp(18);
         EditText editor = new EditText(this);
@@ -116,6 +129,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private EditText passwordField() {
+        // Create a password input field
         EditText field = field(R.string.password, "", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD, 128);
         field.setSaveEnabled(false);
         field.setAutofillHints(View.AUTOFILL_HINT_PASSWORD);
@@ -123,6 +137,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private Button button(int label, boolean primary, Runnable action) {
+        // Create an interactive button
         Button button = new Button(this);
         button.setText(label); button.setTextSize(13); button.setAllCaps(false);
         button.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -138,6 +153,7 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private void setBusy(boolean value) {
+        // Toggle the loading state of the UI
         busy = value;
         progress.setVisibility(value ? View.VISIBLE : View.GONE);
         for (Button action : actions) action.setEnabled(!value && Boolean.TRUE.equals(action.getTag()));
@@ -146,24 +162,33 @@ public class OperatorLoginActivity extends SolarActivity {
     }
 
     private void showMessage(String value, boolean error) {
+        // Display a message to the user
         message.setText(value); message.setTextColor(error ? SolarStyle.RED : GREEN);
         message.setPadding(0, dp(14), 0, dp(10)); message.setVisibility(View.VISIBLE);
     }
 
     private boolean required(EditText... inputs) {
+        // Validate required fields
         for (EditText input : inputs) if (value(input).trim().isEmpty()) {
             input.setError(getString(R.string.required_fields)); input.requestFocus(); return false;
         }
         return true;
     }
 
-    private static String value(EditText input) { return input.getText().toString(); }
+    private static String value(EditText input) { 
+        // Get the value of a text input
+        return input.getText().toString(); 
+    }
 
     private GradientDrawable shape(int fill, int stroke) {
+        // Create a background shape drawable
         GradientDrawable shape = new GradientDrawable(); shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
         return shape;
     }
 
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private int dp(int value) { 
+        // Convert dp units to pixels
+        return Math.round(value * getResources().getDisplayMetrics().density); 
+    }
 }

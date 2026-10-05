@@ -1,3 +1,8 @@
+/*
+ * File: OperatorDashboardActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity displaying the dashboard for grid operators.
+ */
 package lk.solar.microgrid.ui;
 
 import android.content.Intent;
@@ -24,6 +29,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     private int dashboardGeneration;
 
     @Override protected void onNewIntent(Intent intent) {
+        // Handle new intents for navigation
         super.onNewIntent(intent);
         setIntent(intent);
         String destination = intent.getStringExtra(SolarNavigation.DESTINATION);
@@ -33,6 +39,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     @Override public void onCreate(Bundle state) {
+        // Initialize the activity, layout, and check if the operator is signed in
         super.onCreate(state);
         operators = ((SolarApplication) getApplication()).operators();
         if (!operators.signedIn()) {
@@ -64,6 +71,7 @@ public class OperatorDashboardActivity extends SolarActivity {
 
     @Override
     protected void onResume() {
+        // Reload dashboard data when the activity is resumed
         super.onResume();
         if (operators != null && operators.signedIn()) {
             loadDashboardData();
@@ -71,6 +79,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void loadDashboardData() {
+        // Fetch the latest dashboard data from the central API
         final int generation = ++dashboardGeneration;
         if (!swipeRefresh.isRefreshing()) {
             swipeRefresh.setRefreshing(true);
@@ -100,6 +109,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void renderDashboard(lk.solar.microgrid.data.OperatorDashboard dashboard) {
+        // Render the dashboard statistics and list of pending reservations
         content.removeAllViews();
 
         renderHeader();
@@ -130,6 +140,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private LinearLayout statCard(String title, String count, String label, int color) {
+        // Create a visual card for a dashboard statistic
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -165,6 +176,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void renderReservationCard(lk.solar.microgrid.data.Reservation r) {
+        // Render a card displaying details of a specific reservation
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         int statusColor = "COMPLETED".equals(r.status) ? GREEN : "PENDING".equals(r.status) ? SolarStyle.AMBER : SolarStyle.BLUE;
@@ -206,10 +218,51 @@ public class OperatorDashboardActivity extends SolarActivity {
         idParams.topMargin = dp(16);
         card.addView(idView, idParams);
 
-        TextView detailsView = new TextView(this);
+        // User NIC & Name
+        TextView userView = new TextView(this);
+        String displayUser = (r.prosumerName != null && !r.prosumerName.isEmpty()) ? r.prosumerName + " (" + r.prosumerNic + ")" : r.prosumerNic;
+        userView.setText("User: " + (displayUser != null && !displayUser.isEmpty() ? displayUser : "Unknown"));
+        userView.setTextSize(14); userView.setTextColor(INK);
+        LinearLayout.LayoutParams userParams = new LinearLayout.LayoutParams(-1, -2);
+        userParams.topMargin = dp(4);
+        card.addView(userView, userParams);
+
+        // Details (Type & Slots)
+        if (r.tradingType != null && !r.tradingType.isEmpty()) {
+            TextView detailsTxt = new TextView(this);
+            detailsTxt.setText("Type: " + r.tradingType + " | Slots: " + r.allocationSlots);
+            detailsTxt.setTextSize(14); detailsTxt.setTextColor(INK);
+            LinearLayout.LayoutParams detailsParams = new LinearLayout.LayoutParams(-1, -2);
+            detailsParams.topMargin = dp(4);
+            card.addView(detailsTxt, detailsParams);
+        }
+
+        // Formatted Date / Time
+        String formattedDate = r.reservationDate;
+        try {
+            java.text.SimpleDateFormat inFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+            inFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            java.util.Date date = inFormat.parse(r.reservationDate);
+            java.text.SimpleDateFormat outFormat = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault());
+            formattedDate = outFormat.format(date);
+        } catch (Exception e) {
+            try {
+                java.text.SimpleDateFormat inFormat = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+                java.util.Date date = inFormat.parse(r.reservationDate);
+                java.text.SimpleDateFormat outFormat = new java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault());
+                formattedDate = outFormat.format(date);
+            } catch (Exception ex) {}
+        }
+
+        TextView timeView = new TextView(this);
         String dateStr = "COMPLETED".equals(r.status) ?
             "Completed: " + r.source.optString("completedAt", r.source.optString("updatedAt", "Now"))
-            : "Reserved: " + r.reservationDate;
+            : "Reserved: " + formattedDate;
+        timeView.setText(dateStr);
+        timeView.setTextSize(14); timeView.setTextColor(INK);
+        LinearLayout.LayoutParams timeParams = new LinearLayout.LayoutParams(-1, -2);
+        timeParams.topMargin = dp(4);
+        card.addView(timeView, timeParams);
 
         detailsView.setText(r.windowLabel() + "\nReference · " + r.reservationId);
         detailsView.setTextSize(13); detailsView.setTextColor(MUTED);
@@ -219,12 +272,14 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private void renderHeader() {
+        // Render the dashboard header with welcome message and scan button
         SolarStyle.hero(content, "Overview", "Welcome back, " + (operators.getFullName() != null ? operators.getFullName() : "Operator") + ".");
         Button scan = button(R.string.scan_transaction_qr, true, () -> startActivity(new Intent(this, QrScannerActivity.class)));
         ((LinearLayout.LayoutParams) scan.getLayoutParams()).topMargin = 0;
     }
 
     private android.graphics.drawable.GradientDrawable shape(int fill, int stroke) {
+        // Create a background shape drawable
         android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
         shape.setColor(fill); shape.setCornerRadius(dp(8));
         if (stroke != 0) shape.setStroke(dp(1), stroke);
@@ -232,6 +287,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private TextView text(String value, int size, int color, boolean bold) {
+        // Create a text view with specified formatting
         TextView view = new TextView(this);
         view.setText(value); SolarStyle.text(view, size, color, bold);
         LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-1, -2);
@@ -241,6 +297,7 @@ public class OperatorDashboardActivity extends SolarActivity {
     }
 
     private Button button(int label, boolean primary, Runnable action) {
+        // Create an interactive button
         Button button = new Button(this);
         button.setText(label); button.setTextSize(13); button.setAllCaps(false);
         button.setTextColor(primary ? Color.WHITE : GREEN);
@@ -253,5 +310,8 @@ public class OperatorDashboardActivity extends SolarActivity {
         return button;
     }
 
-    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
+    private int dp(int value) { 
+        // Convert dp units to pixels
+        return Math.round(value * getResources().getDisplayMetrics().density); 
+    }
 }

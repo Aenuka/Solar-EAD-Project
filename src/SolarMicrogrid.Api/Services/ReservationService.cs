@@ -1,6 +1,6 @@
 /*
  * File: ReservationService.cs
- * Author: Sajith
+ * Author: Sajith & Lakshman K A P C
  * Description: Business logic for reservations (7-day rule, 12-hour rule, double booking).
  */
 
@@ -17,6 +17,7 @@ public class ReservationService
 
     public ReservationService(IReservationRepository repository, StationService stationService)
     {
+        // Initialize the reservation service with required dependencies
         _repository = repository;
         _stationService = stationService;
     }
@@ -24,6 +25,7 @@ public class ReservationService
     // ===== CREATE — 7-day rule + double booking + Chamithu allocation =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> CreateAsync(ReservationInput dto)
     {
+        // Create a new reservation enforcing 7-day and double-booking rules
         dto.ReservationDate = dto.ReservationDate.ToUniversalTime();
         // Rule 1: Within 7 days
         if (dto.ReservationDate > DateTime.UtcNow.AddDays(7))
@@ -83,6 +85,7 @@ public class ReservationService
     // ===== UPDATE — 12-hour rule + 7-day rule =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> UpdateAsync(string id, UpdateReservationInput dto)
     {
+        // Update an existing reservation enforcing the 12-hour notice rule
         dto.ReservationDate = dto.ReservationDate.ToUniversalTime();
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
@@ -137,6 +140,7 @@ public class ReservationService
     // ===== CANCEL — 12-hour rule + Chamithu release =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> CancelAsync(string id, CancelReservationInput dto)
     {
+        // Cancel a reservation enforcing the 12-hour notice rule
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
@@ -180,11 +184,15 @@ public class ReservationService
 
     // ===== HISTORY =====
     public async Task<List<EnergyReservation>> GetHistoryAsync(string nic)
-        => await _repository.GetByProsumerNicAsync(nic);
+    {
+        // Retrieve reservation history for a specific prosumer
+        return await _repository.GetByProsumerNicAsync(nic);
+    }
 
     // ===== DASHBOARD (Operator) =====
     public async Task<(List<EnergyReservation> pending, int approvedFutureCount, List<EnergyReservation> completed)> GetDashboardDataAsync()
     {
+        // Retrieve live dashboard data including pending, approved, and completed reservations
         var pending = await _repository.GetPendingAsync();
         var approvedFuture = await _repository.GetApprovedFutureAsync();
         var completed = await _repository.SearchAsync("COMPLETED", null, null, null, null);
@@ -194,15 +202,22 @@ public class ReservationService
 
     // ===== PENDING =====
     public async Task<List<EnergyReservation>> GetPendingAsync()
-        => await _repository.GetPendingAsync();
+    {
+        // Retrieve all pending reservations
+        return await _repository.GetPendingAsync();
+    }
 
     // ===== SEARCH =====
     public async Task<List<EnergyReservation>> SearchAsync(string? status, string? stationId, string? nic, DateTime? from, DateTime? to)
-        => await _repository.SearchAsync(status, stationId, nic, from, to);
+    {
+        // Search reservations based on various filters
+        return await _repository.SearchAsync(status, stationId, nic, from, to);
+    }
 
     // ===== APPROVED FUTURE COUNT =====
     public async Task<int> GetApprovedFutureCountAsync()
     {
+        // Count the number of approved future reservations
         var list = await _repository.GetApprovedFutureAsync();
         return list.Count;
     }
@@ -210,6 +225,7 @@ public class ReservationService
     // ===== TRANSACTION TOKEN (QR) =====
     public async Task<(bool success, string message, EnergyReservation? reservation)> GetTransactionAsync(string id, string nic)
     {
+        // Retrieve transaction details and generate a token if needed
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
@@ -252,6 +268,7 @@ public class ReservationService
     /// </summary>
     public async Task<(bool success, string message, EnergyReservation? reservation)> ApproveAsync(string id)
     {
+        // Approve a pending reservation
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
@@ -275,6 +292,7 @@ public class ReservationService
     /// </summary>
     public async Task<(bool success, string message, EnergyReservation? reservation)> VerifyTokenAsync(string token)
     {
+        // Verify a transaction token against server-side data
         if (string.IsNullOrWhiteSpace(token))
             return (false, "Token is required.", null);
 
@@ -338,6 +356,7 @@ public class ReservationService
     /// </summary>
     public async Task<(bool success, string message, EnergyReservation? reservation)> CompleteAsync(string id)
     {
+        // Finalize the energy transfer for an approved reservation
         var existing = await _repository.GetByIdAsync(id);
         if (existing is null)
             return (false, "Reservation not found.", null);
@@ -405,6 +424,7 @@ public class ReservationService
     /// </summary>
     private async Task<long> GetStationVersionAsync(string stationId)
     {
+        // Fetch the current station version required for concurrency checks
         var station = await _stationService.GetAsync(stationId, isStaff: true, CancellationToken.None);
         if (station is null)
             throw new InvalidOperationException($"Station {stationId} not found.");

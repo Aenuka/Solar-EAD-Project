@@ -1,3 +1,8 @@
+/*
+ * File: OperatorRepository.java
+ * Author: Lakshman K A P C
+ * Description: Repository for handling operator data and API requests.
+ */
 package lk.solar.microgrid.data;
 
 import android.content.Context;
@@ -26,16 +31,27 @@ public final class OperatorRepository {
     private interface Work<T> { T run() throws Exception; }
 
     public OperatorRepository(Context context, ApiClient api) {
+        // Initialize the repository with context and API client
         this.context = context.getApplicationContext();
         this.api = api;
     }
 
-    public boolean signedIn() { return token != null && expiresAt != null && expiresAt.isAfter(Instant.now()); }
+    public boolean signedIn() { 
+        // Check if the operator is currently signed in
+        return token != null && expiresAt != null && expiresAt.isAfter(Instant.now()); 
+    }
 
-    public String getFullName() { return fullName; }
-    public String getUsername() { return username; }
+    public String getFullName() { 
+        // Get the full name of the operator
+        return fullName; 
+    }
+    public String getUsername() { 
+        // Get the username of the operator
+        return username; 
+    }
 
     public void login(String username, String password, Callback<Void> callback) {
+        // Authenticate the operator with the central API
         run(() -> {
             JSONObject body = new JSONObject().put("username", username.trim()).put("password", password);
             JSONObject response = api.request("POST", "auth/staff/login", body, null);
@@ -62,10 +78,12 @@ public final class OperatorRepository {
     }
 
     public void logout() {
+        // Clear the operator session
         token = null; operatorId = null; fullName = null; role = null; expiresAt = null; username = null;
     }
 
     public void verifyTransaction(String transactionToken, Callback<Reservation> callback) {
+        // Verify a scanned transaction token
         run(() -> {
             if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
             try {
@@ -81,6 +99,7 @@ public final class OperatorRepository {
     }
 
     public void completeTransaction(String id, Callback<Reservation> callback) {
+        // Complete an approved energy transfer
         run(() -> {
             if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
             try {
@@ -95,7 +114,24 @@ public final class OperatorRepository {
         }, callback);
     }
 
+    public void approveTransaction(String id, Callback<Reservation> callback) {
+        // Approve a pending reservation
+        run(() -> {
+            if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
+            try {
+                JSONObject response = api.request("PATCH", "Reservations/" + java.net.URLEncoder.encode(id, "UTF-8") + "/approve", null, token);
+                return new Reservation(response);
+            } catch (ApiException e) {
+                if (e.status == 403) {
+                    throw new ApiException(403, "Grid Operator authorization required.");
+                }
+                throw e;
+            }
+        }, callback);
+    }
+
     public void loadDashboard(Callback<OperatorDashboard> callback) {
+        // Load dashboard data for the operator
         run(() -> {
             if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
             try {
@@ -111,6 +147,7 @@ public final class OperatorRepository {
     }
 
     public void searchCompletedOperations(Callback<java.util.List<Reservation>> callback) {
+        // Search for completed operations
         run(() -> {
             if (!signedIn()) throw new ApiException(401, "Operator session has expired.");
             try {
@@ -136,6 +173,7 @@ public final class OperatorRepository {
     }
 
     private <T> void run(Work<T> work, Callback<T> callback) {
+        // Execute a background task and post the result to the main thread
         executor.execute(() -> {
             try { T result = work.run(); main.post(() -> callback.success(result)); }
             catch (ApiException e) {
@@ -147,5 +185,8 @@ public final class OperatorRepository {
             catch (Exception e) { fail(callback, R.string.contract_error); }
         });
     }
-    private <T> void fail(Callback<T> callback, int messageId) { main.post(() -> callback.failure(0, context.getString(messageId))); }
+    private <T> void fail(Callback<T> callback, int messageId) { 
+        // Handle a failed operation and dispatch the error
+        main.post(() -> callback.failure(0, context.getString(messageId))); 
+    }
 }

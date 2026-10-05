@@ -1,6 +1,6 @@
 /*
  * File: Reservations.cs
- * Author: Sajith
+ * Author: Sajith & Lakshman K A P C
  * Description: DTOs for reservation operations.
  */
 
@@ -56,7 +56,9 @@ public class ReservationResponse
     public string Id { get; set; } = string.Empty;
     public string ReservationId { get; set; } = string.Empty;
     public string ProsumerNic { get; set; } = string.Empty;
+    public string ProsumerName { get; set; } = string.Empty;
     public string StationId { get; set; } = string.Empty;
+    public string StationName { get; set; } = string.Empty;
     public string SlotId { get; set; } = string.Empty;
     public string? StationName { get; set; }
     public string? StationAddress { get; set; }

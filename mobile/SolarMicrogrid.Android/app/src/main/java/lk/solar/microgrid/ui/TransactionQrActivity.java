@@ -1,3 +1,8 @@
+/*
+ * File: TransactionQrActivity.java
+ * Author: Lakshman K A P C
+ * Description: Android activity displaying the transaction QR for a prosumer.
+ */
 package lk.solar.microgrid.ui;
 
 import android.graphics.Bitmap;
@@ -44,6 +49,7 @@ public final class TransactionQrActivity extends SolarActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize the activity and fetch transaction details
         super.onCreate(savedInstanceState);
         reservations = ((SolarApplication) getApplication()).reservations();
 
@@ -58,6 +64,7 @@ public final class TransactionQrActivity extends SolarActivity {
     }
 
     private void buildUi() {
+        // Build the UI for displaying the transaction QR
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setBackgroundColor(SolarStyle.BACKGROUND);
@@ -128,6 +135,7 @@ public final class TransactionQrActivity extends SolarActivity {
     }
 
     private void addRow(LinearLayout parent, String label, String value) {
+        // Add a row of details to the booking card
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(0, dp(4), 0, dp(4));
@@ -146,6 +154,7 @@ public final class TransactionQrActivity extends SolarActivity {
     }
 
     private void fetchToken() {
+        // Fetch the transaction token from the central API
         if (id == null || id.isEmpty()) {
             showError("Invalid reservation ID.");
             return;
@@ -180,12 +189,14 @@ public final class TransactionQrActivity extends SolarActivity {
     }
 
     private void showError(String message) {
+        // Display an error message to the prosumer
         errorText.setText(message);
         errorText.setVisibility(View.VISIBLE);
         Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     private void displayQrCode(String token) {
+        // Generate and display the QR code bitmap
         try {
             BitMatrix result = new MultiFormatWriter().encode(token, BarcodeFormat.QR_CODE, 512, 512, null);
             int w = result.getWidth();
@@ -207,5 +218,8 @@ public final class TransactionQrActivity extends SolarActivity {
         }
     }
 
-    private int dp(int v) { return Math.round(v * getResources().getDisplayMetrics().density); }
+    private int dp(int v) { 
+        // Convert dp units to pixels
+        return Math.round(v * getResources().getDisplayMetrics().density); 
+    }
 }
