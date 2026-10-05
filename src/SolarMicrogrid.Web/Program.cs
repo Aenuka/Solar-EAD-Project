@@ -1,14 +1,23 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures.Infrastructure;
 using SolarMicrogrid.Web.ApiClients;
 using SolarMicrogrid.Web.Security;
+using SolarMicrogrid.Web.Presentation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews(options =>
+builder.Services.AddControllers(options =>
 {
-    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.Add<PortalAntiforgeryFilter>();
     options.Filters.Add<ApiExceptionFilter>();
+    options.Filters.Add<PortalNoticeFilter>();
 });
+builder.Services.AddAntiforgery();
+builder.Services.AddDataProtection();
+// Keep encrypted redirect notices without registering views or Razor services.
+builder.Services.AddSingleton<TempDataSerializer, PortalNoticeSerializer>();
+builder.Services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
+builder.Services.AddSingleton<ITempDataDictionaryFactory, TempDataDictionaryFactory>();
 builder.AddMicrogridApiClient();
 builder.AddPortalAuthentication();
 

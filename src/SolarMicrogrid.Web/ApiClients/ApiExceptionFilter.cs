@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Web.ViewModels;
 
 namespace SolarMicrogrid.Web.ApiClients;
@@ -25,15 +24,11 @@ public sealed class ApiExceptionFilter : IAsyncExceptionFilter
         else
         {
             var model = new ErrorViewModel(failure.StatusCode, failure.Message);
-            var viewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), context.ModelState)
+            context.Result = new ReactPageResult
             {
-                Model = model
-            };
-            context.Result = new ViewResult
-            {
-                ViewName = "~/Views/Shared/Error.cshtml",
+                Page = "Error",
                 StatusCode = failure.StatusCode,
-                ViewData = viewData
+                Model = model
             };
         }
 

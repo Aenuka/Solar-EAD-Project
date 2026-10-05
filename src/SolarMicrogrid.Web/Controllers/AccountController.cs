@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolarMicrogrid.Web.Presentation;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
 using SolarMicrogrid.Web.ViewModels;
 
 namespace SolarMicrogrid.Web.Controllers;
 
-public sealed class AccountController(MicrogridApiClient api) : Controller
+public sealed class AccountController(MicrogridApiClient api) : PortalController
 {
     [AllowAnonymous, HttpGet]
     public IActionResult Login(bool expired = false)
@@ -19,8 +20,8 @@ public sealed class AccountController(MicrogridApiClient api) : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        ViewBag.Expired = expired;
-        return View(new LoginViewModel());
+        PageMeta["Expired"] = expired;
+        return ReactPage(new LoginViewModel());
     }
 
     [AllowAnonymous, HttpPost]
@@ -28,7 +29,7 @@ public sealed class AccountController(MicrogridApiClient api) : Controller
     {
         if (!ModelState.IsValid)
         {
-            return View(model);
+            return ReactPage(model);
         }
 
         try
@@ -57,7 +58,7 @@ public sealed class AccountController(MicrogridApiClient api) : Controller
         catch (ApiFailureException exception)
         {
             ModelState.AddModelError("", exception.Message);
-            return View(model);
+            return ReactPage(model);
         }
     }
 
@@ -85,6 +86,6 @@ public sealed class AccountController(MicrogridApiClient api) : Controller
     public IActionResult AccessDenied()
     {
         Response.StatusCode = 403;
-        return View("~/Views/Shared/Error.cshtml", new ErrorViewModel(403, "Your role does not have access to this page."));
+        return ReactPage(new ErrorViewModel(403, "Your role does not have access to this page."), page: "Error");
     }
 }

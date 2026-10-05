@@ -37,11 +37,11 @@ import lk.solar.microgrid.data.ReservationRepository;
  * Modify an existing reservation via the API (PUT /reservations/{id}).
  * Author: Sajith
  */
-public final class ModifyBookingActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77),
-            INK = Color.rgb(23, 61, 50),
-            MUTED = Color.rgb(107, 123, 117),
-            RED = Color.rgb(155, 66, 44);
+public final class ModifyBookingActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN,
+            INK = SolarStyle.INK,
+            MUTED = SolarStyle.MUTED,
+            RED = SolarStyle.RED;
 
     private ReservationRepository reservations;
     private LinearLayout content;
@@ -76,15 +76,15 @@ public final class ModifyBookingActivity extends Activity {
     private void buildUi(String originalSlotId, String originalDate, double originalEnergy, String originalTrading) {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(24), dp(20), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
         TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
+        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.modify_booking), 28, INK, true);
         ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
         text("Update your reservation details.", 14, MUTED, false);
@@ -204,8 +204,7 @@ public final class ModifyBookingActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setText(value); SolarStyle.text(v, size, color, bold);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = dp(6);
         content.addView(v, lp);
@@ -221,10 +220,10 @@ public final class ModifyBookingActivity extends Activity {
         editor.setFilters(new InputFilter[]{new InputFilter.LengthFilter(maxLength)});
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE); bg.setCornerRadius(dp(8));
-        bg.setStroke(dp(1), Color.rgb(213, 224, 214));
+        bg.setStroke(dp(1), SolarStyle.BORDER);
         editor.setBackground(bg);
         editor.setPadding(dp(13), dp(12), dp(13), dp(12));
-        editor.setMinimumHeight(dp(50));
+        SolarStyle.field(editor);
         content.addView(editor, new LinearLayout.LayoutParams(-1, -2));
         fields.add(editor);
         return editor;
@@ -234,8 +233,8 @@ public final class ModifyBookingActivity extends Activity {
         Button b = new Button(this);
         b.setText(label); b.setTextSize(13); b.setAllCaps(false);
         b.setTextColor(primary ? Color.WHITE : GREEN);
-        b.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.rgb(234, 240, 227)));
-        b.setMinHeight(dp(48));
+        SolarStyle.button(b, primary);
+        b.setMinHeight(dp(52));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(12);
         content.addView(b, lp);

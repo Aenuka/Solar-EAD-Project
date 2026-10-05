@@ -1,9 +1,24 @@
 <resources>
-    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#176C4D</item>
+    <style name="AppThemeBase" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:colorAccent">@color/solar_blue</item>
+        <item name="android:colorControlActivated">@color/solar_blue</item>
+        <item name="android:textColorPrimary">@color/solar_ink</item>
+        <item name="android:textColorSecondary">@color/solar_muted</item>
+        <item name="android:textColorHint">@color/solar_muted</item>
+        <item name="android:statusBarColor">@color/solar_background</item>
+        <item name="android:navigationBarColor">@color/solar_background</item>
+        <item name="android:alertDialogTheme">@style/SolarDialogTheme</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#F5F7F3</item>
+        <item name="android:windowBackground">@color/solar_background</item>
+    </style>
+    <style name="AppTheme" parent="AppThemeBase" />
+    <style name="SolarDialogTheme" parent="android:style/Theme.Material.Light.Dialog.Alert">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:colorAccent">@color/solar_blue</item>
+        <item name="android:textColorPrimary">@color/solar_ink</item>
+        <item name="android:textColorSecondary">@color/solar_muted</item>
+        <item name="android:windowBackground">@drawable/dialog_surface</item>
     </style>
 </resources>

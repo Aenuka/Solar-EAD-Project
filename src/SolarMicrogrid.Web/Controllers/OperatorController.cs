@@ -8,11 +8,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarMicrogrid.Contracts;
 using SolarMicrogrid.Web.ApiClients;
+using SolarMicrogrid.Web.Presentation;
 
 namespace SolarMicrogrid.Web.Controllers;
 
-[Authorize(Roles = "GridOperator")]
-public class OperatorController : Controller
+[Authorize(Roles = Roles.GridOperator)]
+public class OperatorController : PortalController
 {
     private readonly MicrogridApiClient _api;
 
@@ -29,34 +30,34 @@ public class OperatorController : Controller
         try
         {
             var pending = await _api.GetPendingReservationsAsync(ct);
-            var allBookings = await _api.SearchReservationsAsync(null, null, null, ct) 
+            var allBookings = await _api.SearchReservationsAsync(null, null, null, ct)
                               ?? new List<ReservationResponse>();
 
             var now = DateTime.UtcNow;
 
-            ViewBag.PendingCount = pending.Count;
-            ViewBag.ApprovedFutureCount = allBookings.Count(b => 
+            PageMeta["PendingCount"] = pending.Count;
+            PageMeta["ApprovedFutureCount"] = allBookings.Count(b =>
                 b.Status == "APPROVED" && b.ReservationDate > now);
-            ViewBag.CompletedCount = allBookings.Count(b => b.Status == "COMPLETED");
-            
-            ViewBag.PendingReservations = pending.Take(5).ToList();
-            ViewBag.RecentCompleted = allBookings
+            PageMeta["CompletedCount"] = allBookings.Count(b => b.Status == "COMPLETED");
+
+            PageMeta["PendingReservations"] = pending.Take(5).ToList();
+            PageMeta["RecentCompleted"] = allBookings
                 .Where(b => b.Status == "COMPLETED")
                 .OrderByDescending(b => b.CompletedAt ?? b.UpdatedAt)
                 .Take(5)
                 .ToList();
 
-            return View();
+            return ReactPage();
         }
         catch (Exception ex)
         {
-            ViewBag.Error = ex.Message;
-            ViewBag.PendingCount = 0;
-            ViewBag.ApprovedFutureCount = 0;
-            ViewBag.CompletedCount = 0;
-            ViewBag.PendingReservations = new List<ReservationResponse>();
-            ViewBag.RecentCompleted = new List<ReservationResponse>();
-            return View();
+            PageMeta["Error"] = ex.Message;
+            PageMeta["PendingCount"] = 0;
+            PageMeta["ApprovedFutureCount"] = 0;
+            PageMeta["CompletedCount"] = 0;
+            PageMeta["PendingReservations"] = new List<ReservationResponse>();
+            PageMeta["RecentCompleted"] = new List<ReservationResponse>();
+            return ReactPage();
         }
     }
 }

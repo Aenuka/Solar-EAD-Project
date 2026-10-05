@@ -18,12 +18,12 @@ import lk.solar.microgrid.R;
  * Read-only summary of a single reservation.
  * Author: Sajith
  */
-public final class BookingSummaryActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77),
-            INK = Color.rgb(23, 61, 50),
-            MUTED = Color.rgb(107, 123, 117),
-            AMBER = Color.rgb(191, 132, 0),
-            RED = Color.rgb(155, 66, 44);
+public final class BookingSummaryActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN,
+            INK = SolarStyle.INK,
+            MUTED = SolarStyle.MUTED,
+            AMBER = SolarStyle.AMBER,
+            RED = SolarStyle.RED;
 
     private LinearLayout content;
 
@@ -35,15 +35,15 @@ public final class BookingSummaryActivity extends Activity {
     private void buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(24), dp(20), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
         TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
+        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.booking_summary_title), 28, INK, true);
         ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
         text("Reservation details:", 14, MUTED, false);
@@ -61,11 +61,11 @@ public final class BookingSummaryActivity extends Activity {
         // Card with details
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(16), dp(16), dp(16), dp(16));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE); bg.setCornerRadius(dp(12));
-        bg.setStroke(dp(1), Color.rgb(213, 224, 214));
-        card.setBackground(bg);
+        bg.setStroke(dp(1), SolarStyle.BORDER);
+        SolarStyle.card(card);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(16);
         content.addView(card, lp);
@@ -93,8 +93,8 @@ public final class BookingSummaryActivity extends Activity {
         close.setText(R.string.close_button);
         close.setTextSize(13); close.setAllCaps(false);
         close.setTextColor(Color.WHITE);
-        close.setBackgroundTintList(ColorStateList.valueOf(MUTED));
-        close.setMinHeight(dp(48));
+        SolarStyle.button(close, false);
+        close.setMinHeight(dp(52));
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(-1, -2);
         blp.topMargin = dp(10);
         content.addView(close, blp);
@@ -116,7 +116,7 @@ public final class BookingSummaryActivity extends Activity {
         TextView l = new TextView(this);
         l.setText(label + ": ");
         l.setTextSize(13); l.setTextColor(MUTED);
-        l.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        l.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         row.addView(l);
 
         TextView v = new TextView(this);
@@ -128,8 +128,7 @@ public final class BookingSummaryActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setText(value); SolarStyle.text(v, size, color, bold);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = dp(6);
         content.addView(v, lp);

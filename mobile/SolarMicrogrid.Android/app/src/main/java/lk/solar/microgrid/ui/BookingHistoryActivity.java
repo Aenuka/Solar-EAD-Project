@@ -28,12 +28,12 @@ import lk.solar.microgrid.data.ReservationRepository;
  * Shows the prosumer's reservation history (live from the API).
  * Author: Sajith
  */
-public final class BookingHistoryActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77),
-            INK = Color.rgb(23, 61, 50),
-            MUTED = Color.rgb(107, 123, 117),
-            AMBER = Color.rgb(191, 132, 0),
-            RED = Color.rgb(155, 66, 44);
+public final class BookingHistoryActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN,
+            INK = SolarStyle.INK,
+            MUTED = SolarStyle.MUTED,
+            AMBER = SolarStyle.AMBER,
+            RED = SolarStyle.RED;
 
     private ReservationRepository reservations;
     private LinearLayout content, listContainer;
@@ -54,15 +54,15 @@ public final class BookingHistoryActivity extends Activity {
     private void buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(24), dp(20), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
 
         TextView brand = text(getString(R.string.brand), 12, GREEN, true);
-        brand.setLetterSpacing(0.13f);
+        SolarStyle.brand(brand);
         TextView heading = text(getString(R.string.my_bookings), 28, INK, true);
         ((LinearLayout.LayoutParams) heading.getLayoutParams()).topMargin = dp(24);
         text("All your reservations, newest first.", 14, MUTED, false);
@@ -110,12 +110,12 @@ public final class BookingHistoryActivity extends Activity {
     private View card(Reservation r) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(Color.WHITE);
         bg.setCornerRadius(dp(10));
-        bg.setStroke(dp(1), Color.rgb(213, 224, 214));
-        card.setBackground(bg);
+        bg.setStroke(dp(1), SolarStyle.BORDER);
+        SolarStyle.card(card);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(10);
         card.setLayoutParams(lp);
@@ -123,7 +123,7 @@ public final class BookingHistoryActivity extends Activity {
         TextView rid = new TextView(this);
         rid.setText(r.reservationId.isEmpty() ? r.id : r.reservationId);
         rid.setTextSize(15); rid.setTextColor(INK);
-        rid.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        rid.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         card.addView(rid);
 
         TextView meta = new TextView(this);
@@ -139,7 +139,7 @@ public final class BookingHistoryActivity extends Activity {
 
         TextView status = new TextView(this);
         status.setText(r.status);
-        status.setTextSize(12); status.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        status.setTextSize(13); status.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         status.setTextColor(statusColor(r.status));
         status.setPadding(0, dp(6), 0, 0);
         card.addView(status);
@@ -148,10 +148,10 @@ public final class BookingHistoryActivity extends Activity {
         if ("PENDING".equals(r.status) || "APPROVED".equals(r.status)) {
             Button modify = new Button(this);
             modify.setText(R.string.modify_booking);
-            modify.setAllCaps(false); modify.setTextSize(12);
+            modify.setAllCaps(false); modify.setTextSize(13);
             modify.setTextColor(GREEN);
-            modify.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(234, 240, 227)));
-            modify.setMinHeight(dp(40));
+            SolarStyle.button(modify, false);
+            modify.setMinHeight(dp(52));
             LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(-1, -2);
             mlp.topMargin = dp(10);
             card.addView(modify, mlp);
@@ -171,10 +171,10 @@ public final class BookingHistoryActivity extends Activity {
         if ("PENDING".equals(r.status) || "APPROVED".equals(r.status)) {
             Button cancel = new Button(this);
             cancel.setText(getString(R.string.cancel_booking));
-            cancel.setAllCaps(false); cancel.setTextSize(12);
+            cancel.setAllCaps(false); cancel.setTextSize(13);
             cancel.setTextColor(RED);
-            cancel.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(250, 235, 230)));
-            cancel.setMinHeight(dp(40));
+            SolarStyle.danger(cancel);
+            cancel.setMinHeight(dp(52));
             LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(-1, -2);
             clp.topMargin = dp(10);
             card.addView(cancel, clp);
@@ -185,10 +185,10 @@ public final class BookingHistoryActivity extends Activity {
         if ("APPROVED".equals(r.status)) {
             Button qrBtn = new Button(this);
             qrBtn.setText("Show Transaction QR");
-            qrBtn.setAllCaps(false); qrBtn.setTextSize(12);
+            qrBtn.setAllCaps(false); qrBtn.setTextSize(13);
             qrBtn.setTextColor(Color.WHITE);
-            qrBtn.setBackgroundTintList(ColorStateList.valueOf(GREEN));
-            qrBtn.setMinHeight(dp(40));
+            SolarStyle.button(qrBtn, true);
+            qrBtn.setMinHeight(dp(52));
             LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(-1, -2);
             qlp.topMargin = dp(10);
             card.addView(qrBtn, qlp);
@@ -249,8 +249,7 @@ public final class BookingHistoryActivity extends Activity {
 
     private TextView text(String value, int size, int color, boolean bold) {
         TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        if (bold) v.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        v.setText(value); SolarStyle.text(v, size, color, bold);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = dp(6);
         content.addView(v, lp);
@@ -261,8 +260,8 @@ public final class BookingHistoryActivity extends Activity {
         Button b = new Button(this);
         b.setText(label); b.setTextSize(13); b.setAllCaps(false);
         b.setTextColor(primary ? Color.WHITE : GREEN);
-        b.setBackgroundTintList(ColorStateList.valueOf(primary ? GREEN : Color.rgb(234, 240, 227)));
-        b.setMinHeight(dp(48));
+        SolarStyle.button(b, primary);
+        b.setMinHeight(dp(52));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.topMargin = dp(12);
         content.addView(b, lp);

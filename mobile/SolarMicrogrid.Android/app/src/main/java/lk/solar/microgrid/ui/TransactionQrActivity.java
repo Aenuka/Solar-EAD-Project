@@ -24,10 +24,10 @@ import lk.solar.microgrid.SolarApplication;
 import lk.solar.microgrid.data.Reservation;
 import lk.solar.microgrid.data.ReservationRepository;
 
-public final class TransactionQrActivity extends Activity {
-    private static final int GREEN = Color.rgb(23, 108, 77);
-    private static final int INK = Color.rgb(23, 61, 50);
-    private static final int MUTED = Color.rgb(107, 123, 117);
+public final class TransactionQrActivity extends SolarActivity {
+    private static final int GREEN = SolarStyle.GREEN;
+    private static final int INK = SolarStyle.INK;
+    private static final int MUTED = SolarStyle.MUTED;
 
     private ReservationRepository reservations;
     private LinearLayout content;
@@ -60,10 +60,10 @@ public final class TransactionQrActivity extends Activity {
     private void buildUi() {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(245, 247, 243));
+        scroll.setBackgroundColor(SolarStyle.BACKGROUND);
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(20), dp(24), dp(20), dp(32));
+        content.setPadding(dp(24), dp(24), dp(24), dp(36));
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         setContentView(scroll);
@@ -72,7 +72,7 @@ public final class TransactionQrActivity extends Activity {
         title.setText("Transaction QR");
         title.setTextSize(28);
         title.setTextColor(INK);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         content.addView(title);
 
         TextView subtitle = new TextView(this);
@@ -85,7 +85,7 @@ public final class TransactionQrActivity extends Activity {
         // Booking details
         LinearLayout detailsCard = new LinearLayout(this);
         detailsCard.setOrientation(LinearLayout.VERTICAL);
-        detailsCard.setBackgroundColor(Color.WHITE);
+        SolarStyle.card(detailsCard);
         detailsCard.setPadding(dp(16), dp(16), dp(16), dp(16));
         content.addView(detailsCard, new LinearLayout.LayoutParams(-1, -2));
 
@@ -108,7 +108,7 @@ public final class TransactionQrActivity extends Activity {
         content.addView(qrCodeView);
 
         errorText = new TextView(this);
-        errorText.setTextColor(Color.RED);
+        errorText.setTextColor(SolarStyle.RED);
         errorText.setTextSize(14);
         errorText.setPadding(0, dp(16), 0, 0);
         errorText.setVisibility(View.GONE);
@@ -134,7 +134,7 @@ public final class TransactionQrActivity extends Activity {
         TextView l = new TextView(this);
         l.setText(label + ": ");
         l.setTextColor(MUTED);
-        l.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        l.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         row.addView(l);
 
         TextView v = new TextView(this);
@@ -154,7 +154,7 @@ public final class TransactionQrActivity extends Activity {
             public void success(Reservation result) {
                 if (isFinishing() || isDestroyed()) return;
                 progress.setVisibility(View.GONE);
-                
+
                 String token = result.transactionToken;
                 if (token == null || token.isEmpty()) {
                     showError("No transaction token received from the server.");
@@ -197,7 +197,7 @@ public final class TransactionQrActivity extends Activity {
             }
             Bitmap bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
             bitmap.setPixels(pixels, 0, 512, 0, 0, w, h);
-            
+
             qrCodeView.setImageBitmap(bitmap);
             qrCodeView.setVisibility(View.VISIBLE);
         } catch (Exception e) {

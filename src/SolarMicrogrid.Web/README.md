@@ -1,54 +1,91 @@
-# Understanding the staff portal
+# React staff portal
 
-This project is the MVC client for the API. It uses the same readable C# and
-one-type-per-file organization as the supplied Julio Casal examples. The
-examples use Minimal APIs rather than MVC, so this portal keeps its existing
-controllers, views, cookie authentication, and antiforgery protection.
+The interface uses Apple-inspired system typography, white and grey surfaces,
+compact translucent navigation, and blue actions. On phones, sign-in comes
+before the illustration, dashboard metrics become readable rows, and tables
+support horizontal keyboard scrolling. Motion respects the device preference.
 
-Read these files in order:
+The web UI is React JSX with Tailwind CSS, built by Vite. ASP.NET Core hosts the
+compiled assets and keeps the existing controller routes, server-side validation,
+cookie authentication, antiforgery protection, and API client. The REST API,
+MongoDB rules, shared DTOs, and Android application are unchanged.
 
-1. `Program.cs` configures MVC, registers the API client and authentication, then
-   runs the middleware and the existing MVC route.
-2. `ApiClients/ApiClientExtensions.cs` configures the API address and HTTP timeouts.
-   Its registration extension follows the tutorial's short-startup approach.
-3. `Security/AuthenticationExtensions.cs` configures the browser session cookie.
-   It calls `auth/me` to check whether the stored API token is still valid. When
-   the API revokes a session, the portal also signs the browser out.
-4. `Controllers/` validates forms, calls the API, and chooses a view or redirect.
-   Business rules such as station capacity and deactivation decisions stay in
-   the API. Controllers do not connect to MongoDB.
-5. `ViewModels/` contains one class per form or display model. Required/range
-   attributes validate submitted forms; `StationSlotForm` converts Sri Lanka
-   local times to timestamps containing a UTC offset.
-6. `Views/` contains the existing Razor pages, with expanded layout and control
-   blocks. Form names, actions, hidden version fields, and page content remain
-   the same. MVC still generates antiforgery tokens for POST forms.
-7. `ApiClients/MicrogridApiClient.cs` sends requests with the API token and reads
-   responses. `ApiFailureException` carries errors; `ApiExceptionFilter` handles
-   failures that a controller has not already displayed in the form.
+## Run
 
-For example, creating a staff account starts in `StaffController.Create`.
-Invalid form values return the same view with validation messages. A valid form
-becomes a `CreateStaffRequest` and is posted to `staff-users`. The API checks the
-Backoffice role, validates the request, hashes the password, and writes MongoDB.
-The portal redirects to the staff list only after the API succeeds.
-
-The browser uses an encrypted HTTP-only cookie, while the API uses a JWT bearer
-token. These are the existing two parts of sign-in, not alternative mechanisms.
-Logging out calls the API to revoke the account's sessions and then clears the
-browser cookie. Neither passwords nor JWTs are rendered into the HTML.
-
-The shared DTO names, namespaces, constructors, annotations, and JSON fields are
-unchanged. The [backend guide](../SolarMicrogrid.Api/README.md) explains the API
-structure and how it relates to the tutorials.
-
-From the repository root, verify the complete .NET flow with:
+Install Node.js 20.19+ (or 22.12+) and npm, alongside .NET 10 and the existing API
+prerequisites. From the repository root:
 
 ```sh
-dotnet build SolarMicrogrid.sln
-python3 scripts/verify.py --no-build
+python3 scripts/run_dev.py
 ```
 
-`tests/test_01_web_contract.py` covers failed sign-in, invalid forms, logout, and
-revoked browser sessions. The existing integration tests also cover role access,
-antiforgery, staff/profile changes, decisions, and station forms.
+`dotnet build` installs the locked npm dependencies when needed and builds the
+frontend automatically. `dotnet publish` includes the generated UI. The staff
+portal remains at <http://localhost:5081>.
+
+For frontend development, keep the API and web application running, then use:
+
+```sh
+cd src/SolarMicrogrid.Web/ClientApp
+npm run dev
+```
+
+This watches JSX/CSS and rebuilds the assets served by ASP.NET Core. Refresh the
+browser after a change; there is no separate frontend origin or CORS setup.
+
+## Structure
+
+- `ClientApp/src/main.jsx` mounts React and the rendering error boundary.
+- `ClientApp/src/App.jsx` provides navigation, session-aware layout, feedback,
+  and form submission. All screens use existing `/Account`, `/Staff`,
+  `/Prosumers`, `/Stations`, and `/Bookings` URLs, including direct links.
+- `ClientApp/src/pages/` contains account, station, and booking JSX components.
+- `ClientApp/src/components.jsx` shares accessible forms, dialogs, tables,
+  pagination, notices, and cards.
+- `ClientApp/src/styles.css` imports Tailwind and defines the neutral surfaces,
+  system typography, blue actions, responsive navigation, and reduced-motion styles.
+- `ClientApp/src/SolarScene.jsx` draws the local solar illustration used by the
+  sign-in and overview screens, without loading external images.
+- `Presentation/ReactPageResult.cs` sends controller page data in a React
+  bootstrap document or JSON when `Accept: application/json` is requested.
+- `Controllers/` and `ViewModels/` retain existing form binding, validation,
+  version checks, and API calls. Controllers inherit `ControllerBase` through
+  `PortalController` and return explicit `ReactPageResult` responses. There are
+  no `View(...)` calls, view engines, or Razor services. Razor compilation is
+  disabled for both build and publish.
+- `Security/PortalAntiforgeryFilter.cs` validates unsafe HTTP requests without
+  depending on the view framework. Encrypted redirect notices use the standard
+  cookie TempData provider, registered independently of view services.
+- `Security/AuthenticationExtensions.cs` checks the server-held API token and
+  rejects revoked browser sessions. Passwords are excluded from page JSON;
+  bearer tokens remain inside the encrypted HTTP-only session cookie.
+
+Initial documents contain safely escaped JSON, an antiforgery token, and the
+compiled module/CSS references. React renders all UI markup. Form submissions
+use `FormData`, preserve repeated schedule-day values and optimistic concurrency
+versions, and request JSON. Redirects return fresh page data and tokens. Invalid
+forms retain non-secret server values and display validation messages. Navigation
+links load their server route, so refresh, bookmarks, and back/forward work.
+
+All station date/time inputs and displays use Sri Lanka time. Protected staff
+access controls, Backoffice-only actions, and server authorization remain intact.
+The old `.cshtml`, Bootstrap grid, and imperative station DOM scripts are removed.
+
+## Verify
+
+```sh
+dotnet build SolarMicrogrid.sln --disable-build-servers -m:1 /p:UseSharedCompilation=false
+python3 scripts/verify.py --no-build
+cd src/SolarMicrogrid.Web/ClientApp
+npm test
+npm run build
+```
+
+Python tests exercise the real API and isolated MongoDB, including both HTML
+bootstrap and JSON form responses, authentication, permissions, concurrency,
+staff/prosumer lifecycle, and station operations. React interaction tests cover
+form submissions, validation, role-specific controls, booking approval, network
+failures, and pagination filters.
+
+Frontend references: [React root API](https://react.dev/reference/react-dom/client/createRoot)
+and [Tailwind with Vite](https://tailwindcss.com/docs/installation/using-vite).

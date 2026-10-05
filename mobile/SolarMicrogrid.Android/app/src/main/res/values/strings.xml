@@ -1,8 +1,8 @@
 <resources>
     <string name="my_account">My account</string>
     <string name="app_name">Solar Microgrid</string>
-    <string name="brand">SOLAR / MICROGRID</string>
-    <string name="welcome">Your energy.\nYour community.</string>
+    <string name="brand">Solar Microgrid</string>
+    <string name="welcome">Clean energy.\nConnected people.</string>
     <string name="login_intro">Sign in to manage your prosumer account.</string>
     <string name="nic">National Identity Card number</string>
     <string name="nic_hint">12 digits or your old NIC ending in V/X</string>
@@ -96,6 +96,7 @@
 
     <!-- ===== Operator strings ===== -->
     <string name="operator_login_title">Grid Operator Login</string>
+    <string name="operator_login_intro">Sign in to manage your grid and energy transfers.</string>
     <string name="operator_username">Username</string>
     <string name="back_to_prosumer_login">Back to Prosumer Login</string>
     <string name="grid_operator_link">Grid Operator Login</string>

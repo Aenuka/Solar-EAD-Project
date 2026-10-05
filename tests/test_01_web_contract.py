@@ -1,4 +1,6 @@
-"""MVC form/session regressions for the tutorial-style .NET refactor."""
+"""React portal JSON form/session regression tests."""
+from portal_contract import page_data
+
 import http.cookiejar
 import os
 import re
@@ -24,13 +26,14 @@ class WebContractTests(unittest.TestCase):
     def setUp(self):
         self.cookies = http.cookiejar.CookieJar()
         self.browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookies))
+        self.browser.addheaders = [("Accept", "application/json")]
 
     def get(self, path):
         with self.browser.open(WEB + path, timeout=20) as response:
             return response.read().decode(), response.url
 
     def post(self, path, data, html):
-        token = re.search(r'name="__RequestVerificationToken"[^>]*value="([^"]+)"', html).group(1)
+        token = page_data(html)["csrfToken"]
         body = urllib.parse.urlencode({**data, "__RequestVerificationToken": token}).encode()
         with self.browser.open(WEB + path, body, timeout=20) as response:
             return response.read().decode(), response.url
@@ -64,6 +67,27 @@ class WebContractTests(unittest.TestCase):
         _, url = self.get("/Staff")
         self.assertIn("/Account/Login", url)
 
+    def test_bootstrap_is_escaped_and_does_not_expose_passwords(self):
+        self.browser.addheaders = [("Accept", "text/html")]
+        html, _ = self.get("/Account/Login")
+        self.assertIn('<div id="root"></div>', html)
+        self.assertRegex(html, r'src="/app/assets/[^\"]+\.js"')
+        hostile_name = '</script><script>alert(1)</script>'
+        password = secrets.token_urlsafe(20)
+        html, _ = self.post("/Account/Login", {"Username": hostile_name, "Password": password}, html)
+        self.assertEqual(hostile_name, page_data(html)["model"]["username"])
+        self.assertNotIn(hostile_name, html)
+        self.assertNotIn(password, html)
+        self.assertNotIn("password", page_data(html)["model"])
+        self.assertEqual(1, len(re.findall('id="portal-data"', html)))
+
+    def test_json_posts_still_require_antiforgery(self):
+        self.get("/Account/Login")
+        with self.assertRaises(urllib.error.HTTPError) as rejected:
+            self.browser.open(WEB + "/Account/Login", urllib.parse.urlencode({"Username": "someone", "Password": "password"}).encode())
+        self.assertEqual(400, rejected.exception.code)
+        rejected.exception.close()
+
     def test_invalid_staff_form_keeps_values_without_creating_account(self):
         self.login()
         code, before, _ = request("GET", "staff-users", token=self.admin)
@@ -74,8 +98,9 @@ class WebContractTests(unittest.TestCase):
             "Password": "short", "Role": "GridOperator",
         }, html)
         self.assertIn("/Staff/Create", url)
-        self.assertIn('value="Keep this name"', html)
-        self.assertIn("validation-summary-errors", html)
+        self.assertEqual("Keep this name", page_data(html)["model"]["fullName"])
+        self.assertTrue(page_data(html)["errors"])
+        self.assertNotIn("password", page_data(html)["model"])
         code, after, _ = request("GET", "staff-users", token=self.admin)
         self.assertEqual(200, code)
         self.assertEqual(before["total"], after["total"])
@@ -92,7 +117,7 @@ class WebContractTests(unittest.TestCase):
             "Version": station["version"], "StartsAt": "", "EndsAt": "", "UsableSlots": "", "UsableEnergyKwh": "",
         }, html)
         self.assertIn("/Stations/Details/", url)
-        self.assertIn('role="alert" class="notice error"', html)
+        self.assertTrue(page_data(html)["notices"]["error"])
         self.assertIn("required", html)
         code, after, _ = request("GET", "stations/" + station["id"], token=self.admin)
         self.assertEqual(200, code)
@@ -108,6 +133,32 @@ class WebContractTests(unittest.TestCase):
         self.assertEqual(401, request("GET", "auth/me", token=token)[0])
         _, url = self.get("/Stations")
         self.assertIn("/Account/Login", url)
+
+    def test_operator_landing_and_dashboard_return_react_data(self):
+        _, credentials, _ = self.new_operator()
+        html, url = self.login(credentials["username"], credentials["password"])
+        self.assertIn("/Operator/Dashboard", url)
+        data = page_data(html)
+        self.assertEqual("Operator", data["controller"])
+        self.assertEqual("Dashboard", data["page"])
+        self.assertFalse(data["meta"].get("Error"))
+        for key in ("PendingCount", "ApprovedFutureCount", "CompletedCount"):
+            self.assertIsInstance(data["meta"][key], int)
+        for key in ("PendingReservations", "RecentCompleted"):
+            self.assertIsInstance(data["meta"][key], list)
+            self.assertLessEqual(len(data["meta"][key]), 5)
+        self.browser.addheaders = [("Accept", "text/html")]
+        html, _ = self.get("/Operator/Dashboard")
+        self.assertIn('<div id="root"></div>', html)
+        self.assertEqual("Operator", page_data(html)["controller"])
+
+    def test_operator_dashboard_denies_backoffice_access(self):
+        self.login()
+        with self.assertRaises(urllib.error.HTTPError) as rejected:
+            self.get("/Operator/Dashboard")
+        self.assertEqual(403, rejected.exception.code)
+        self.assertNotEqual("Operator", page_data(rejected.exception.read().decode())["controller"])
+        rejected.exception.close()
 
     def test_revoked_account_rejects_existing_browser_cookie(self):
         staff, credentials, _ = self.new_operator()

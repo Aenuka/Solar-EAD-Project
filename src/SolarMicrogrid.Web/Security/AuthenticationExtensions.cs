@@ -75,7 +75,7 @@ public static class AuthenticationExtensions
                 // Safely exit without failing the pipeline.
                 return;
             }
-            
+
             // The API timed out (took longer than the HttpClient timeout).
             context.RejectPrincipal();
             await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
